@@ -1,82 +1,81 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <title>NV-FIRST — Painel Técnico</title>
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NV-Control Panel</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Fonte moderna -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
 
 <body>
-  <div id="app">
 
-    <!-- ============================== -->
-    <!-- 🔝 BARRA DE BOTÕES SUPERIOR   -->
-    <!-- ============================== -->
-    <div id="top-buttons">
-      <button class="action-btn" id="btn-listar">Listar</button>
-      <button class="action-btn" id="btn-patch">Patch</button>
-      <button class="action-btn" id="btn-diff">Diff</button>
-      <button class="action-btn" id="btn-simular">Simular</button>
+    <!-- =========================== -->
+    <!--        NAV SUPERIOR         -->
+    <!-- =========================== -->
 
-      <!-- 🔽 BOTÃO DEPLOY + DROPDOWN -->
-      <div class="dropdown">
-        <button class="action-btn" id="btn-deploy-main">Deploy ▼</button>
+    <header class="top-nav">
 
-        <div class="dropdown-content">
-          <button class="dropdown-item" id="deploy-user">Deploy (Meu Código)</button>
+        <button id="btn-listar" class="nav-btn">Listar</button>
+        <button id="btn-patch" class="nav-btn">Patch</button>
+        <button id="btn-diff" class="nav-btn">Diff</button>
+        <button id="btn-simular" class="nav-btn">Simular</button>
 
-          <div class="dropdown-sub">
-            <button class="dropdown-item">Deploy (Sugestão ENAVIA) ▶</button>
-            <div class="dropdown-subcontent">
-              <button class="dropdown-item" id="deploy-minimal">Patch Minimalista</button>
-              <button class="dropdown-item" id="deploy-optimized">Patch Otimizado</button>
+        <div class="deploy-dropdown">
+            <button id="deploy-toggle" class="nav-btn">Deploy ▾</button>
+
+            <div class="deploy-menu">
+                <button id="deploy-list-btn">Listar Staging</button>
+                <button id="deploy-show-btn">Mostrar Patch</button>
+                <button id="deploy-diff-btn">Gerar Diff</button>
+                <button id="deploy-dryrun-btn">Simular Deploy</button>
+                <button id="deploy-apply-btn">Aplicar Deploy</button>
+                <button id="deploy-discard-btn">Descartar Staging</button>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <button class="action-btn danger-btn" id="btn-descartar">Descartar</button>
-    </div>
-
-    <!-- ============================== -->
-    <!-- 🔥 LAYOUT PRINCIPAL (2 CARDS) -->
-    <!-- ============================== -->
-    <div id="main-layout">
-
-      <!-- ============================== -->
-      <!-- 🟦 PAINEL DE CHAT (ESQUERDA) -->
-      <!-- ============================== -->
-      <div id="chat-panel" class="panel">
-        <div id="chat-output" class="scrollable"></div>
-
-        <div id="chat-input-area">
-          <textarea id="chat-input" placeholder="Digite sua mensagem..."></textarea>
-          <button id="chat-send">Enviar</button>
-        </div>
-      </div>
-
-      <!-- ========================================= -->
-      <!-- 🟧 PAINEL TÉCNICO / TELEMETRIA (DIREITA) -->
-      <!-- ========================================= -->
-      <div id="tech-panel" class="panel">
-        <!-- Abas premium -->
-        <div id="tech-tabs">
-          <button id="tab-telemetry" class="tab-pill active">Telemetria</button>
-          <button id="tab-history" class="tab-pill">Histórico</button>
         </div>
 
-        <div id="tech-content">
-          <!-- Telemetria / diffs / JSON -->
-          <div id="tech-telemetry" class="scrollable tab-content active"></div>
+        <button id="btn-descartar" class="nav-btn danger">Descartar</button>
 
-          <!-- Histórico agrupado por sessão -->
-          <div id="tech-history" class="scrollable tab-content"></div>
-        </div>
-      </div>
-    </div>
-  </div>
+        <span id="mode-badge" class="mode-badge">Modo: CHAT normal</span>
+        <span id="status-text" class="status-text">Inicializando…</span>
+    </header>
 
-  <!-- SCRIPTS -->
-  <script src="script.js"></script>
+    <!-- =========================== -->
+    <!--        ÁREAS PRINCIPAIS     -->
+    <!-- =========================== -->
+
+    <main class="main-grid">
+
+        <!-- CHAT -->
+        <section class="chat-panel">
+            <div id="chat-log" class="chat-log"></div>
+
+            <div class="input-area">
+                <textarea id="input" placeholder="Digite sua mensagem…"></textarea>
+
+                <div class="input-buttons">
+                    <button id="engineer-btn" class="toggle-btn">Engineer</button>
+                    <button id="send-btn" class="send-btn">Enviar</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- TELEMETRIA / HISTÓRICO -->
+        <section class="tech-panel">
+
+            <div class="tabs">
+                <button id="tab-telemetria" class="tab active">Telemetria</button>
+                <button id="tab-historico" class="tab">Histórico</button>
+            </div>
+
+            <div id="json-log" class="json-log"></div>
+        </section>
+
+    </main>
+
+    <script src="script.js"></script>
 </body>
 </html>
