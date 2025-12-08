@@ -1,353 +1,264 @@
-/* ========================================= */
-/* 🔥 RESET GERAL */
-/* ========================================= */
+/* ============================ */
+/*   NV-CONTROL — ESTILO BASE   */
+/* ============================ */
+
 * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: Inter, Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Inter", sans-serif;
 }
 
 body {
-  background: #111214;
-  color: #e3e3e3;
-  overflow: hidden;
+    background-color: #0d1117;
+    color: #e6edf3;
+    overflow: hidden;
 }
 
-/* ========================================= */
-/* 🔥 LAYOUT PRINCIPAL */
-/* ========================================= */
+/* ============================ */
+/*  BARRA SUPERIOR (NAVBAR)     */
+/* ============================ */
 
-#main-layout {
-  display: flex;
-  height: calc(100vh - 60px);
-  padding: 10px;
-  gap: 12px;
+.top-nav {
+    width: 100%;
+    padding: 12px;
+    background: #161b22;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid #30363d;
 }
 
-.panel {
-  background: #1a1b1e;
-  border: 1px solid #2b2c31;
-  border-radius: 8px;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
+.nav-btn {
+    background: #21262d;
+    border: 1px solid #30363d;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #c9d1d9;
+    font-weight: 500;
+    transition: 0.15s;
 }
 
-/* PAINEL DE CHAT (ESQUERDA) */
-#chat-panel {
-  flex: 1;
+.nav-btn:hover {
+    background: #30363d;
 }
 
-/* PAINEL TÉCNICO (DIREITA) */
-#tech-panel {
-  flex: 1;
+.danger {
+    background: #8b0000;
+    border-color: #b00;
 }
 
-/* Scroll independente */
-.scrollable {
-  overflow-y: auto;
-  height: 100%;
-  padding-right: 5px;
+.danger:hover {
+    background: #a30000;
 }
 
-/* ========================================= */
-/* 🔥 BARRA SUPERIOR DE BOTÕES */
-/* ========================================= */
+/* STATUS BADGE */
 
-#top-buttons {
-  background: #1a1b1e;
-  padding: 10px;
-  border-bottom: 1px solid #2b2c31;
-  display: flex;
-  gap: 8px;
-  align-items: center;
+.mode-badge {
+    margin-left: auto;
+    padding: 5px 10px;
+    border-radius: 6px;
+    background: #30363d;
+    color: #58a6ff;
+    font-size: 14px;
 }
 
-.action-btn {
-  background: #24262b;
-  border: 1px solid #35373d;
-  color: #e3e3e3;
-  padding: 6px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: 0.15s;
-  font-size: 13px;
+.status-text {
+    padding: 5px 10px;
+    border-radius: 6px;
+    background: #21262d;
+    color: #c9d1d9;
+    font-size: 14px;
 }
 
-.action-btn:hover {
-  background: #2e3036;
-  border-color: #4a4c55;
+/* ============================ */
+/*        LAYOUT PRINCIPAL       */
+/* ============================ */
+
+.main-grid {
+    display: grid;
+    grid-template-columns: 1fr 0.9fr;
+    height: calc(100vh - 60px);
 }
 
-.danger-btn {
-  background: #3a1b1b;
-  border-color: #5a2a2a;
+/* ============================ */
+/*        CHAT PANEL            */
+/* ============================ */
+
+.chat-panel {
+    border-right: 1px solid #30363d;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
-.danger-btn:hover {
-  background: #502323;
+.chat-log {
+    padding: 15px;
+    overflow-y: auto;
+    flex-grow: 1;
+    font-size: 15px;
+    line-height: 1.45;
 }
 
-/* ========================================= */
-/* 🔥 DROPDOWN DO DEPLOY */
-/* ========================================= */
-
-.dropdown {
-  position: relative;
-  display: inline-block;
+.message {
+    margin-bottom: 18px;
+    word-break: break-word;
+    white-space: pre-wrap;
 }
 
-.dropdown-content {
-  display: none;
-  position: absolute;
-  background: #1f2024;
-  border: 1px solid #303136;
-  min-width: 210px;
-  border-radius: 8px;
-  margin-top: 4px;
-  z-index: 9999;
-  padding: 6px 0;
+.input-area {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    border-top: 1px solid #30363d;
+    background: #0f141a;
 }
 
-.dropdown:hover .dropdown-content {
-  display: block;
+#input {
+    width: 100%;
+    height: 70px;
+    border-radius: 6px;
+    border: 1px solid #30363d;
+    background: #161b22;
+    color: #fff;
+    padding: 10px;
+    resize: none;
+    font-size: 15px;
 }
 
-.dropdown-item {
-  width: 100%;
-  text-align: left;
-  padding: 8px 12px;
-  color: #e3e3e3;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: 0.15s;
-  font-size: 13px;
+.input-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 8px;
 }
 
-.dropdown-item:hover {
-  background: #2d2f34;
+.send-btn {
+    background: #238636;
+    border: 1px solid #2ea043;
+    color: white;
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
 }
 
-/* SUBMENU */
-.dropdown-sub {
-  position: relative;
+.send-btn:hover {
+    background: #2ea043;
 }
 
-.dropdown-subcontent {
-  display: none;
-  position: absolute;
-  left: 100%;
-  top: 0;
-  background: #1f2024;
-  border: 1px solid #303136;
-  min-width: 210px;
-  border-radius: 8px;
-  padding: 6px 0;
+.toggle-btn {
+    background: #30363d;
+    border: 1px solid #414852;
+    color: #58a6ff;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
 }
 
-.dropdown-sub:hover .dropdown-subcontent {
-  display: block;
+.toggle-btn.active {
+    background: #1f6feb;
+    border-color: #388bfd;
+    color: white;
 }
 
-/* ========================================= */
-/* 🔥 CHAT - ÁREA DE INPUT */
-/* ========================================= */
+/* ============================ */
+/*       ABA DE TELEMETRIA      */
+/* ============================ */
 
-#chat-input-area {
-  display: flex;
-  gap: 6px;
-  margin-top: 10px;
+.tech-panel {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
-#chat-input {
-  flex: 1;
-  background: #202225;
-  color: #e3e3e3;
-  border: 1px solid #303136;
-  border-radius: 6px;
-  padding: 8px;
-  resize: none;
-  min-height: 60px;
+.tabs {
+    display: flex;
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
 }
 
-#chat-input:focus {
-  outline: 1px solid #4a4c55;
+.tab {
+    flex: 1;
+    padding: 12px;
+    cursor: pointer;
+    text-align: center;
+    background: #161b22;
+    color: #c9d1d9;
+    border: none;
+    font-size: 16px;
 }
 
-#chat-send {
-  background: #2c6ef8;
-  border: none;
-  color: white;
-  padding: 8px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: 0.15s;
-  font-size: 13px;
+.tab:hover {
+    background: #1b222c;
 }
 
-#chat-send:hover {
-  background: #1756e2;
+.tab.active {
+    background: #1f6feb;
+    color: white;
 }
 
-/* ========================================= */
-/* 🔥 BLOCO LIDO / NÃO LIDO (PAINEL TÉCNICO) */
-/* ========================================= */
-
-.unread-block {
-  border-left: 4px solid #2c6ef8;
-  background: rgba(44, 110, 248, 0.07);
-  padding: 8px;
-  margin-bottom: 10px;
-  border-radius: 4px;
+.json-log {
+    overflow-y: auto;
+    padding: 15px;
+    height: 100%;
+    background: #0f141a;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 14px;
+    white-space: pre-wrap;
 }
 
-.read-block {
-  border-left: 4px solid #3a3c40;
-  background: rgba(255, 255, 255, 0.03);
-  padding: 8px;
-  margin-bottom: 10px;
-  border-radius: 4px;
+/* ============================ */
+/*   DEPLOY MENU (DROPDOWN)     */
+/* ============================ */
+
+.deploy-dropdown {
+    position: relative;
 }
 
-/* ========================================= */
-/* 🔥 TEXTOS / PRE */
-/* ========================================= */
-
-#chat-output pre,
-#tech-telemetry pre {
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  margin-bottom: 10px;
-  background: #1e1f22;
-  padding: 10px;
-  border-radius: 6px;
-  border: 1px solid #303136;
-  color: #dcdcdc;
-  font-size: 13px;
+.deploy-menu {
+    position: absolute;
+    top: 38px;
+    left: 0;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 8px 0;
+    display: none;
+    flex-direction: column;
+    width: 170px;
+    z-index: 10;
 }
 
-/* ========================================= */
-/* 🔥 ABAS PREMIUM (TELEMETRIA / HISTÓRICO) */
-/* ========================================= */
-
-#tech-tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 8px;
+.deploy-menu button {
+    padding: 8px 14px;
+    background: none;
+    border: none;
+    text-align: left;
+    color: #c9d1d9;
+    cursor: pointer;
 }
 
-.tab-pill {
-  border-radius: 999px;
-  padding: 6px 16px;
-  border: 1px solid #303136;
-  background: #202125;
-  color: #b4b6bd;
-  font-size: 13px;
-  cursor: pointer;
-  transition: 0.15s;
+.deploy-menu button:hover {
+    background: #1f6feb22;
 }
 
-.tab-pill.active {
-  background: #2c6ef8;
-  color: #ffffff;
-  border-color: #2c6ef8;
-  box-shadow: 0 0 8px rgba(44, 110, 248, 0.6);
+/* ============================ */
+/*  SCROLL PERSONALIZADO        */
+/* ============================ */
+
+::-webkit-scrollbar {
+    width: 10px;
 }
 
-#tech-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
+::-webkit-scrollbar-thumb {
+    background: #30363d;
+    border-radius: 6px;
 }
 
-/* Cada aba é um scrollable independente */
-.tab-content {
-  display: none;
-}
-
-.tab-content.active {
-  display: block;
-}
-
-/* ========================================= */
-/* 🔥 HISTÓRICO AGRUPADO POR SESSÃO */
-/* ========================================= */
-
-.session-card {
-  border-radius: 8px;
-  padding: 10px;
-  margin-bottom: 8px;
-  background: #1e2024;
-  border: 1px solid #303136;
-  font-size: 13px;
-}
-
-.session-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-
-/* Badge base */
-.session-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-/* 🟢 OK */
-.session-ok .session-badge {
-  background: rgba(40, 167, 69, 0.18);
-  color: #3bcf74;
-  border: 1px solid rgba(40, 167, 69, 0.5);
-}
-
-/* 🟡 ATENÇÃO */
-.session-attention .session-badge {
-  background: rgba(255, 193, 7, 0.16);
-  color: #ffcd39;
-  border: 1px solid rgba(255, 193, 7, 0.65);
-}
-
-/* 🔴 ERRO */
-.session-error .session-badge {
-  background: rgba(220, 53, 69, 0.16);
-  color: #ff6b81;
-  border: 1px solid rgba(220, 53, 69, 0.65);
-}
-
-.session-title {
-  font-weight: 600;
-}
-
-.session-meta {
-  font-size: 11px;
-  color: #a9abb2;
-}
-
-.session-body {
-  margin-top: 6px;
-  line-height: 1.4;
-}
-
-/* ========================================= */
-/* 🔥 HIGHLIGHT DE ERRO / ATENÇÃO */
-/* ========================================= */
-
-.line-error {
-  border-left: 3px solid #d9534f;
-  background: rgba(217, 83, 79, 0.12);
-  padding-left: 6px;
-}
-
-.line-warning {
-  border-left: 3px solid #f0ad4e;
-  background: rgba(240, 173, 78, 0.12);
-  padding-left: 6px;
+::-webkit-scrollbar-thumb:hover {
+    background: #4a4f57;
 }
