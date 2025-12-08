@@ -295,3 +295,315 @@ async function handleEngineerSend() {
     color: result.ok ? "#4ade80" : "#f97316",
   });
 }
+// =======================================
+// MODO BRAIN (TREINAMENTO)
+// =======================================
+
+async function handleBrainSend() {
+  const text = inputEl.value.trim();
+  if (!text) return;
+
+  appendChatMessage("Você (BRAIN)", text, { color: "#a78bfa" });
+  inputEl.value = "";
+
+  const payload = {
+    mode: "brain",
+    content: text,
+    training: true,
+    debug: true,
+    source: BASE_PAYLOAD.source,
+  };
+
+  const result = await callNvFirst("/", payload);
+
+  const msg =
+    result?.message ||
+    result?.result?.message ||
+    "Treinamento recebido pela ENAVIA.";
+
+  appendChatMessage("ENAVIA (BRAIN)", msg, {
+    color: result?.ok ? "#4ade80" : "#f97316",
+  });
+}
+
+// =======================================
+// FUNÇÕES DE DEPLOY / ENGENHARIA ASSISTIDA
+// =======================================
+
+async function engineerAction(action) {
+  const payload = {
+    mode: "engineer",
+    intent: action,
+    askSuggestions: false,
+    riskReport: true,
+    preventForbidden: true,
+  };
+
+  if (lastDeploySessionId) {
+    payload.deploySessionId = lastDeploySessionId;
+  }
+
+  const result = await callNvFirst("/engineer", payload);
+
+  if (result?.deploy?.session_id) {
+    lastDeploySessionId = result.deploy.session_id;
+  }
+
+  const msgBase =
+    result?.result?.message ||
+    result?.message ||
+    "Ação de deploy processada.";
+
+  appendChatMessage("ENAVIA (Deploy)", `[${action}] ${msgBase}`, {
+    color: result?.ok ? "#4ade80" : "#f97316",
+  });
+}
+
+async function handleListarStaging() {
+  await engineerAction("APROVAR DEPLOY: listar staging");
+}
+
+async function handleMostrarPatch() {
+  await engineerAction("APROVAR DEPLOY: mostrar patch");
+}
+
+async function handleGerarDiff() {
+  await engineerAction("APROVAR DEPLOY: gerar diff");
+}
+
+async function handleSimularDeploy() {
+  await engineerAction("APROVAR DEPLOY: simular deploy (dry-run)");
+}
+
+async function handleAplicarDeploy() {
+  await engineerAction("APROVAR DEPLOY: aplicar deploy");
+}
+
+async function handleDescartarStaging() {
+  await engineerAction("APROVAR DEPLOY: descartar staging");
+}
+
+// =======================================
+// TABS: TELEMETRIA / HISTÓRICO / AVANÇADO
+// =======================================
+
+const tabAvancado   = document.getElementById("tab-avancado");
+const advancedLogEl = document.getElementById("advanced-log");
+
+function activateTab(target) {
+  // tabs
+  [tabTelemetria, tabHistorico, tabAvancado].forEach((t) => {
+    if (!t) return;
+    t.classList.remove("active");
+  });
+
+  // panels
+  jsonLogEl.classList.add("hidden");
+  historyLogEl.classList.add("hidden");
+  advancedLogEl.classList.add("hidden");
+
+  if (target === "telemetria") {
+    tabTelemetria.classList.add("active");
+    jsonLogEl.classList.remove("hidden");
+  }
+
+  if (target === "historico") {
+    tabHistorico.classList.add("active");
+    historyLogEl.classList.remove("hidden");
+  }
+
+  if (target === "avancado") {
+    tabAvancado.classList.add("active");
+    advancedLogEl.classList.remove("hidden");
+  }
+}
+
+tabTelemetria.addEventListener("click", () => activateTab("telemetria"));
+tabHistorico.addEventListener("click", () => activateTab("historico"));
+tabAvancado.addEventListener("click", () => activateTab("avancado"));
+
+// =======================================
+// TELEMETRIA AVANÇADA (A1–A8, DEBUG, ETC.)
+// =======================================
+
+// Observa o HISTÓRICO e replica para o painel AVANÇADO
+// (filtrando o que for mais relevante)
+const historyObserver = new MutationObserver((mutations) => {
+  for (const m of mutations) {
+    for (const node of m.addedNodes) {
+      if (!(node instanceof HTMLElement)) continue;
+
+      // Estrutura esperada:
+      // <div>
+      //   <div>LABEL</div>
+      //   <div>JSON / texto</div>
+      // </div>
+      const titleEl = node.firstChild;
+      const bodyEl  = node.lastChild;
+
+      if (!titleEl || !bodyEl) continue;
+
+      const label = (titleEl.textContent || "").toUpperCase();
+      const bodyText = bodyEl.textContent || "";
+
+      // Só joga para o AVANÇADO o que for:
+      // - RESPONSE (resposta do Worker)
+      // - ou tiver "telemetry", "debug", "A1", "A2"... no JSON
+      const isResponse = label.includes("RESPONSE");
+      const isTelemetryLike =
+        bodyText.includes("telemetry") ||
+        bodyText.includes("debug") ||
+        bodyText.includes('"A1"') ||
+        bodyText.includes('"A2"') ||
+        bodyText.includes('"A3"') ||
+        bodyText.includes('"A4"') ||
+        bodyText.includes('"A5"') ||
+        bodyText.includes('"A6"') ||
+        bodyText.includes('"A7"') ||
+        bodyText.includes('"A8"');
+
+      if (!isResponse && !isTelemetryLike) continue;
+
+      const clone = node.cloneNode(true);
+      clone.classList.add("advanced-block");
+
+      const titleClone = clone.firstChild;
+      if (titleClone) {
+        titleClone.classList.add("advanced-title");
+      }
+
+      advancedLogEl.insertBefore(clone, advancedLogEl.firstChild);
+    }
+  }
+});
+
+historyObserver.observe(historyLogEl, { childList: true });
+
+// =======================================
+// DROPDOWN DEPLOY
+// =======================================
+
+deployDropdownToggle.addEventListener("click", (e) => {
+  e.stopPropagation();
+  deployDropdownContainer.classList.toggle("open");
+});
+
+// Fecha dropdown clicando fora
+document.addEventListener("click", (e) => {
+  if (!deployDropdownContainer.contains(e.target)) {
+    deployDropdownContainer.classList.remove("open");
+  }
+});
+
+// =======================================
+// EVENTOS PRINCIPAIS
+// =======================================
+
+sendBtn.addEventListener("click", () => {
+  if (currentMode === "chat") {
+    handleChatSend();
+  } else if (currentMode === "engineer") {
+    handleEngineerSend();
+  } else if (currentMode === "brain") {
+    handleBrainSend();
+  }
+});
+
+inputEl.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    if (currentMode === "chat") {
+      handleChatSend();
+    } else if (currentMode === "engineer") {
+      handleEngineerSend();
+    } else if (currentMode === "brain") {
+      handleBrainSend();
+    }
+  }
+});
+
+// Toggle Engineer
+engineerBtn.addEventListener("click", () => {
+  if (currentMode !== "engineer") {
+    setMode("engineer");
+    appendChatMessage(
+      "Sistema",
+      "Modo ENGENHARIA ativado. Use para planos, patches e deploy assistido.",
+      { color: "#facc15" }
+    );
+  } else {
+    setMode("chat");
+    appendChatMessage(
+      "Sistema",
+      "Modo CHAT normal reativado.",
+      { color: "#60a5fa" }
+    );
+  }
+});
+
+// Toggle Brain
+brainBtn.addEventListener("click", () => {
+  if (currentMode !== "brain") {
+    setMode("brain");
+    appendChatMessage(
+      "Sistema",
+      "Modo BRAIN ativado. Tudo que você enviar agora será tratado como TREINAMENTO / CONHECIMENTO.",
+      { color: "#a78bfa" }
+    );
+  } else {
+    setMode("chat");
+    appendChatMessage(
+      "Sistema",
+      "Modo CHAT normal reativado (saindo do BRAIN).",
+      { color: "#60a5fa" }
+    );
+  }
+});
+
+// Botões de deploy no topo
+navListar.addEventListener("click", handleListarStaging);
+navPatch.addEventListener("click", handleMostrarPatch);
+navDiff.addEventListener("click", handleGerarDiff);
+navSimular.addEventListener("click", handleSimularDeploy);
+navDescartar.addEventListener("click", handleDescartarStaging);
+
+// Botões de deploy dentro do dropdown
+btnListar.addEventListener("click", handleListarStaging);
+btnMostrarPatch.addEventListener("click", handleMostrarPatch);
+btnGerarDiff.addEventListener("click", handleGerarDiff);
+btnSimular.addEventListener("click", handleSimularDeploy);
+btnAplicar.addEventListener("click", handleAplicarDeploy);
+btnDescartar.addEventListener("click", handleDescartarStaging);
+
+// =======================================
+// INICIALIZAÇÃO DO PAINEL
+// =======================================
+
+setMode("chat");
+setStatusText(
+  "NV-Control pronto — use CHAT normal, ENGENHARIA ou BRAIN.",
+  "#4ade80"
+);
+
+appendChatMessage(
+  "Sistema",
+  "Console NV-Control iniciado. Você pode conversar em modo normal, pedir patches em ENGENHARIA ou treinar a ENAVIA em modo BRAIN.",
+  { color: "#4ade80" }
+);
+
+appendJsonLog(
+  "STATUS",
+  {
+    message: "NV-Control pronto",
+    worker: NV_WORKER_URL,
+    source: BASE_PAYLOAD.source,
+  },
+  "#a5b4fc"
+);
+
+appendHistory(
+  "STATUS",
+  `Painel NV-Control conectado em ${NV_WORKER_URL}`,
+  "#a5b4fc"
+);
+
