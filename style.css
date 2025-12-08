@@ -53,7 +53,7 @@ body {
     background: #a30000;
 }
 
-/* STATUS BADGE */
+/* BADGES */
 
 .mode-badge {
     margin-left: auto;
@@ -73,7 +73,7 @@ body {
 }
 
 /* ============================ */
-/*        LAYOUT PRINCIPAL       */
+/*       PAINEL PRINCIPAL       */
 /* ============================ */
 
 .main-grid {
@@ -91,6 +91,7 @@ body {
     display: flex;
     flex-direction: column;
     height: 100%;
+    min-height: 0;
 }
 
 .chat-log {
@@ -99,12 +100,6 @@ body {
     flex-grow: 1;
     font-size: 15px;
     line-height: 1.45;
-}
-
-.message {
-    margin-bottom: 18px;
-    word-break: break-word;
-    white-space: pre-wrap;
 }
 
 .input-area {
@@ -145,10 +140,6 @@ body {
     cursor: pointer;
 }
 
-.send-btn:hover {
-    background: #2ea043;
-}
-
 .toggle-btn {
     background: #30363d;
     border: 1px solid #414852;
@@ -159,20 +150,16 @@ body {
     cursor: pointer;
 }
 
-.toggle-btn.active {
-    background: #1f6feb;
-    border-color: #388bfd;
-    color: white;
-}
-
 /* ============================ */
-/*       ABA DE TELEMETRIA      */
+/*         TECH PANEL           */
 /* ============================ */
 
 .tech-panel {
     height: 100%;
     display: flex;
     flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .tabs {
@@ -202,17 +189,21 @@ body {
 }
 
 .json-log {
+    flex-grow: 1;
     overflow-y: auto;
     padding: 15px;
-    height: 100%;
     background: #0f141a;
-    font-family: "JetBrains Mono", monospace;
+    font-family: monospace;
     font-size: 14px;
     white-space: pre-wrap;
 }
 
+.hidden {
+    display: none;
+}
+
 /* ============================ */
-/*   DEPLOY MENU (DROPDOWN)     */
+/*  DEPLOY MENU (DROPDOWN)      */
 /* ============================ */
 
 .deploy-dropdown {
@@ -229,8 +220,12 @@ body {
     padding: 8px 0;
     display: none;
     flex-direction: column;
-    width: 170px;
+    width: 180px;
     z-index: 10;
+}
+
+.deploy-dropdown.open .deploy-menu {
+    display: flex;
 }
 
 .deploy-menu button {
