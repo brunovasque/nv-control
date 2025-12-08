@@ -4,57 +4,93 @@
 
 const NV_WORKER_URL = "https://nv-enavia.brunovasque.workers.dev";
 
-// Seletores
-const chatLogEl = document.getElementById("chat-log");
-const jsonLogEl = document.getElementById("json-log");
-const historyLogEl = document.getElementById("history-log");
+const BASE_PAYLOAD = {
+  source: "NV-CONTROL",
+  env_mode: "supervised",
+};
 
+// =======================================
+// SELETORES
+// =======================================
+
+// Chat
+const chatLogEl = document.getElementById("chat-log");
 const inputEl = document.getElementById("input");
 const sendBtn = document.getElementById("send-btn");
 const engineerBtn = document.getElementById("engineer-btn");
 const brainBtn = document.getElementById("brain-btn");
 
+// Top nav / status
 const modeBadgeEl = document.getElementById("mode-badge");
 const statusTextEl = document.getElementById("status-text");
 
-// Botões de deploy
-const btnListar       = document.getElementById("deploy-list-btn");
+// Deploy dropdown
+const deployDropdown = document.querySelector(".deploy-dropdown");
+const deployToggle = document.getElementById("deploy-toggle");
+const btnListar = document.getElementById("deploy-list-btn");
 const btnMostrarPatch = document.getElementById("deploy-show-btn");
-const btnGerarDiff    = document.getElementById("deploy-diff-btn");
-const btnSimular      = document.getElementById("deploy-dryrun-btn");
-const btnAplicar      = document.getElementById("deploy-apply-btn");
-const btnDescartar    = document.getElementById("deploy-discard-btn");
+const btnGerarDiff = document.getElementById("deploy-diff-btn");
+const btnSimular = document.getElementById("deploy-dryrun-btn");
+const btnAplicar = document.getElementById("deploy-apply-btn");
+const btnDescartar = document.getElementById("deploy-discard-btn");
 
-// Botões principais do topo
-const navListar   = document.getElementById("btn-listar");
-const navPatch    = document.getElementById("btn-patch");
-const navDiff     = document.getElementById("btn-diff");
-const navSimular  = document.getElementById("btn-simular");
-const navDescartar = document.getElementById("btn-descartar");
+// Top nav ações rápidas
+const navListar = document.getElementById("btn-listar");
+const navPatch = document.getElementById("btn-patch");
+const navDiff = document.getElementById("btn-diff");
+const navSimular = document.getElementById("btn-simular");
+const navNavDescartar = document.getElementById("btn-descartar");
 
-// Tabs
+// Tabs + painéis
 const tabTelemetria = document.getElementById("tab-telemetria");
-const tabHistorico  = document.getElementById("tab-historico");
+const tabHistorico = document.getElementById("tab-historico");
+const tabAvancado = document.getElementById("tab-avancado");
 
-// Dropdown deploy
-const deployDropdownContainer = document.querySelector(".deploy-dropdown");
-const deployDropdownToggle    = document.getElementById("deploy-toggle");
+const telemetryLogEl = document.getElementById("telemetry-log");
+const historyLogEl = document.getElementById("history-log");
+const advancedLogEl = document.getElementById("advanced-log");
 
-// Estado interno
-let currentMode = "chat"; 
-let lastEngineeringResult = null;
+// =======================================
+// ESTADO INTERNO
+// =======================================
+
+let currentMode = "chat"; // chat | engineer | brain
 let lastDeploySessionId = null;
 
-// Base telemetria
-const BASE_PAYLOAD = {
-  source: "NV-CONTROL",
-  env_mode: "supervised",
-};
 // =======================================
-// FUNÇÕES DE UI
+// HELPERS DE UI
 // =======================================
 
-function appendChatMessage(from, text, options = {}) {
+function setStatus(text, level = "ok") {
+  statusTextEl.textContent = text;
+  statusTextEl.classList.remove("status-ok", "status-warn", "status-error");
+  if (level === "ok") statusTextEl.classList.add("status-ok");
+  else if (level === "warn") statusTextEl.classList.add("status-warn");
+  else statusTextEl.classList.add("status-error");
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  modeBadgeEl.classList.remove("mode-chat", "mode-engineer", "mode-brain");
+
+  engineerBtn.classList.remove("active");
+  brainBtn.classList.remove("active");
+
+  if (mode === "chat") {
+    modeBadgeEl.textContent = "Modo: CHAT normal";
+    modeBadgeEl.classList.add("mode-chat");
+  } else if (mode === "engineer") {
+    modeBadgeEl.textContent = "Modo: ENGENHARIA (patch / deploy)";
+    modeBadgeEl.classList.add("mode-engineer");
+    engineerBtn.classList.add("active");
+  } else if (mode === "brain") {
+    modeBadgeEl.textContent = "Modo: BRAIN (treinamento)";
+    modeBadgeEl.classList.add("mode-brain");
+    brainBtn.classList.add("active");
+  }
+}
+
+function appendChatMessage(from, text, kind = "system") {
   const line = document.createElement("div");
   line.className = "chat-line";
 
@@ -64,95 +100,110 @@ function appendChatMessage(from, text, options = {}) {
 
   const textSpan = document.createElement("span");
   textSpan.className = "chat-text";
-  textSpan.textContent = text;
 
-  if (options.color) {
-    textSpan.style.color = options.color;
+  switch (kind) {
+    case "user":
+      line.classList.add("chat-user");
+      break;
+    case "eng":
+      line.classList.add("chat-eng");
+      break;
+    case "brain":
+      line.classList.add("chat-brain");
+      break;
+    case "enavia":
+      line.classList.add("chat-enavia");
+      break;
+    case "error":
+      line.classList.add("chat-error");
+      break;
+    default:
+      line.classList.add("chat-system");
   }
+
+  textSpan.textContent = text;
 
   line.appendChild(senderSpan);
   line.appendChild(textSpan);
-
   chatLogEl.appendChild(line);
   chatLogEl.scrollTop = chatLogEl.scrollHeight;
 }
 
-function appendJsonLog(label, obj, color = null) {
-  const wrapper = document.createElement("div");
-  wrapper.className = "json-block";
+// Cards de log
+
+function createLogCard(targetEl, title, obj, options = {}) {
+  const { tag = null, tagType = "info" } = options;
+
+  const card = document.createElement("div");
+  card.className = "log-card";
 
   const header = document.createElement("div");
-  header.className = "json-header";
-  header.textContent = label;
+  header.className = "log-card-header";
+
+  const left = document.createElement("div");
+  const titleSpan = document.createElement("span");
+  titleSpan.className = "log-title";
+  titleSpan.textContent = title;
+  left.appendChild(titleSpan);
+
+  if (tag) {
+    const tagSpan = document.createElement("span");
+    tagSpan.className = `log-tag ${tagType}`;
+    tagSpan.textContent = tag;
+    left.appendChild(tagSpan);
+  }
 
   const copyBtn = document.createElement("button");
-  copyBtn.textContent = "Copiar";
   copyBtn.className = "copy-btn";
+  copyBtn.textContent = "Copiar";
 
+  header.appendChild(left);
   header.appendChild(copyBtn);
 
-  const pre = document.createElement("pre");
-  pre.className = "json-body";
+  const body = document.createElement("pre");
+  body.className = "log-body";
 
   try {
-    pre.textContent = JSON.stringify(obj, null, 2);
+    body.textContent =
+      typeof obj === "string" ? obj : JSON.stringify(obj, null, 2);
   } catch {
-    pre.textContent = String(obj);
+    body.textContent = String(obj);
   }
-
-  if (color) header.style.color = color;
-
-  wrapper.appendChild(header);
-  wrapper.appendChild(pre);
-
-  jsonLogEl.insertBefore(wrapper, jsonLogEl.firstChild);
 
   copyBtn.addEventListener("click", () => {
-    navigator.clipboard.writeText(pre.textContent).catch(() => {});
+    navigator.clipboard.writeText(body.textContent).catch(() => {});
   });
+
+  card.appendChild(header);
+  card.appendChild(body);
+
+  // último no topo
+  targetEl.insertBefore(card, targetEl.firstChild || null);
 }
 
-function appendHistory(label, text, color = "#e5e7eb") {
-  const block = document.createElement("div");
-  block.style.marginBottom = "12px";
+// Tabs
 
-  const title = document.createElement("div");
-  title.style.fontWeight = "600";
-  title.style.color = color;
-  title.textContent = label;
+function activateTab(tabName) {
+  [tabTelemetria, tabHistorico, tabAvancado].forEach((b) =>
+    b.classList.remove("active")
+  );
+  [telemetryLogEl, historyLogEl, advancedLogEl].forEach((p) =>
+    p.classList.remove("active-log")
+  );
 
-  const body = document.createElement("div");
-  body.textContent = text;
-
-  block.appendChild(title);
-  block.appendChild(body);
-
-  historyLogEl.insertBefore(block, historyLogEl.firstChild);
-}
-
-function setStatusText(text, color = null) {
-  statusTextEl.textContent = text;
-  statusTextEl.style.color = color || "#e5e7eb";
-}
-
-function setMode(mode) {
-  currentMode = mode;
-
-  if (mode === "chat") {
-    modeBadgeEl.textContent = "Modo: CHAT normal";
-    modeBadgeEl.className = "mode-badge mode-chat";
-  }
-
-  if (mode === "engineer") {
-    modeBadgeEl.textContent = "Modo: ENGENHARIA";
-    modeBadgeEl.className = "mode-badge mode-engineer";
-  }
-
-  if (mode === "brain") {
-    modeBadgeEl.textContent = "Modo: BRAIN (treinamento)";
-    modeBadgeEl.className = "mode-badge mode-brain";
+  if (tabName === "telemetria") {
+    tabTelemetria.classList.add("active");
+    telemetryLogEl.classList.add("active-log");
+  } else if (tabName === "historico") {
+    tabHistorico.classList.add("active");
+    historyLogEl.classList.add("active-log");
+  } else {
+    tabAvancado.classList.add("active");
+    advancedLogEl.classList.add("active-log");
   }
 }
+
+// Habilita/desabilita botões de deploy enquanto requisita
 
 function setDeployButtonsEnabled(enabled) {
   const btns = [
@@ -166,108 +217,156 @@ function setDeployButtonsEnabled(enabled) {
     navPatch,
     navDiff,
     navSimular,
-    navDescartar,
+    navNavDescartar,
   ];
-
   btns.forEach((b) => {
     if (!b) return;
     b.disabled = !enabled;
-
-    if (!enabled) b.classList.add("btn-disabled");
-    else b.classList.remove("btn-disabled");
+    b.classList.toggle("btn-disabled", !enabled);
   });
 }
 
 // =======================================
-// FUNÇÃO GENÉRICA DE CHAMADA
+// CHAMADA GENÉRICA AO WORKER
 // =======================================
 
-async function callNvFirst(path, payload) {
-  const fullPayload = { ...BASE_PAYLOAD, ...payload };
+async function callNvFirst(path, payload, opts = {}) {
+  const { label = null } = opts;
 
-  appendJsonLog("REQUEST /" + (path || ""), fullPayload, "#60a5fa");
-  appendHistory("REQUEST", JSON.stringify(fullPayload), "#60a5fa");
+  const fullPayload = {
+    ...BASE_PAYLOAD,
+    ...payload,
+  };
 
-  setStatusText("Enviando requisição para ENAVIA...", "#facc15");
+  const route = path || "/";
+
+  // Logs
+  createLogCard(
+    historyLogEl,
+    `REQUEST ${route}`,
+    fullPayload,
+    { tag: "request", tagType: "info" }
+  );
+
+  setStatus("Enviando requisição para ENAVIA…", "warn");
   setDeployButtonsEnabled(false);
 
   try {
-    const res = await fetch(NV_WORKER_URL + (path || "/"), {
+    const res = await fetch(NV_WORKER_URL + route, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(fullPayload),
     });
 
-    const data = await res.json().catch(() => null);
-
-    if (!res.ok) {
-      appendJsonLog("ERRO HTTP " + res.status, data || {}, "#f87171");
-      appendHistory("HTTP ERROR", res.status, "#f87171");
-
-      setStatusText("Erro HTTP na chamada.", "#f87171");
-
-      return { ok: false, error: "HTTP " + res.status, raw: data };
+    let data = null;
+    try {
+      data = await res.json();
+    } catch {
+      data = null;
     }
 
-    appendJsonLog("RESPONSE /" + (path || ""), data, "#34d399");
-    appendHistory("RESPONSE", JSON.stringify(data), "#34d399");
+    if (!res.ok) {
+      createLogCard(
+        advancedLogEl,
+        `HTTP ERROR ${res.status}`,
+        data || {},
+        { tag: "erro", tagType: "error" }
+      );
+      setStatus("Erro HTTP na chamada. Veja o painel técnico.", "error");
+      return { ok: false, httpStatus: res.status, raw: data };
+    }
 
-    setStatusText("Resposta recebida da ENAVIA.", "#4ade80");
+    // Logs organizados
+    createLogCard(
+      historyLogEl,
+      `RESPONSE ${route}`,
+      data,
+      { tag: "response", tagType: data?.ok ? "success" : "error" }
+    );
+
+    createLogCard(
+      telemetryLogEl,
+      label || "STATUS",
+      {
+        ok: data.ok,
+        mode: data.mode || payload.mode,
+        stage: data.telemetry?.stage,
+        system: data.system,
+      },
+      { tag: "telemetria", tagType: data.ok ? "success" : "error" }
+    );
+
+    createLogCard(
+      advancedLogEl,
+      `DETAIL ${route}`,
+      data,
+      { tag: "detalhe", tagType: "info" }
+    );
+
+    setStatus(
+      data.ok
+        ? "Resposta recebida da ENAVIA."
+        : "Resposta recebida com erro lógico. Veja telemetria.",
+      data.ok ? "ok" : "error"
+    );
+
     return data;
-
   } catch (err) {
-    appendJsonLog("EXCEÇÃO FETCH", { message: err.message }, "#f87171");
-    appendHistory("EXCEÇÃO", err.message, "#f87171");
-
-    setStatusText("Falha de conexão com o Worker.", "#f87171");
-
-    return { ok: false, error: err.message };
-  }
-
-  finally {
+    createLogCard(
+      advancedLogEl,
+      "EXCEÇÃO FETCH",
+      { message: err.message },
+      { tag: "erro", tagType: "error" }
+    );
+    setStatus("Falha de conexão com o Worker.", "error");
+    return { ok: false, error: String(err) };
+  } finally {
     setDeployButtonsEnabled(true);
   }
 }
 
 // =======================================
-// CHAT NORMAL
+// HANDLERS DE ENVIO
 // =======================================
 
 async function handleChatSend() {
   const text = inputEl.value.trim();
   if (!text) return;
 
-  appendChatMessage("Você", text, { color: "#60a5fa" });
+  appendChatMessage("Você", text, "user");
   inputEl.value = "";
 
-  const payload = { mode: "chat", message: text, debug: true };
+  const payload = {
+    mode: "chat",
+    message: text,
+    debug: true,
+  };
 
-  const result = await callNvFirst("/", payload);
+  const result = await callNvFirst("/", payload, { label: "CHAT" });
 
   if (!result) {
-    appendChatMessage("Sistema", "Resposta vazia.", { color: "#f87171" });
+    appendChatMessage("Sistema", "Resposta vazia.", "error");
     return;
   }
 
-  const msg =
-    result.output ||
-    result?.result?.message ||
-    "[sem output textual]";
-
-  appendChatMessage("ENAVIA", msg, {
-    color: result.ok ? "#4ade80" : "#f97316",
-  });
+  if (result.output) {
+    appendChatMessage("ENAVIA", result.output, result.ok ? "enavia" : "error");
+  } else if (result.result && result.result.message) {
+    appendChatMessage(
+      "ENAVIA",
+      result.result.message,
+      result.ok ? "enavia" : "error"
+    );
+  } else {
+    appendChatMessage("ENAVIA", "[sem output textual]", "enavia");
+  }
 }
-
-// =======================================
-// MODO ENGENHARIA
-// =======================================
 
 async function handleEngineerSend() {
   const text = inputEl.value.trim();
   if (!text) return;
 
-  appendChatMessage("Você (ENG)", text, { color: "#facc15" });
+  appendChatMessage("Você (ENG)", text, "eng");
   inputEl.value = "";
 
   const payload = {
@@ -278,62 +377,79 @@ async function handleEngineerSend() {
     preventForbidden: true,
   };
 
-  const result = await callNvFirst("/engineer", payload);
-
-  lastEngineeringResult = result || null;
+  const result = await callNvFirst("/engineer", payload, {
+    label: "ENGINEER",
+  });
 
   if (result?.deploy?.session_id) {
     lastDeploySessionId = result.deploy.session_id;
   }
 
-  const resumo =
-    result?.result?.plan?.summary ||
-    result?.message ||
-    "ENGINEER executado.";
+  if (!result) {
+    appendChatMessage(
+      "Sistema",
+      "Resposta de engenharia vazia.",
+      "error"
+    );
+    return;
+  }
 
-  appendChatMessage("ENAVIA (ENG)", resumo, {
-    color: result.ok ? "#4ade80" : "#f97316",
-  });
+  let resumo = "ENGINEER executado.";
+  if (result.result?.plan?.summary) {
+    resumo = result.result.plan.summary;
+  } else if (result.message) {
+    resumo = result.message;
+  }
+
+  appendChatMessage(
+    "ENAVIA (ENG)",
+    resumo,
+    result.ok ? "enavia" : "error"
+  );
 }
-// =======================================
-// MODO BRAIN (TREINAMENTO)
-// =======================================
 
 async function handleBrainSend() {
   const text = inputEl.value.trim();
   if (!text) return;
 
-  appendChatMessage("Você (BRAIN)", text, { color: "#a78bfa" });
+  appendChatMessage("Você (BRAIN)", text, "brain");
   inputEl.value = "";
 
   const payload = {
     mode: "brain",
     content: text,
     training: true,
-    debug: true,
-    source: BASE_PAYLOAD.source,
   };
 
-  const result = await callNvFirst("/", payload);
+  const result = await callNvFirst("/", payload, { label: "BRAIN" });
+
+  if (!result) {
+    appendChatMessage(
+      "Sistema",
+      "Resposta de treinamento vazia.",
+      "error"
+    );
+    return;
+  }
 
   const msg =
-    result?.message ||
-    result?.result?.message ||
+    result.message ||
     "Treinamento recebido pela ENAVIA.";
-
-  appendChatMessage("ENAVIA (BRAIN)", msg, {
-    color: result?.ok ? "#4ade80" : "#f97316",
-  });
+  appendChatMessage(
+    "ENAVIA (BRAIN)",
+    msg,
+    result.ok ? "enavia" : "error"
+  );
 }
 
 // =======================================
-// FUNÇÕES DE DEPLOY / ENGENHARIA ASSISTIDA
+// FUNÇÕES DE DEPLOY (ENGINEERING)
 // =======================================
 
-async function engineerAction(action) {
+async function engineerAction(actionText) {
   const payload = {
     mode: "engineer",
-    intent: action,
+    intent: actionText,
     askSuggestions: false,
     riskReport: true,
     preventForbidden: true,
@@ -343,231 +459,126 @@ async function engineerAction(action) {
     payload.deploySessionId = lastDeploySessionId;
   }
 
-  const result = await callNvFirst("/engineer", payload);
+  const result = await callNvFirst("/engineer", payload, {
+    label: "DEPLOY",
+  });
 
   if (result?.deploy?.session_id) {
     lastDeploySessionId = result.deploy.session_id;
   }
 
-  const msgBase =
+  const baseMsg =
     result?.result?.message ||
     result?.message ||
     "Ação de deploy processada.";
 
-  appendChatMessage("ENAVIA (Deploy)", `[${action}] ${msgBase}`, {
-    color: result?.ok ? "#4ade80" : "#f97316",
-  });
+  appendChatMessage(
+    "ENAVIA (Deploy)",
+    `[${actionText}] ${baseMsg}`,
+    result?.ok ? "enavia" : "error"
+  );
 }
 
-async function handleListarStaging() {
-  await engineerAction("APROVAR DEPLOY: listar staging");
+function handleListarStaging() {
+  engineerAction("APROVAR DEPLOY: listar staging");
 }
-
-async function handleMostrarPatch() {
-  await engineerAction("APROVAR DEPLOY: mostrar patch");
+function handleMostrarPatch() {
+  engineerAction("APROVAR DEPLOY: mostrar patch");
 }
-
-async function handleGerarDiff() {
-  await engineerAction("APROVAR DEPLOY: gerar diff");
+function handleGerarDiff() {
+  engineerAction("APROVAR DEPLOY: gerar diff");
 }
-
-async function handleSimularDeploy() {
-  await engineerAction("APROVAR DEPLOY: simular deploy (dry-run)");
+function handleSimularDeploy() {
+  engineerAction("APROVAR DEPLOY: simular deploy (dry-run)");
 }
-
-async function handleAplicarDeploy() {
-  await engineerAction("APROVAR DEPLOY: aplicar deploy");
+function handleAplicarDeploy() {
+  engineerAction("APROVAR DEPLOY: aplicar deploy");
 }
-
-async function handleDescartarStaging() {
-  await engineerAction("APROVAR DEPLOY: descartar staging");
+function handleDescartarStaging() {
+  engineerAction("APROVAR DEPLOY: descartar staging");
 }
 
 // =======================================
-// TABS: TELEMETRIA / HISTÓRICO / AVANÇADO
+// EVENTOS
 // =======================================
 
-const tabAvancado   = document.getElementById("tab-avancado");
-const advancedLogEl = document.getElementById("advanced-log");
-
-function activateTab(target) {
-  // tabs
-  [tabTelemetria, tabHistorico, tabAvancado].forEach((t) => {
-    if (!t) return;
-    t.classList.remove("active");
-  });
-
-  // panels
-  jsonLogEl.classList.add("hidden");
-  historyLogEl.classList.add("hidden");
-  advancedLogEl.classList.add("hidden");
-
-  if (target === "telemetria") {
-    tabTelemetria.classList.add("active");
-    jsonLogEl.classList.remove("hidden");
-  }
-
-  if (target === "historico") {
-    tabHistorico.classList.add("active");
-    historyLogEl.classList.remove("hidden");
-  }
-
-  if (target === "avancado") {
-    tabAvancado.classList.add("active");
-    advancedLogEl.classList.remove("hidden");
-  }
-}
-
-tabTelemetria.addEventListener("click", () => activateTab("telemetria"));
-tabHistorico.addEventListener("click", () => activateTab("historico"));
-tabAvancado.addEventListener("click", () => activateTab("avancado"));
-
-// =======================================
-// TELEMETRIA AVANÇADA (A1–A8, DEBUG, ETC.)
-// =======================================
-
-// Observa o HISTÓRICO e replica para o painel AVANÇADO
-// (filtrando o que for mais relevante)
-const historyObserver = new MutationObserver((mutations) => {
-  for (const m of mutations) {
-    for (const node of m.addedNodes) {
-      if (!(node instanceof HTMLElement)) continue;
-
-      // Estrutura esperada:
-      // <div>
-      //   <div>LABEL</div>
-      //   <div>JSON / texto</div>
-      // </div>
-      const titleEl = node.firstChild;
-      const bodyEl  = node.lastChild;
-
-      if (!titleEl || !bodyEl) continue;
-
-      const label = (titleEl.textContent || "").toUpperCase();
-      const bodyText = bodyEl.textContent || "";
-
-      // Só joga para o AVANÇADO o que for:
-      // - RESPONSE (resposta do Worker)
-      // - ou tiver "telemetry", "debug", "A1", "A2"... no JSON
-      const isResponse = label.includes("RESPONSE");
-      const isTelemetryLike =
-        bodyText.includes("telemetry") ||
-        bodyText.includes("debug") ||
-        bodyText.includes('"A1"') ||
-        bodyText.includes('"A2"') ||
-        bodyText.includes('"A3"') ||
-        bodyText.includes('"A4"') ||
-        bodyText.includes('"A5"') ||
-        bodyText.includes('"A6"') ||
-        bodyText.includes('"A7"') ||
-        bodyText.includes('"A8"');
-
-      if (!isResponse && !isTelemetryLike) continue;
-
-      const clone = node.cloneNode(true);
-      clone.classList.add("advanced-block");
-
-      const titleClone = clone.firstChild;
-      if (titleClone) {
-        titleClone.classList.add("advanced-title");
-      }
-
-      advancedLogEl.insertBefore(clone, advancedLogEl.firstChild);
-    }
-  }
-});
-
-historyObserver.observe(historyLogEl, { childList: true });
-
-// =======================================
-// DROPDOWN DEPLOY
-// =======================================
-
-deployDropdownToggle.addEventListener("click", (e) => {
-  e.stopPropagation();
-  deployDropdownContainer.classList.toggle("open");
-});
-
-// Fecha dropdown clicando fora
-document.addEventListener("click", (e) => {
-  if (!deployDropdownContainer.contains(e.target)) {
-    deployDropdownContainer.classList.remove("open");
-  }
-});
-
-// =======================================
-// EVENTOS PRINCIPAIS
-// =======================================
-
+// Enviar
 sendBtn.addEventListener("click", () => {
-  if (currentMode === "chat") {
-    handleChatSend();
-  } else if (currentMode === "engineer") {
-    handleEngineerSend();
-  } else if (currentMode === "brain") {
-    handleBrainSend();
-  }
+  if (currentMode === "chat") return handleChatSend();
+  if (currentMode === "engineer") return handleEngineerSend();
+  if (currentMode === "brain") return handleBrainSend();
 });
 
 inputEl.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
-    if (currentMode === "chat") {
-      handleChatSend();
-    } else if (currentMode === "engineer") {
-      handleEngineerSend();
-    } else if (currentMode === "brain") {
-      handleBrainSend();
-    }
+    if (currentMode === "chat") return handleChatSend();
+    if (currentMode === "engineer") return handleEngineerSend();
+    if (currentMode === "brain") return handleBrainSend();
   }
 });
 
-// Toggle Engineer
+// Toggles de modo
 engineerBtn.addEventListener("click", () => {
-  if (currentMode !== "engineer") {
-    setMode("engineer");
-    appendChatMessage(
-      "Sistema",
-      "Modo ENGENHARIA ativado. Use para planos, patches e deploy assistido.",
-      { color: "#facc15" }
-    );
-  } else {
+  if (currentMode === "engineer") {
     setMode("chat");
     appendChatMessage(
       "Sistema",
       "Modo CHAT normal reativado.",
-      { color: "#60a5fa" }
+      "system"
+    );
+  } else {
+    setMode("engineer");
+    appendChatMessage(
+      "Sistema",
+      "Modo ENGENHARIA ativado. Use para planos, patches e deploy assistido.",
+      "system"
     );
   }
 });
 
-// Toggle Brain
 brainBtn.addEventListener("click", () => {
-  if (currentMode !== "brain") {
+  if (currentMode === "brain") {
+    setMode("chat");
+    appendChatMessage(
+      "Sistema",
+      "Modo CHAT normal reativado.",
+      "system"
+    );
+  } else {
     setMode("brain");
     appendChatMessage(
       "Sistema",
       "Modo BRAIN ativado. Tudo que você enviar agora será tratado como TREINAMENTO / CONHECIMENTO.",
-      { color: "#a78bfa" }
-    );
-  } else {
-    setMode("chat");
-    appendChatMessage(
-      "Sistema",
-      "Modo CHAT normal reativado (saindo do BRAIN).",
-      { color: "#60a5fa" }
+      "system"
     );
   }
 });
 
-// Botões de deploy no topo
+// Tabs
+tabTelemetria.addEventListener("click", () => activateTab("telemetria"));
+tabHistorico.addEventListener("click", () => activateTab("historico"));
+tabAvancado.addEventListener("click", () => activateTab("avancado"));
+
+// Deploy dropdown
+deployToggle.addEventListener("click", () => {
+  deployDropdown.classList.toggle("open");
+});
+
+document.addEventListener("click", (e) => {
+  if (!deployDropdown.contains(e.target) && e.target !== deployToggle) {
+    deployDropdown.classList.remove("open");
+  }
+});
+
+// Navegação topo
 navListar.addEventListener("click", handleListarStaging);
 navPatch.addEventListener("click", handleMostrarPatch);
 navDiff.addEventListener("click", handleGerarDiff);
 navSimular.addEventListener("click", handleSimularDeploy);
-navDescartar.addEventListener("click", handleDescartarStaging);
+navNavDescartar.addEventListener("click", handleDescartarStaging);
 
-// Botões de deploy dentro do dropdown
+// Botões dentro do dropdown
 btnListar.addEventListener("click", handleListarStaging);
 btnMostrarPatch.addEventListener("click", handleMostrarPatch);
 btnGerarDiff.addEventListener("click", handleGerarDiff);
@@ -576,34 +587,28 @@ btnAplicar.addEventListener("click", handleAplicarDeploy);
 btnDescartar.addEventListener("click", handleDescartarStaging);
 
 // =======================================
-// INICIALIZAÇÃO DO PAINEL
+// INICIALIZAÇÃO
 // =======================================
 
 setMode("chat");
-setStatusText(
-  "NV-Control pronto — use CHAT normal, ENGENHARIA ou BRAIN.",
-  "#4ade80"
+setStatus(
+  "Console NV-Control iniciado. Você pode conversar em modo normal, pedir patches em ENGENHARIA ou treinar a ENAVIA em modo BRAIN.",
+  "ok"
 );
 
 appendChatMessage(
   "Sistema",
   "Console NV-Control iniciado. Você pode conversar em modo normal, pedir patches em ENGENHARIA ou treinar a ENAVIA em modo BRAIN.",
-  { color: "#4ade80" }
+  "system"
 );
 
-appendJsonLog(
+createLogCard(
+  telemetryLogEl,
   "STATUS",
   {
     message: "NV-Control pronto",
     worker: NV_WORKER_URL,
     source: BASE_PAYLOAD.source,
   },
-  "#a5b4fc"
+  { tag: "status", tagType: "info" }
 );
-
-appendHistory(
-  "STATUS",
-  `Painel NV-Control conectado em ${NV_WORKER_URL}`,
-  "#a5b4fc"
-);
-
