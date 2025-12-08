@@ -1,105 +1,217 @@
 <!DOCTYPE html>
-<html lang="pt-br">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NV-Control Panel</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-
-<body>
-  <div id="app">
-    <header id="top-bar">
-      <div id="left-bar">
-        <button id="list-btn" class="top-btn">Listar</button>
-        <button id="patch-btn" class="top-btn">Patch</button>
-        <button id="diff-btn" class="top-btn">Diff</button>
-        <button id="simulate-btn" class="top-btn">Simular</button>
-
-        <div class="dropdown">
-          <button class="top-btn drop-btn">Deploy ▾</button>
-          <div class="dropdown-content">
-            <button data-deploy="test">Testar deploy</button>
-            <button data-deploy="safe">Deploy seguro</button>
-            <button data-deploy="full">Deploy completo</button>
-            <button data-deploy="rollback">Rollback</button>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>NV-Control | ENAVIA</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <!-- HEADER -->
+      <header class="app-header">
+        <div class="app-header-left">
+          <h1>NV-Control</h1>
+          <p class="subtitle">Painel de supervisão da ENAVIA</p>
+        </div>
+        <div class="app-header-right">
+          <div class="worker-url">
+            <label for="workerUrlInput">Worker:</label>
+            <input
+              id="workerUrlInput"
+              type="text"
+              spellcheck="false"
+              value="https://nv-enavia.brunovasque.workers.dev"
+            />
+          </div>
+          <div class="badges">
+            <span id="status-badge" class="badge badge-neutral">Pronto</span>
+            <span id="mode-badge" class="badge badge-mode badge-mode-chat"
+              >CHAT</span
+            >
           </div>
         </div>
+      </header>
 
-        <button id="discard-btn" class="top-btn danger">Descartar</button>
-      </div>
-
-      <div id="right-bar">
-        <span id="mode-badge" class="badge mode-normal">Modo: CHAT normal</span>
-        <span id="status-text" class="badge status-idle">Pronto</span>
-      </div>
-    </header>
-
-    <main id="main-area">
-
-      <!-- ========================= -->
-      <!--   SEÇÃO DO CHAT À ESQUERDA   -->
-      <!-- ========================= -->
-      <section id="chat-section">
-        <div id="chat-log" class="log-panel active-log"></div>
-
-        <div id="input-area">
-          <textarea id="user-input" placeholder="Digite sua mensagem..."></textarea>
-
-          <div id="mode-buttons">
-            <button id="engineer-btn" class="mode-btn">Engineer</button>
-            <button id="brain-btn" class="mode-btn">Brain</button>
-            <button id="send-btn" class="send-btn">Enviar</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- ========================= -->
-      <!--   PAINÉIS LATERAIS (3 aba)   -->
-      <!-- ========================= -->
-      <section id="panels-section">
-
-        <div id="tabs">
-          <button class="tab-btn active" data-tab="telemetry">Telemetria</button>
-          <button class="tab-btn" data-tab="history">Histórico</button>
-          <button class="tab-btn" data-tab="advanced">Avançado</button>
-        </div>
-
-        <div id="panel-content">
-
-          <!-- ============= TELEMETRIA ============= -->
-          <div id="telemetry-panel" class="panel active">
-
-            <!-- NOVO: Contêiner exigido pelo script.js -->
-            <div id="telemetry-cards" class="cards-container"></div>
-
-            <!-- Mantido: log bruto caso queira -->
-            <div id="telemetry-log" class="log-panel"></div>
+      <!-- MAIN -->
+      <main class="app-main">
+        <!-- LEFT: CONSOLE -->
+        <section class="console">
+          <div class="console-header">
+            <span>Console NV-Control</span>
           </div>
 
-          <!-- ============= HISTÓRICO ============= -->
-          <div id="history-panel" class="panel">
+          <div id="messages" class="messages"></div>
 
-            <!-- NOVO: Contêiner exigido pelo script.js -->
-            <div id="history-cards" class="cards-container"></div>
+          <div class="input-area">
+            <textarea
+              id="userInput"
+              rows="3"
+              placeholder="Digite sua mensagem para a ENAVIA... (Ctrl+Enter para enviar)"
+            ></textarea>
+            <div class="input-toolbar">
+              <div class="mode-buttons">
+                <button
+                  id="chatBtn"
+                  type="button"
+                  class="btn btn-secondary btn-mode active"
+                >
+                  Chat
+                </button>
+                <button
+                  id="engineerBtn"
+                  type="button"
+                  class="btn btn-secondary btn-mode"
+                >
+                  Engineer
+                </button>
+                <button
+                  id="brainBtn"
+                  type="button"
+                  class="btn btn-secondary btn-mode"
+                >
+                  Brain
+                </button>
+              </div>
+              <div class="send-area">
+                <label class="checkbox-inline">
+                  <input id="debugToggle" type="checkbox" checked />
+                  <span>Debug</span>
+                </label>
+                <button id="sendBtn" type="button" class="btn btn-primary">
+                  Enviar
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
 
-            <div id="history-log" class="log-panel"></div>
+        <!-- RIGHT: TELEMETRIA / HISTÓRICO / AVANÇADO -->
+        <section class="side-panel">
+          <div class="tabs">
+            <button
+              id="tab-telemetry"
+              class="tab active"
+              data-tab="telemetry"
+            >
+              Telemetria
+            </button>
+            <button id="tab-history" class="tab" data-tab="history">
+              Histórico
+            </button>
+            <button id="tab-advanced" class="tab" data-tab="advanced">
+              Avançado
+            </button>
           </div>
 
-          <!-- ============= AVANÇADO ============= -->
-          <div id="advanced-panel" class="panel">
+          <div class="tab-panels">
+            <!-- TELEMETRIA -->
+            <div id="panel-telemetry" class="tab-panel active">
+              <div class="card">
+                <div class="card-header">
+                  <span>Resumo</span>
+                  <span class="card-badge" id="telemetry-summary-badge"
+                    >-</span
+                  >
+                </div>
+                <div id="telemetry-summary" class="card-body card-grid"></div>
+              </div>
 
-            <!-- NOVO: Contêiner exigido pelo script.js -->
-            <div id="advanced-cards" class="cards-container"></div>
+              <div class="card">
+                <div class="card-header">
+                  <span>Request</span>
+                  <button
+                    type="button"
+                    class="btn-icon copy-btn"
+                    data-copy-target="telemetry-request"
+                    title="Copiar JSON do request"
+                  >
+                    Copiar
+                  </button>
+                </div>
+                <pre id="telemetry-request" class="card-body code-block"></pre>
+              </div>
 
-            <div id="advanced-log" class="log-panel"></div>
+              <div class="card">
+                <div class="card-header">
+                  <span>Response</span>
+                  <button
+                    type="button"
+                    class="btn-icon copy-btn"
+                    data-copy-target="telemetry-response"
+                    title="Copiar JSON da response"
+                  >
+                    Copiar
+                  </button>
+                </div>
+                <pre id="telemetry-response" class="card-body code-block"></pre>
+              </div>
+
+              <div class="card" id="telemetry-error-card" style="display:none;">
+                <div class="card-header">
+                  <span>Erro</span>
+                  <button
+                    type="button"
+                    class="btn-icon copy-btn"
+                    data-copy-target="telemetry-error"
+                    title="Copiar detalhes de erro"
+                  >
+                    Copiar
+                  </button>
+                </div>
+                <pre id="telemetry-error" class="card-body code-block"></pre>
+              </div>
+            </div>
+
+            <!-- HISTÓRICO -->
+            <div id="panel-history" class="tab-panel">
+              <div class="card">
+                <div class="card-header">
+                  <span>Histórico de chamadas</span>
+                  <button
+                    type="button"
+                    id="clearHistoryBtn"
+                    class="btn-icon"
+                    title="Limpar histórico"
+                  >
+                    Limpar
+                  </button>
+                </div>
+                <div id="history-list" class="card-body history-list"></div>
+              </div>
+            </div>
+
+            <!-- AVANÇADO -->
+            <div id="panel-advanced" class="tab-panel">
+              <div class="card">
+                <div class="card-header">
+                  <span>Raw log da última interação</span>
+                  <button
+                    type="button"
+                    class="btn-icon copy-btn"
+                    data-copy-target="advanced-raw"
+                    title="Copiar log completo"
+                  >
+                    Copiar
+                  </button>
+                </div>
+                <pre id="advanced-raw" class="card-body code-block"></pre>
+              </div>
+            </div>
           </div>
+        </section>
+      </main>
 
-        </div>
-      </section>
-    </main>
-  </div>
+      <!-- FOOTER -->
+      <footer class="app-footer">
+        <span>NV-Control • ENAVIA supervisionada (modo <strong>supervised</strong>)</span>
+        <span class="hint"
+          >Dica: use <strong>Chat</strong> para conversa normal, <strong>Engineer</strong> para
+          plano/patch e <strong>Brain</strong> para treinamento.</span
+        >
+      </footer>
+    </div>
 
-  <script src="script.js"></script>
-</body>
+    <script src="script.js"></script>
+  </body>
 </html>
