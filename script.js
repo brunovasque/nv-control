@@ -1,203 +1,345 @@
-// ===============================
+// ============================================================
 // NV-Control Panel Script
-// ===============================
+// ============================================================
 
-// URL DO WORKER NV-ENAVIA
-const NV_WORKER_URL = "https://nv-enavia.brunovasque.workers.dev";
+const DEFAULT_WORKER_URL = "https://nv-enavia.brunovasque.workers.dev";
 
-// ===============================
-// SELETORES (DOM)
-// ===============================
-const chatLogEl = document.getElementById("chat-log");
-const jsonLogEl = document.getElementById("json-log");
-const historyLogEl = document.getElementById("history-log");
-
-const inputEl = document.getElementById("input");
-const sendBtn = document.getElementById("send-btn");
-const engineerBtn = document.getElementById("engineer-btn");
-const brainBtn = document.getElementById("brain-btn");
-
+// DOM ELEMENTS
+const messagesEl = document.getElementById("messages");
+const userInputEl = document.getElementById("userInput");
+const sendBtn = document.getElementById("sendBtn");
+const chatBtn = document.getElementById("chatBtn");
+const engineerBtn = document.getElementById("engineerBtn");
+const brainBtn = document.getElementById("brainBtn");
+const statusBadgeEl = document.getElementById("status-badge");
 const modeBadgeEl = document.getElementById("mode-badge");
-const statusTextEl = document.getElementById("status-text");
-
-// Botões de deploy
-const btnListar = document.getElementById("deploy-list-btn");
-const btnMostrarPatch = document.getElementById("deploy-show-btn");
-const btnGerarDiff = document.getElementById("deploy-diff-btn");
-const btnSimular = document.getElementById("deploy-dryrun-btn");
-const btnAplicar = document.getElementById("deploy-apply-btn");
-const btnDescartar = document.getElementById("deploy-discard-btn");
-
-// Botões principais do topo
-const navListar = document.getElementById("btn-listar");
-const navPatch = document.getElementById("btn-patch");
-const navDiff = document.getElementById("btn-diff");
-const navSimular = document.getElementById("btn-simular");
-const navDescartar = document.getElementById("btn-descartar");
+const workerUrlInputEl = document.getElementById("workerUrlInput");
+const debugToggleEl = document.getElementById("debugToggle");
 
 // Tabs
 const tabTelemetryBtn = document.getElementById("tab-telemetry");
 const tabHistoryBtn = document.getElementById("tab-history");
 const tabAdvancedBtn = document.getElementById("tab-advanced");
 
-const telemetryPanel = document.getElementById("telemetry-panel");
-const historyPanel = document.getElementById("history-panel");
-const advancedPanel = document.getElementById("advanced-panel");
+const panelTelemetryEl = document.getElementById("panel-telemetry");
+const panelHistoryEl = document.getElementById("panel-history");
+const panelAdvancedEl = document.getElementById("panel-advanced");
 
-// Containers dos cards
-const telemetryCardsEl = document.getElementById("telemetry-cards");
-const historyCardsEl = document.getElementById("history-cards");
-const advancedCardsEl = document.getElementById("advanced-cards");
+// Telemetry elements
+const telemetrySummaryEl = document.getElementById("telemetry-summary");
+const telemetrySummaryBadgeEl = document.getElementById(
+  "telemetry-summary-badge"
+);
+const telemetryRequestEl = document.getElementById("telemetry-request");
+const telemetryResponseEl = document.getElementById("telemetry-response");
+const telemetryErrorCardEl = document.getElementById("telemetry-error-card");
+const telemetryErrorEl = document.getElementById("telemetry-error");
 
-// Badge de modo no topo direito
-const headerModeBadge = document.getElementById("header-mode-badge");
+// History
+const historyListEl = document.getElementById("history-list");
+const clearHistoryBtn = document.getElementById("clearHistoryBtn");
 
-// ===============================
-// ESTADO GLOBAL
-// ===============================
+// Advanced
+const advancedRawEl = document.getElementById("advanced-raw");
+
+// Global state
 let currentMode = "chat"; // "chat" | "engineer" | "brain"
-let lastRequestInfo = null;
+let history = [];
 
-// ===============================
-// UTILITÁRIOS
-// ===============================
-function timeNow() {
-  return new Date().toISOString().replace("T", " ").replace("Z", "");
-}
+// ============================================================
+// INIT
+// ============================================================
 
-function appendChatLine(prefix, text, colorClass = "text-slate-100") {
-  const line = document.createElement("div");
-  line.className = "mb-1 text-sm";
-  line.innerHTML = `<span class="font-semibold ${colorClass}">${prefix}</span><span class="text-slate-200"> ${text}</span>`;
-  chatLogEl.appendChild(line);
-  chatLogEl.scrollTop = chatLogEl.scrollHeight;
-}
-
-function setStatus(text, type = "info") {
-  statusTextEl.textContent = text;
-  statusTextEl.className =
-    "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium";
-
-  if (type === "ok") {
-    statusTextEl.classList.add("bg-emerald-900/60", "text-emerald-300");
-  } else if (type === "error") {
-    statusTextEl.classList.add("bg-red-900/60", "text-red-300");
-  } else if (type === "warn") {
-    statusTextEl.classList.add("bg-amber-900/60", "text-amber-300");
-  } else {
-    statusTextEl.classList.add("bg-slate-800/80", "text-slate-200");
-  }
-}
-
-function setModeBadge() {
-  headerModeBadge.className =
-    "inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-800/70 backdrop-blur border border-slate-700/60";
-
-  if (currentMode === "chat") {
-    headerModeBadge.textContent = "Modo: CHAT normal";
-    headerModeBadge.classList.add("text-emerald-300");
-  } else if (currentMode === "engineer") {
-    headerModeBadge.textContent = "Modo: ENGENHARIA (patch / deploy)";
-    headerModeBadge.classList.add("text-amber-300");
-  } else if (currentMode === "brain") {
-    headerModeBadge.textContent = "Modo: BRAIN (treinamento)";
-    headerModeBadge.classList.add("text-purple-300");
-  }
-}
-
-// Cria um "card" JSON
-function createJsonCard(title, badge, obj, type = "telemetry") {
-  const card = document.createElement("div");
-  card.className =
-    "bg-slate-900/60 border border-slate-800 rounded-xl p-3 mb-3 shadow-sm";
-
-  const header = document.createElement("div");
-  header.className = "flex items-center justify-between mb-2";
-
-  const titleSpan = document.createElement("span");
-  titleSpan.className = "text-xs font-semibold text-slate-300";
-  titleSpan.textContent = title;
-
-  const badgeSpan = document.createElement("span");
-  badgeSpan.className =
-    "inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold";
-
-  if (type === "error") {
-    badgeSpan.classList.add("bg-red-900/70", "text-red-200");
-  } else if (type === "status") {
-    badgeSpan.classList.add("bg-sky-900/70", "text-sky-200");
-  } else if (type === "detail") {
-    badgeSpan.classList.add("bg-amber-900/70", "text-amber-200");
-  } else {
-    badgeSpan.classList.add("bg-slate-800/80", "text-slate-200");
+function init() {
+  // Worker URL fallback
+  if (!workerUrlInputEl) {
+    console.warn("workerUrlInput element not found; using default URL only.");
+  } else if (!workerUrlInputEl.value) {
+    workerUrlInputEl.value = DEFAULT_WORKER_URL;
   }
 
-  badgeSpan.textContent = badge;
+  // Mode buttons
+  if (chatBtn) chatBtn.addEventListener("click", () => setMode("chat"));
+  if (engineerBtn)
+    engineerBtn.addEventListener("click", () => setMode("engineer"));
+  if (brainBtn) brainBtn.addEventListener("click", () => setMode("brain"));
 
-  const copyBtn = document.createElement("button");
-  copyBtn.className =
-    "text-[10px] px-2 py-0.5 rounded-full border border-slate-700/70 text-slate-300 hover:bg-slate-800/80";
-  copyBtn.textContent = "Copiar";
-  copyBtn.addEventListener("click", () => {
-    navigator.clipboard.writeText(JSON.stringify(obj, null, 2));
+  // Send
+  if (sendBtn) sendBtn.addEventListener("click", handleSend);
+
+  if (userInputEl) {
+    userInputEl.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        handleSend();
+      }
+    });
+  }
+
+  // Tabs
+  if (tabTelemetryBtn)
+    tabTelemetryBtn.addEventListener("click", () => setActiveTab("telemetry"));
+  if (tabHistoryBtn)
+    tabHistoryBtn.addEventListener("click", () => setActiveTab("history"));
+  if (tabAdvancedBtn)
+    tabAdvancedBtn.addEventListener("click", () => setActiveTab("advanced"));
+
+  // Copy buttons
+  const copyButtons = document.querySelectorAll(".copy-btn");
+  copyButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const targetId = btn.getAttribute("data-copy-target");
+      if (!targetId) return;
+      const targetEl = document.getElementById(targetId);
+      if (!targetEl) return;
+      copyToClipboard(targetEl.innerText || targetEl.textContent || "");
+    });
   });
 
-  header.appendChild(titleSpan);
-  const rightGroup = document.createElement("div");
-  rightGroup.className = "flex items-center gap-2";
-  rightGroup.appendChild(badgeSpan);
-  rightGroup.appendChild(copyBtn);
-  header.appendChild(rightGroup);
+  // Clear history
+  if (clearHistoryBtn) {
+    clearHistoryBtn.addEventListener("click", () => {
+      history = [];
+      if (historyListEl) historyListEl.innerHTML = "";
+    });
+  }
 
-  const pre = document.createElement("pre");
-  pre.className =
-    "text-[11px] leading-[1.25rem] text-slate-200 bg-slate-950/60 rounded-lg p-2 overflow-auto max-h-60";
-  pre.textContent = JSON.stringify(obj, null, 2);
-
-  card.appendChild(header);
-  card.appendChild(pre);
-
-  return card;
+  setMode("chat", { silent: true });
+  setStatus("neutral", "Pronto");
+  appendSystemMessage(
+    "NV-Control inicializado. Conectando à ENAVIA via rota / (supervised)."
+  );
 }
 
-function pushTelemetry(obj) {
-  if (!obj) return;
-  const card = createJsonCard("CHAT", "telemetria", obj, "telemetry");
-  telemetryCardsEl.prepend(card);
+document.addEventListener("DOMContentLoaded", init);
+
+// ============================================================
+// MODE & STATUS
+// ============================================================
+
+function setMode(mode, options = {}) {
+  currentMode = mode;
+
+  // Update badge
+  if (modeBadgeEl) {
+    modeBadgeEl.textContent = mode.toUpperCase();
+    modeBadgeEl.classList.remove(
+      "badge-mode-chat",
+      "badge-mode-engineer",
+      "badge-mode-brain"
+    );
+    if (mode === "chat") modeBadgeEl.classList.add("badge-mode-chat");
+    if (mode === "engineer") modeBadgeEl.classList.add("badge-mode-engineer");
+    if (mode === "brain") modeBadgeEl.classList.add("badge-mode-brain");
+  }
+
+  // Mode buttons visual
+  const modes = [
+    { btn: chatBtn, id: "chat" },
+    { btn: engineerBtn, id: "engineer" },
+    { btn: brainBtn, id: "brain" },
+  ];
+  modes.forEach(({ btn, id }) => {
+    if (!btn) return;
+    if (id === mode) btn.classList.add("active");
+    else btn.classList.remove("active");
+  });
+
+  if (!options.silent) {
+    appendSystemMessage(
+      `Modo alterado para ${mode.toUpperCase()} (${modeDescription(mode)}).`
+    );
+  }
 }
 
-function pushHistoryEntry(title, obj) {
-  if (!obj) return;
-  const card = createJsonCard(title, "Resposta", obj, "detail");
-  historyCardsEl.prepend(card);
+function modeDescription(mode) {
+  if (mode === "chat") return "conversa normal";
+  if (mode === "engineer")
+    return "plano técnico, patch e fluxo supervisionado de deploy";
+  if (mode === "brain") return "treinamento (conteúdo será aprendido)";
+  return "";
 }
 
-function pushAdvancedDetail(title, obj) {
-  if (!obj) return;
-  const card = createJsonCard(title, "detalhe", obj, "detail");
-  advancedCardsEl.prepend(card);
+function setStatus(type, text) {
+  if (!statusBadgeEl) return;
+  statusBadgeEl.textContent = text || "";
+
+  statusBadgeEl.classList.remove(
+    "badge-neutral",
+    "badge-ok",
+    "badge-error",
+    "badge-pending"
+  );
+
+  if (type === "ok") statusBadgeEl.classList.add("badge-ok");
+  else if (type === "error") statusBadgeEl.classList.add("badge-error");
+  else if (type === "pending") statusBadgeEl.classList.add("badge-pending");
+  else statusBadgeEl.classList.add("badge-neutral");
 }
 
-// ===============================
-// CHAMADA AO WORKER
-// ===============================
-async function sendToWorker(payload, options = {}) {
-  const { label = "CHAT" } = options;
-  const url = NV_WORKER_URL + "/";
+// ============================================================
+// TABS
+// ============================================================
 
-  const reqInfo = {
-    url,
-    payload,
-    mode: currentMode,
-    label,
-    timestamp: timeNow(),
+function setActiveTab(tabId) {
+  const tabs = [
+    { btn: tabTelemetryBtn, panel: panelTelemetryEl, id: "telemetry" },
+    { btn: tabHistoryBtn, panel: panelHistoryEl, id: "history" },
+    { btn: tabAdvancedBtn, panel: panelAdvancedEl, id: "advanced" },
+  ];
+
+  tabs.forEach(({ btn, panel, id }) => {
+    if (btn) btn.classList.toggle("active", id === tabId);
+    if (panel) panel.classList.toggle("active", id === tabId);
+  });
+}
+
+// ============================================================
+// CHAT UI
+// ============================================================
+
+function appendMessage(role, mode, text) {
+  if (!messagesEl) return;
+  const wrapper = document.createElement("div");
+  wrapper.classList.add("message", role);
+  if (role === "user" && mode) {
+    wrapper.classList.add(`mode-${mode}`);
+  }
+
+  const avatar = document.createElement("div");
+  avatar.classList.add("avatar");
+
+  const bubble = document.createElement("div");
+  bubble.classList.add("bubble");
+
+  const meta = document.createElement("div");
+  meta.classList.add("meta");
+
+  const content = document.createElement("div");
+  content.classList.add("content");
+
+  const when = new Date().toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  if (role === "user") {
+    avatar.textContent = "VC";
+    meta.textContent = `Você (${mode.toUpperCase()}) • ${when}`;
+  } else if (role === "assistant") {
+    avatar.textContent = "NV";
+    meta.textContent = `ENAVIA • ${when}`;
+  } else {
+    avatar.textContent = "⚙";
+    meta.textContent = `Sistema • ${when}`;
+  }
+
+  content.textContent = text;
+
+  bubble.appendChild(meta);
+  bubble.appendChild(content);
+
+  wrapper.appendChild(avatar);
+  wrapper.appendChild(bubble);
+
+  messagesEl.appendChild(wrapper);
+  scrollMessagesToBottom();
+}
+
+function appendUserMessage(text, mode) {
+  appendMessage("user", mode, text);
+}
+
+function appendAssistantMessage(text) {
+  appendMessage("assistant", currentMode, text);
+}
+
+function appendSystemMessage(text) {
+  appendMessage("system", null, text);
+}
+
+function scrollMessagesToBottom() {
+  if (!messagesEl) return;
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+// ============================================================
+// SEND FLOW
+// ============================================================
+
+function getWorkerUrl() {
+  const raw = workerUrlInputEl ? workerUrlInputEl.value.trim() : "";
+  if (!raw) return DEFAULT_WORKER_URL;
+  return raw;
+}
+
+function buildPayload(mode, content) {
+  const base = {
+    source: "NV-CONTROL",
+    env_mode: "supervised",
+    mode,
+    debug: !!(debugToggleEl && debugToggleEl.checked),
+    timestamp: new Date().toISOString(),
   };
-  lastRequestInfo = reqInfo;
+
+  if (mode === "engineer") {
+    return {
+      ...base,
+      intent: content,
+      message: `[ENGINEER] ${content}`,
+      askSuggestions: true,
+      riskReport: true,
+      preventForbidden: true,
+    };
+  }
+
+  if (mode === "brain") {
+    return {
+      ...base,
+      content,
+      message: `[BRAIN] ${truncate(content, 200)}`,
+    };
+  }
+
+  // default: chat
+  return {
+    ...base,
+    message: content,
+  };
+}
+
+async function handleSend() {
+  if (!userInputEl) return;
+  const raw = userInputEl.value.trim();
+  if (!raw) return;
+
+  appendUserMessage(raw, currentMode);
+  userInputEl.value = "";
+
+  const payload = buildPayload(currentMode, raw);
+  await sendToWorker(payload);
+}
+
+async function sendToWorker(payload) {
+  const url = getWorkerUrl();
+
+  if (!url.startsWith("http")) {
+    setStatus("error", "URL do worker inválida.");
+    appendSystemMessage("URL do worker inválida. Ajuste no topo do painel.");
+    return;
+  }
+
+  const endpoint = url.endsWith("/") ? url : url + "/";
+  const startedAt = performance.now();
+  setStatus("pending", "Enviando...");
+
+  let responseStatus = null;
+  let responseJson = null;
+  let responseText = null;
+  let error = null;
 
   try {
-    setStatus("Enviando requisição ao NV-ENAVIA...", "info");
-
-    const resp = await fetch(url, {
+    const resp = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -205,445 +347,228 @@ async function sendToWorker(payload, options = {}) {
       body: JSON.stringify(payload),
     });
 
-    const status = resp.status;
-    let data = null;
+    responseStatus = resp.status;
+    responseText = await resp.text();
+
     try {
-      data = await resp.json();
-    } catch {
-      data = null;
+      responseJson = responseText ? JSON.parse(responseText) : null;
+    } catch (parseErr) {
+      // keep as text only
+      responseJson = null;
     }
-
-    const baseLog = {
-      httpStatus: status,
-      timestamp: timeNow(),
-      mode: currentMode,
-      label,
-    };
-
-    if (!resp.ok) {
-      const errorObj = {
-        ...baseLog,
-        error: "HTTP ERROR " + status,
-        request: payload,
-        response: data,
-      };
-
-      const errorCard = createJsonCard(
-        "HTTP ERROR " + status,
-        "erro",
-        errorObj,
-        "error",
-      );
-      telemetryCardsEl.prepend(errorCard);
-
-      advancedCardsEl.prepend(
-        createJsonCard("DETAIL / erro", "detalhe", errorObj, "error"),
-      );
-
-      setStatus("Erro HTTP na chamada. Veja o painel técnico.", "error");
-      return { ok: false, error: errorObj };
-    }
-
-    const okObj = {
-      ...baseLog,
-      request: payload,
-      response: data,
-    };
-
-    const respCard = createJsonCard("CHAT", "telemetria", okObj, "telemetry");
-    telemetryCardsEl.prepend(respCard);
-
-    pushHistoryEntry("RESPONSE", data || {});
-
-    if (data && data.telemetry) {
-      pushAdvancedDetail("DETAIL / telemetria", data.telemetry);
-    }
-
-    setStatus("Resposta recebida da ENAVIA.", "ok");
-    return { ok: true, data };
   } catch (err) {
-    const errorObj = {
-      timestamp: timeNow(),
-      mode: currentMode,
-      label,
-      error: String(err),
-      request: payload,
-    };
-
-    const card = createJsonCard("HTTP ERROR", "erro", errorObj, "error");
-    telemetryCardsEl.prepend(card);
-    setStatus("Falha de rede ou erro na chamada ao worker.", "error");
-    return { ok: false, error: errorObj };
+    error = err;
   }
-}
 
-// Wrapper que já injeta alguns metadados
-async function callNvFirst(path, payload, options = {}) {
-  const fullPayload = {
-    ...payload,
-    source: "NV-CONTROL",
-    env_mode: "supervised",
+  const latencyMs = Math.round(performance.now() - startedAt);
+
+  const telemetry = {
+    timestamp: new Date().toISOString(),
+    latencyMs,
+    status: responseStatus,
+    mode: payload.mode,
+    url: endpoint,
+    ok: !error && responseStatus >= 200 && responseStatus < 300,
   };
 
-  // Hoje, sempre enviaremos para "/" (rota única)
-  return sendToWorker(fullPayload, options);
-}
-
-// ===============================
-// MODO CHAT NORMAL
-// ===============================
-async function handleChatSend() {
-  const text = inputEl.value.trim();
-  if (!text) return;
-
-  appendChatLine("Você:", text, "text-cyan-300");
-
-  const payload = {
-    mode: "chat",
-    message: text,
-    debug: true,
+  // Build a compact envelope for advanced log
+  const advancedEnvelope = {
+    request: payload,
+    responseStatus,
+    responseJson,
+    responseText,
+    error: error ? String(error) : null,
+    telemetry,
   };
 
-  const result = await callNvFirst("/", payload, {
-    label: "CHAT",
-  });
+  // Render telemetry + history + advanced
+  renderTelemetry(telemetry, payload, responseJson, error, responseText);
+  addToHistory(telemetry, payload);
+  renderAdvanced(advancedEnvelope);
 
-  if (result.ok && result.data) {
-    const out = result.data.output || "[sem output textual]";
-    appendChatLine("ENAVIA:", out, "text-emerald-300");
-
-    pushTelemetry({
-      ok: true,
-      mode: "chat",
-      stage: "chat",
-      system: result.data.system || "ENAVIA-NV-FIRST",
-    });
-
-    const statusObj = {
-      message: "NV-Control pronto",
-      worker: NV_WORKER_URL,
-      source: "NV-CONTROL",
-    };
-    const statusCard = createJsonCard("STATUS", "status", statusObj, "status");
-    telemetryCardsEl.appendChild(statusCard);
+  // Chat console output
+  if (error) {
+    setStatus("error", "Erro na requisição.");
+    appendSystemMessage(`Erro ao falar com o worker: ${String(error)}`);
+    return;
   }
+
+  if (telemetry.ok) {
+    setStatus("ok", `OK • ${latencyMs} ms • ${responseStatus}`);
+  } else {
+    setStatus("error", `HTTP ${responseStatus || "-"} • ver Telemetria`);
+  }
+
+  const assistantText = extractAssistantMessage(responseJson, responseText);
+  appendAssistantMessage(assistantText);
 }
 
-// ===============================
-// MODO ENGENHARIA
-// ===============================
-async function handleEngineerSend() {
-  const text = inputEl.value.trim();
-  if (!text) return;
+// ============================================================
+// TELEMETRIA / HISTÓRICO / AVANÇADO
+// ============================================================
 
-  appendChatLine("Você (ENG):", text, "text-amber-300");
+function renderTelemetry(telemetry, payload, responseJson, error, responseText) {
+  if (!telemetrySummaryEl) return;
 
-  const payload = {
-    mode: "engineer",
-    intent: text,
-    askSuggestions: true,
-    riskReport: true,
-    preventForbidden: true,
-  };
+  // Summary grid
+  telemetrySummaryEl.innerHTML = "";
 
-  // 🔁 Agora também vai pela rota "/" (rota única)
-  const result = await callNvFirst("/", payload, {
-    label: "ENGINEER",
-  });
-
-  if (result.ok && result.data) {
-    appendChatLine("ENAVIA (ENG):", "ENGINEER executado.", "text-red-400");
-
-    if (result.data) {
-      pushHistoryEntry("RESPONSE /engineer", result.data);
-
-      const detailObj = {
-        ok: result.data.ok,
-        bypass: result.data.bypass,
-        mode: result.data.mode,
-        result: result.data.result,
-        telemetry: result.data.telemetry,
-      };
-      pushAdvancedDetail("DETAIL /", detailObj);
-    }
-  }
-}
-
-// Fluxo auxiliar para ações de deploy (listar, diff, dryrun, apply, discard)
-async function engineerAction(action, extra = {}) {
-  const baseIntent = {
-    mode: "deploy",
-    action,
-    ...extra,
-  };
-
-  const payload = {
-    mode: "engineer",
-    intent: JSON.stringify(baseIntent),
-    askSuggestions: false,
-    riskReport: true,
-    preventForbidden: true,
-  };
-
-  // 🔁 Também usando rota "/"
-  const result = await callNvFirst("/", payload, {
-    label: "DEPLOY",
-  });
-
-  if (result.ok && result.data) {
-    appendChatLine(
-      "ENAVIA (ENG):",
-      `Ação de deploy "${action}" executada.`,
-      "text-red-400",
-    );
-
-    pushHistoryEntry(`RESPONSE /deploy (${action})`, result.data);
-
-    const detailObj = {
-      ok: result.data.ok,
-      bypass: result.data.bypass,
-      mode: result.data.mode,
-      result: result.data.result,
-      telemetry: result.data.telemetry,
-    };
-    pushAdvancedDetail(`DETAIL /deploy (${action})`, detailObj);
-  }
-}
-
-// ===============================
-// MODO BRAIN (TREINAMENTO)
-// ===============================
-async function handleBrainSend() {
-  const text = inputEl.value.trim();
-  if (!text) return;
-
-  appendChatLine("Você (BRAIN):", text, "text-purple-300");
-
-  const payload = {
-    mode: "brain",
-    content: text,
-    training: true,
-  };
-
-  const result = await callNvFirst("/", payload, {
-    label: "BRAIN",
-  });
-
-  if (result.ok && result.data) {
-    appendChatLine(
-      "ENAVIA (BRAIN):",
-      "Treinamento recebido pela ENAVIA.",
-      "text-orange-300",
-    );
-
-    pushHistoryEntry("RESPONSE /brain", result.data);
-
-    const detailObj = {
-      ok: result.data.ok,
-      mode: result.data.mode,
-      training: true,
-      telemetry: result.data.telemetry,
-    };
-    pushAdvancedDetail("DETAIL /brain", detailObj);
-  }
-}
-
-// ===============================
-// HANDLERS DE BOTÃO / MODO
-// ===============================
-function setMode(newMode) {
-  currentMode = newMode;
-  setModeBadge();
-
-  engineerBtn.classList.remove("bg-amber-500", "text-slate-900");
-  brainBtn.classList.remove("bg-purple-500", "text-slate-900");
-  sendBtn.textContent = "Enviar";
-
-  if (newMode === "chat") {
-    appendChatLine(
-      "Sistema:",
-      "Modo CHAT normal reativado.",
-      "text-emerald-300",
-    );
-  } else if (newMode === "engineer") {
-    engineerBtn.classList.add("bg-amber-500", "text-slate-900");
-    appendChatLine(
-      "Sistema:",
-      "Modo ENGENHARIA ativado. Use para planos, patches e deploy assistido.",
-      "text-amber-300",
-    );
-  } else if (newMode === "brain") {
-    brainBtn.classList.add("bg-purple-500", "text-slate-900");
-    appendChatLine(
-      "Sistema:",
-      "Modo BRAIN ativado. Tudo que você enviar agora será tratado como TREINAMENTO / CONHECIMENTO.",
-      "text-purple-300",
-    );
-  }
-}
-
-// ===============================
-// BOTÕES DE DEPLOY (TOPO)
-// ===============================
-function setDeployButtonsEnabled(enabled) {
-  const buttons = [
-    btnListar,
-    btnMostrarPatch,
-    btnGerarDiff,
-    btnSimular,
-    btnAplicar,
-    btnDescartar,
+  const items = [
+    { label: "Status", value: telemetry.status || "-" },
+    { label: "OK", value: telemetry.ok ? "true" : "false" },
+    { label: "Modo", value: telemetry.mode || "-" },
+    { label: "URL", value: telemetry.url || "-" },
+    { label: "Latência", value: `${telemetry.latencyMs} ms` },
+    { label: "Hora", value: formatTime(telemetry.timestamp) },
   ];
-  buttons.forEach((btn) => {
-    if (!btn) return;
-    btn.disabled = !enabled;
-    if (!enabled) {
-      btn.classList.add("opacity-50", "cursor-not-allowed");
+
+  items.forEach((item) => {
+    const labelEl = document.createElement("div");
+    labelEl.classList.add("card-grid-item-label");
+    labelEl.textContent = item.label;
+
+    const valueEl = document.createElement("div");
+    valueEl.classList.add("card-grid-item-value");
+    valueEl.textContent = item.value;
+
+    telemetrySummaryEl.appendChild(labelEl);
+    telemetrySummaryEl.appendChild(valueEl);
+  });
+
+  if (telemetrySummaryBadgeEl) {
+    telemetrySummaryBadgeEl.textContent = telemetry.ok ? "SUCESSO" : "FALHA";
+  }
+
+  // Request
+  if (telemetryRequestEl) {
+    telemetryRequestEl.textContent = JSON.stringify(payload, null, 2);
+  }
+
+  // Response
+  if (telemetryResponseEl) {
+    if (responseJson) {
+      telemetryResponseEl.textContent = JSON.stringify(responseJson, null, 2);
+    } else if (responseText) {
+      telemetryResponseEl.textContent = responseText;
     } else {
-      btn.classList.remove("opacity-50", "cursor-not-allowed");
+      telemetryResponseEl.textContent = "<sem conteúdo>";
     }
+  }
+
+  // Error
+  if (telemetryErrorCardEl && telemetryErrorEl) {
+    if (error || !telemetry.ok) {
+      telemetryErrorCardEl.style.display = "flex";
+      const details = {
+        error: error ? String(error) : null,
+        status: telemetry.status,
+        raw: responseText || null,
+      };
+      telemetryErrorEl.textContent = JSON.stringify(details, null, 2);
+    } else {
+      telemetryErrorCardEl.style.display = "none";
+      telemetryErrorEl.textContent = "";
+    }
+  }
+}
+
+function addToHistory(telemetry, payload) {
+  history.unshift({
+    at: telemetry.timestamp,
+    mode: telemetry.mode,
+    status: telemetry.status,
+    ok: telemetry.ok,
+    latencyMs: telemetry.latencyMs,
+    message: payload.message || payload.intent || payload.content || "",
+  });
+
+  if (!historyListEl) return;
+  historyListEl.innerHTML = "";
+
+  history.forEach((entry) => {
+    const item = document.createElement("div");
+    item.classList.add("history-item");
+
+    const metaRow = document.createElement("div");
+    metaRow.classList.add("history-meta");
+
+    const left = document.createElement("div");
+    left.innerHTML = `<span class="history-mode">${(entry.mode || "-")
+      .toUpperCase()
+      .padEnd(7, " ")}</span> • HTTP ${entry.status || "-"}`;
+
+    const right = document.createElement("div");
+    right.textContent = `${entry.ok ? "OK" : "ERRO"} • ${entry.latencyMs} ms`;
+
+    metaRow.appendChild(left);
+    metaRow.appendChild(right);
+
+    const msg = document.createElement("div");
+    msg.textContent = truncate(entry.message || "", 220);
+
+    item.appendChild(metaRow);
+    item.appendChild(msg);
+
+    historyListEl.appendChild(item);
   });
 }
 
-navListar?.addEventListener("click", () => {
-  setMode("engineer");
-  engineerAction("list");
-});
+function renderAdvanced(envelope) {
+  if (!advancedRawEl) return;
+  advancedRawEl.textContent = JSON.stringify(envelope, null, 2);
+}
 
-navPatch?.addEventListener("click", () => {
-  setMode("engineer");
-  engineerAction("patch");
-});
+// ============================================================
+// HELPERS
+// ============================================================
 
-navDiff?.addEventListener("click", () => {
-  setMode("engineer");
-  engineerAction("diff");
-});
+function truncate(str, max) {
+  if (!str) return "";
+  if (str.length <= max) return str;
+  return str.slice(0, max) + "…";
+}
 
-navSimular?.addEventListener("click", () => {
-  setMode("engineer");
-  engineerAction("dryrun");
-});
-
-navDescartar?.addEventListener("click", () => {
-  setMode("engineer");
-  engineerAction("discard");
-});
-
-// Botões da seção Deploy (lado direito)
-btnListar?.addEventListener("click", () => engineerAction("list"));
-btnMostrarPatch?.addEventListener("click", () => engineerAction("patch"));
-btnGerarDiff?.addEventListener("click", () => engineerAction("diff"));
-btnSimular?.addEventListener("click", () => engineerAction("dryrun"));
-btnAplicar?.addEventListener("click", () => engineerAction("apply"));
-btnDescartar?.addEventListener("click", () => engineerAction("discard"));
-
-// ===============================
-// TABS (TELEMETRIA / HISTÓRICO / AVANÇADO)
-// ===============================
-function showTab(tab) {
-  telemetryPanel.classList.add("hidden");
-  historyPanel.classList.add("hidden");
-  advancedPanel.classList.add("hidden");
-
-  tabTelemetryBtn.classList.remove(
-    "bg-slate-800",
-    "text-slate-100",
-    "border-slate-700",
-  );
-  tabHistoryBtn.classList.remove(
-    "bg-slate-800",
-    "text-slate-100",
-    "border-slate-700",
-  );
-  tabAdvancedBtn.classList.remove(
-    "bg-slate-800",
-    "text-slate-100",
-    "border-slate-700",
-  );
-
-  if (tab === "telemetry") {
-    telemetryPanel.classList.remove("hidden");
-    tabTelemetryBtn.classList.add(
-      "bg-slate-800",
-      "text-slate-100",
-      "border-slate-700",
-    );
-  } else if (tab === "history") {
-    historyPanel.classList.remove("hidden");
-    tabHistoryBtn.classList.add(
-      "bg-slate-800",
-      "text-slate-100",
-      "border-slate-700",
-    );
-  } else if (tab === "advanced") {
-    advancedPanel.classList.remove("hidden");
-    tabAdvancedBtn.classList.add(
-      "bg-slate-800",
-      "text-slate-100",
-      "border-slate-700",
-    );
+function formatTime(iso) {
+  try {
+    return new Date(iso).toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  } catch {
+    return iso;
   }
 }
 
-tabTelemetryBtn?.addEventListener("click", () => showTab("telemetry"));
-tabHistoryBtn?.addEventListener("click", () => showTab("history"));
-tabAdvancedBtn?.addEventListener("click", () => showTab("advanced"));
+function extractAssistantMessage(json, textFallback) {
+  if (!json && !textFallback) return "<sem conteúdo>";
 
-// ===============================
-// EVENTOS PRINCIPAIS
-// ===============================
-sendBtn?.addEventListener("click", () => {
-  if (currentMode === "chat") {
-    handleChatSend();
-  } else if (currentMode === "engineer") {
-    handleEngineerSend();
-  } else if (currentMode === "brain") {
-    handleBrainSend();
+  // Prioridade para formatos esperados da ENAVIA
+  if (json) {
+    if (typeof json.output === "string") return json.output;
+    if (typeof json.message === "string") return json.message;
+    if (json.result) {
+      const r = json.result;
+      if (typeof r.output === "string") return r.output;
+      if (typeof r.message === "string") return r.message;
+      if (typeof r.summary === "string") return r.summary;
+      if (typeof r.plan === "string") return r.plan;
+    }
+    // fallback: JSON completo
+    return JSON.stringify(json, null, 2);
   }
-});
 
-inputEl?.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    sendBtn.click();
+  return textFallback || "<sem conteúdo>";
+}
+
+async function copyToClipboard(text) {
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    setStatus("ok", "Copiado para a área de transferência.");
+    setTimeout(() => setStatus("neutral", "Pronto"), 1500);
+  } catch (err) {
+    console.warn("Falha ao copiar:", err);
+    setStatus("error", "Não foi possível copiar.");
   }
-});
-
-engineerBtn?.addEventListener("click", () => {
-  if (currentMode === "engineer") {
-    setMode("chat");
-  } else {
-    setMode("engineer");
-  }
-});
-
-brainBtn?.addEventListener("click", () => {
-  if (currentMode === "brain") {
-    setMode("chat");
-  } else {
-    setMode("brain");
-  }
-});
-
-// ===============================
-// INICIALIZAÇÃO
-// ===============================
-(function init() {
-  setMode("chat");
-  showTab("telemetry");
-
-  appendChatLine(
-    "Sistema:",
-    "Console NV-Control iniciado. Você pode conversar em modo normal, pedir patches em ENGENHARIA ou treinar a ENAVIA em modo BRAIN.",
-    "text-emerald-300",
-  );
-
-  const statusObj = {
-    message: "NV-Control pronto",
-    worker: NV_WORKER_URL,
-    source: "NV-CONTROL",
-  };
-  const statusCard = createJsonCard("STATUS", "status", statusObj, "status");
-  telemetryCardsEl.appendChild(statusCard);
-})();
+}
