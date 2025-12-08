@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>NV-FIRST — Painel Técnico</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div id="app">
+
+    <!-- ============================== -->
+    <!-- 🔝 BARRA DE BOTÕES SUPERIOR   -->
+    <!-- ============================== -->
+    <div id="top-buttons">
+      <button class="action-btn" id="btn-listar">Listar</button>
+      <button class="action-btn" id="btn-patch">Patch</button>
+      <button class="action-btn" id="btn-diff">Diff</button>
+      <button class="action-btn" id="btn-simular">Simular</button>
+
+      <!-- 🔽 BOTÃO DEPLOY + DROPDOWN -->
+      <div class="dropdown">
+        <button class="action-btn" id="btn-deploy-main">Deploy ▼</button>
+
+        <div class="dropdown-content">
+          <button class="dropdown-item" id="deploy-user">Deploy (Meu Código)</button>
+
+          <div class="dropdown-sub">
+            <button class="dropdown-item">Deploy (Sugestão ENAVIA) ▶</button>
+            <div class="dropdown-subcontent">
+              <button class="dropdown-item" id="deploy-minimal">Patch Minimalista</button>
+              <button class="dropdown-item" id="deploy-optimized">Patch Otimizado</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button class="action-btn danger-btn" id="btn-descartar">Descartar</button>
+    </div>
+
+    <!-- ============================== -->
+    <!-- 🔥 LAYOUT PRINCIPAL (2 CARDS) -->
+    <!-- ============================== -->
+    <div id="main-layout">
+
+      <!-- ============================== -->
+      <!-- 🟦 PAINEL DE CHAT (ESQUERDA) -->
+      <!-- ============================== -->
+      <div id="chat-panel" class="panel">
+        <div id="chat-output" class="scrollable"></div>
+
+        <div id="chat-input-area">
+          <textarea id="chat-input" placeholder="Digite sua mensagem..."></textarea>
+          <button id="chat-send">Enviar</button>
+        </div>
+      </div>
+
+      <!-- ========================================= -->
+      <!-- 🟧 PAINEL TÉCNICO / TELEMETRIA (DIREITA) -->
+      <!-- ========================================= -->
+      <div id="tech-panel" class="panel">
+        <!-- Abas premium -->
+        <div id="tech-tabs">
+          <button id="tab-telemetry" class="tab-pill active">Telemetria</button>
+          <button id="tab-history" class="tab-pill">Histórico</button>
+        </div>
+
+        <div id="tech-content">
+          <!-- Telemetria / diffs / JSON -->
+          <div id="tech-telemetry" class="scrollable tab-content active"></div>
+
+          <!-- Histórico agrupado por sessão -->
+          <div id="tech-history" class="scrollable tab-content"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPTS -->
+  <script src="script.js"></script>
+</body>
+</html>

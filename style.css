@@ -1,0 +1,353 @@
+/* ========================================= */
+/* 🔥 RESET GERAL */
+/* ========================================= */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Inter, Arial, sans-serif;
+}
+
+body {
+  background: #111214;
+  color: #e3e3e3;
+  overflow: hidden;
+}
+
+/* ========================================= */
+/* 🔥 LAYOUT PRINCIPAL */
+/* ========================================= */
+
+#main-layout {
+  display: flex;
+  height: calc(100vh - 60px);
+  padding: 10px;
+  gap: 12px;
+}
+
+.panel {
+  background: #1a1b1e;
+  border: 1px solid #2b2c31;
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* PAINEL DE CHAT (ESQUERDA) */
+#chat-panel {
+  flex: 1;
+}
+
+/* PAINEL TÉCNICO (DIREITA) */
+#tech-panel {
+  flex: 1;
+}
+
+/* Scroll independente */
+.scrollable {
+  overflow-y: auto;
+  height: 100%;
+  padding-right: 5px;
+}
+
+/* ========================================= */
+/* 🔥 BARRA SUPERIOR DE BOTÕES */
+/* ========================================= */
+
+#top-buttons {
+  background: #1a1b1e;
+  padding: 10px;
+  border-bottom: 1px solid #2b2c31;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.action-btn {
+  background: #24262b;
+  border: 1px solid #35373d;
+  color: #e3e3e3;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.15s;
+  font-size: 13px;
+}
+
+.action-btn:hover {
+  background: #2e3036;
+  border-color: #4a4c55;
+}
+
+.danger-btn {
+  background: #3a1b1b;
+  border-color: #5a2a2a;
+}
+
+.danger-btn:hover {
+  background: #502323;
+}
+
+/* ========================================= */
+/* 🔥 DROPDOWN DO DEPLOY */
+/* ========================================= */
+
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background: #1f2024;
+  border: 1px solid #303136;
+  min-width: 210px;
+  border-radius: 8px;
+  margin-top: 4px;
+  z-index: 9999;
+  padding: 6px 0;
+}
+
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+.dropdown-item {
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  color: #e3e3e3;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: 0.15s;
+  font-size: 13px;
+}
+
+.dropdown-item:hover {
+  background: #2d2f34;
+}
+
+/* SUBMENU */
+.dropdown-sub {
+  position: relative;
+}
+
+.dropdown-subcontent {
+  display: none;
+  position: absolute;
+  left: 100%;
+  top: 0;
+  background: #1f2024;
+  border: 1px solid #303136;
+  min-width: 210px;
+  border-radius: 8px;
+  padding: 6px 0;
+}
+
+.dropdown-sub:hover .dropdown-subcontent {
+  display: block;
+}
+
+/* ========================================= */
+/* 🔥 CHAT - ÁREA DE INPUT */
+/* ========================================= */
+
+#chat-input-area {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+#chat-input {
+  flex: 1;
+  background: #202225;
+  color: #e3e3e3;
+  border: 1px solid #303136;
+  border-radius: 6px;
+  padding: 8px;
+  resize: none;
+  min-height: 60px;
+}
+
+#chat-input:focus {
+  outline: 1px solid #4a4c55;
+}
+
+#chat-send {
+  background: #2c6ef8;
+  border: none;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.15s;
+  font-size: 13px;
+}
+
+#chat-send:hover {
+  background: #1756e2;
+}
+
+/* ========================================= */
+/* 🔥 BLOCO LIDO / NÃO LIDO (PAINEL TÉCNICO) */
+/* ========================================= */
+
+.unread-block {
+  border-left: 4px solid #2c6ef8;
+  background: rgba(44, 110, 248, 0.07);
+  padding: 8px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+}
+
+.read-block {
+  border-left: 4px solid #3a3c40;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 8px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+}
+
+/* ========================================= */
+/* 🔥 TEXTOS / PRE */
+/* ========================================= */
+
+#chat-output pre,
+#tech-telemetry pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin-bottom: 10px;
+  background: #1e1f22;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #303136;
+  color: #dcdcdc;
+  font-size: 13px;
+}
+
+/* ========================================= */
+/* 🔥 ABAS PREMIUM (TELEMETRIA / HISTÓRICO) */
+/* ========================================= */
+
+#tech-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.tab-pill {
+  border-radius: 999px;
+  padding: 6px 16px;
+  border: 1px solid #303136;
+  background: #202125;
+  color: #b4b6bd;
+  font-size: 13px;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.tab-pill.active {
+  background: #2c6ef8;
+  color: #ffffff;
+  border-color: #2c6ef8;
+  box-shadow: 0 0 8px rgba(44, 110, 248, 0.6);
+}
+
+#tech-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Cada aba é um scrollable independente */
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* ========================================= */
+/* 🔥 HISTÓRICO AGRUPADO POR SESSÃO */
+/* ========================================= */
+
+.session-card {
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 8px;
+  background: #1e2024;
+  border: 1px solid #303136;
+  font-size: 13px;
+}
+
+.session-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+/* Badge base */
+.session-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* 🟢 OK */
+.session-ok .session-badge {
+  background: rgba(40, 167, 69, 0.18);
+  color: #3bcf74;
+  border: 1px solid rgba(40, 167, 69, 0.5);
+}
+
+/* 🟡 ATENÇÃO */
+.session-attention .session-badge {
+  background: rgba(255, 193, 7, 0.16);
+  color: #ffcd39;
+  border: 1px solid rgba(255, 193, 7, 0.65);
+}
+
+/* 🔴 ERRO */
+.session-error .session-badge {
+  background: rgba(220, 53, 69, 0.16);
+  color: #ff6b81;
+  border: 1px solid rgba(220, 53, 69, 0.65);
+}
+
+.session-title {
+  font-weight: 600;
+}
+
+.session-meta {
+  font-size: 11px;
+  color: #a9abb2;
+}
+
+.session-body {
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+/* ========================================= */
+/* 🔥 HIGHLIGHT DE ERRO / ATENÇÃO */
+/* ========================================= */
+
+.line-error {
+  border-left: 3px solid #d9534f;
+  background: rgba(217, 83, 79, 0.12);
+  padding-left: 6px;
+}
+
+.line-warning {
+  border-left: 3px solid #f0ad4e;
+  background: rgba(240, 173, 78, 0.12);
+  padding-left: 6px;
+}
