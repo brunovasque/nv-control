@@ -257,3 +257,32 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: #4a4f57;
 }
+/* Painel avançado A1–A8 */
+.advanced-block {
+    background: #11161d;
+    border: 1px solid #253040;
+    padding: 12px;
+    margin-bottom: 14px;
+    border-radius: 6px;
+}
+
+.advanced-title {
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #7dd3fc;
+}
+
+.advanced-warning {
+    color: #fbbf24;
+    font-weight: 600;
+}
+
+.advanced-error {
+    color: #f87171;
+    font-weight: 600;
+}
+
+.hidden {
+    display: none;
+}
+
