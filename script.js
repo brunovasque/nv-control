@@ -473,23 +473,20 @@ function renderTelemetry(telemetry, payload, responseJson, error, responseText) 
 }
 
 function addToHistory(telemetry, payload) {
-  // Formata o horário HH:MM:SS com base no timestamp da própria telemetria
-  const time = new Date(telemetry.timestamp).toLocaleTimeString("pt-BR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
+  const now = telemetry.timestamp || Date.now();
 
-  // Armazena o item completo com o novo campo "time"
   history.unshift({
-    at: telemetry.timestamp,
+    at: now,
     mode: telemetry.mode,
     status: telemetry.status,
     ok: telemetry.ok,
     latencyMs: telemetry.latencyMs,
-    time,
     message: payload.message || payload.intent || payload.content || "",
+    rawPayload: payload
   });
+
+  // ordenação garantida por timestamp
+  history.sort((a, b) => b.at - a.at);
 
   if (!historyListEl) return;
   historyListEl.innerHTML = "";
@@ -498,20 +495,29 @@ function addToHistory(telemetry, payload) {
     const item = document.createElement("div");
     item.classList.add("history-item");
 
+    // timestamp formatado
+    const date = new Date(entry.at);
+    const hh = String(date.getHours()).padStart(2, "0");
+    const mm = String(date.getMinutes()).padStart(2, "0");
+    const ss = String(date.getSeconds()).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+
+    const formattedTime = `${hh}:${mm}:${ss} • ${day}/${month}/${year}`;
+
     const metaRow = document.createElement("div");
     metaRow.classList.add("history-meta");
 
     const left = document.createElement("div");
     left.innerHTML = `
-      <span class="history-mode">${(entry.mode || "-")
-        .toUpperCase()
-        .padEnd(7, " ")}</span> • HTTP ${entry.status || "-"}
+      <span class="history-mode">${(entry.mode || "-").toUpperCase()}</span>
+      • HTTP ${entry.status || "-"} 
+      • <span class="history-time">${formattedTime}</span>
     `;
 
     const right = document.createElement("div");
-    right.textContent = `${entry.ok ? "OK" : "ERRO"} • ${
-      entry.latencyMs
-    } ms • ${entry.time}`;
+    right.textContent = `${entry.ok ? "OK" : "ERRO"} • ${entry.latencyMs} ms`;
 
     metaRow.appendChild(left);
     metaRow.appendChild(right);
@@ -519,8 +525,18 @@ function addToHistory(telemetry, payload) {
     const msg = document.createElement("div");
     msg.textContent = truncate(entry.message || "", 220);
 
+    // botão REENVIAR
+    const resendBtn = document.createElement("button");
+    resendBtn.classList.add("resend-btn");
+    resendBtn.textContent = "Reenviar";
+    resendBtn.onclick = () => {
+      userInput.value = entry.rawPayload.message || JSON.stringify(entry.rawPayload);
+      sendMessage();
+    };
+
     item.appendChild(metaRow);
     item.appendChild(msg);
+    item.appendChild(resendBtn);
 
     historyListEl.appendChild(item);
   });
@@ -585,4 +601,5 @@ async function copyToClipboard(text) {
     setStatus("error", "Não foi possível copiar.");
   }
 }
+
 
