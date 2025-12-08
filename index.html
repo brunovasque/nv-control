@@ -164,22 +164,35 @@
             </div>
 
             <!-- HISTÓRICO -->
-            <div id="panel-history" class="tab-panel">
-              <div class="card">
-                <div class="card-header">
-                  <span>Histórico de chamadas</span>
-                  <button
-                    type="button"
-                    id="clearHistoryBtn"
-                    class="btn-icon"
-                    title="Limpar histórico"
-                  >
-                    Limpar
-                  </button>
-                </div>
-                <div id="history-list" class="card-body history-list"></div>
-              </div>
-            </div>
+<div id="panel-history" class="tab-panel">
+  <div class="card">
+    <div class="card-header">
+      <span>Histórico de chamadas</span>
+
+      <div class="header-actions">
+        <button
+          type="button"
+          id="exportHistoryBtn"
+          class="btn-icon"
+          title="Exportar histórico"
+        >
+          Exportar
+        </button>
+
+        <button
+          type="button"
+          id="clearHistoryBtn"
+          class="btn-icon"
+          title="Limpar histórico"
+        >
+          Limpar
+        </button>
+      </div>
+    </div>
+
+    <div id="history-list" class="card-body history-list"></div>
+  </div>
+</div>
 
             <!-- AVANÇADO -->
             <div id="panel-advanced" class="tab-panel">
@@ -215,3 +228,4 @@
     <script src="script.js"></script>
   </body>
 </html>
+
