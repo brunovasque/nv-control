@@ -473,12 +473,21 @@ function renderTelemetry(telemetry, payload, responseJson, error, responseText) 
 }
 
 function addToHistory(telemetry, payload) {
+  // Formata o horário HH:MM:SS com base no timestamp da própria telemetria
+  const time = new Date(telemetry.timestamp).toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+
+  // Armazena o item completo com o novo campo "time"
   history.unshift({
     at: telemetry.timestamp,
     mode: telemetry.mode,
     status: telemetry.status,
     ok: telemetry.ok,
     latencyMs: telemetry.latencyMs,
+    time,
     message: payload.message || payload.intent || payload.content || "",
   });
 
@@ -493,12 +502,16 @@ function addToHistory(telemetry, payload) {
     metaRow.classList.add("history-meta");
 
     const left = document.createElement("div");
-    left.innerHTML = `<span class="history-mode">${(entry.mode || "-")
-      .toUpperCase()
-      .padEnd(7, " ")}</span> • HTTP ${entry.status || "-"}`;
+    left.innerHTML = `
+      <span class="history-mode">${(entry.mode || "-")
+        .toUpperCase()
+        .padEnd(7, " ")}</span> • HTTP ${entry.status || "-"}
+    `;
 
     const right = document.createElement("div");
-    right.textContent = `${entry.ok ? "OK" : "ERRO"} • ${entry.latencyMs} ms`;
+    right.textContent = `${entry.ok ? "OK" : "ERRO"} • ${
+      entry.latencyMs
+    } ms • ${entry.time}`;
 
     metaRow.appendChild(left);
     metaRow.appendChild(right);
@@ -572,3 +585,4 @@ async function copyToClipboard(text) {
     setStatus("error", "Não foi possível copiar.");
   }
 }
+
