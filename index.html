@@ -4,79 +4,101 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NV-Control Panel</title>
-
   <link rel="stylesheet" href="style.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
 </head>
 
 <body>
-  <!-- =========================== -->
-  <!--        NAV SUPERIOR         -->
-  <!-- =========================== -->
-  <header class="top-nav">
-    <div class="nav-left">
-      <button id="btn-listar" class="nav-btn">Listar</button>
-      <button id="btn-patch" class="nav-btn">Patch</button>
-      <button id="btn-diff" class="nav-btn">Diff</button>
-      <button id="btn-simular" class="nav-btn">Simular</button>
+  <div id="app">
+    <header id="top-bar">
+      <div id="left-bar">
+        <button id="list-btn" class="top-btn">Listar</button>
+        <button id="patch-btn" class="top-btn">Patch</button>
+        <button id="diff-btn" class="top-btn">Diff</button>
+        <button id="simulate-btn" class="top-btn">Simular</button>
 
-      <div class="deploy-dropdown">
-        <button id="deploy-toggle" class="nav-btn">Deploy ▾</button>
-        <div class="deploy-menu">
-          <button id="deploy-list-btn">Listar Staging</button>
-          <button id="deploy-show-btn">Mostrar Patch</button>
-          <button id="deploy-diff-btn">Gerar Diff</button>
-          <button id="deploy-dryrun-btn">Simular Deploy</button>
-          <button id="deploy-apply-btn">Aplicar Deploy</button>
-          <button id="deploy-discard-btn">Descartar Staging</button>
+        <div class="dropdown">
+          <button class="top-btn drop-btn">Deploy ▾</button>
+          <div class="dropdown-content">
+            <button data-deploy="test">Testar deploy</button>
+            <button data-deploy="safe">Deploy seguro</button>
+            <button data-deploy="full">Deploy completo</button>
+            <button data-deploy="rollback">Rollback</button>
+          </div>
         </div>
+
+        <button id="discard-btn" class="top-btn danger">Descartar</button>
       </div>
 
-      <button id="btn-descartar" class="nav-btn danger">Descartar</button>
-    </div>
+      <div id="right-bar">
+        <span id="mode-badge" class="badge mode-normal">Modo: CHAT normal</span>
+        <span id="status-text" class="badge status-idle">Pronto</span>
+      </div>
+    </header>
 
-    <div class="nav-right">
-      <span id="mode-badge" class="mode-badge mode-chat">Modo: CHAT normal</span>
-      <span id="status-text" class="status-badge status-ok">
-        Painel NV-Control pronto — use CHAT, ENGENHARIA ou BRAIN.
-      </span>
-    </div>
-  </header>
+    <main id="main-area">
 
-  <!-- =========================== -->
-  <!--        ÁREAS PRINCIPAIS     -->
-  <!-- =========================== -->
-  <main class="main-grid">
-    <!-- CHAT -->
-    <section class="chat-panel">
-      <div id="chat-log" class="chat-log"></div>
+      <!-- ========================= -->
+      <!--   SEÇÃO DO CHAT À ESQUERDA   -->
+      <!-- ========================= -->
+      <section id="chat-section">
+        <div id="chat-log" class="log-panel active-log"></div>
 
-      <div class="input-area">
-        <textarea id="input" placeholder="Digite sua mensagem…"></textarea>
+        <div id="input-area">
+          <textarea id="user-input" placeholder="Digite sua mensagem..."></textarea>
 
-        <div class="input-buttons">
-          <button id="engineer-btn" class="toggle-btn">Engineer</button>
-          <button id="brain-btn" class="toggle-btn">Brain</button>
-          <button id="send-btn" class="send-btn">Enviar</button>
+          <div id="mode-buttons">
+            <button id="engineer-btn" class="mode-btn">Engineer</button>
+            <button id="brain-btn" class="mode-btn">Brain</button>
+            <button id="send-btn" class="send-btn">Enviar</button>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- TELEMETRIA / HISTÓRICO / AVANÇADO -->
-    <section class="tech-panel">
-      <div class="tabs">
-        <button id="tab-telemetria" class="tab active">Telemetria</button>
-        <button id="tab-historico" class="tab">Histórico</button>
-        <button id="tab-avancado" class="tab">Avançado</button>
-      </div>
+      <!-- ========================= -->
+      <!--   PAINÉIS LATERAIS (3 aba)   -->
+      <!-- ========================= -->
+      <section id="panels-section">
 
-      <div class="logs-container">
-        <div id="telemetry-log" class="log-panel active-log"></div>
-        <div id="history-log" class="log-panel"></div>
-        <div id="advanced-log" class="log-panel"></div>
-      </div>
-    </section>
-  </main>
+        <div id="tabs">
+          <button class="tab-btn active" data-tab="telemetry">Telemetria</button>
+          <button class="tab-btn" data-tab="history">Histórico</button>
+          <button class="tab-btn" data-tab="advanced">Avançado</button>
+        </div>
+
+        <div id="panel-content">
+
+          <!-- ============= TELEMETRIA ============= -->
+          <div id="telemetry-panel" class="panel active">
+
+            <!-- NOVO: Contêiner exigido pelo script.js -->
+            <div id="telemetry-cards" class="cards-container"></div>
+
+            <!-- Mantido: log bruto caso queira -->
+            <div id="telemetry-log" class="log-panel"></div>
+          </div>
+
+          <!-- ============= HISTÓRICO ============= -->
+          <div id="history-panel" class="panel">
+
+            <!-- NOVO: Contêiner exigido pelo script.js -->
+            <div id="history-cards" class="cards-container"></div>
+
+            <div id="history-log" class="log-panel"></div>
+          </div>
+
+          <!-- ============= AVANÇADO ============= -->
+          <div id="advanced-panel" class="panel">
+
+            <!-- NOVO: Contêiner exigido pelo script.js -->
+            <div id="advanced-cards" class="cards-container"></div>
+
+            <div id="advanced-log" class="log-panel"></div>
+          </div>
+
+        </div>
+      </section>
+    </main>
+  </div>
 
   <script src="script.js"></script>
 </body>
