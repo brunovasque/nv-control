@@ -1,85 +1,83 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NV-Control Panel</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NV-Control Panel</title>
 
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
 </head>
 
 <body>
+  <!-- =========================== -->
+  <!--        NAV SUPERIOR         -->
+  <!-- =========================== -->
+  <header class="top-nav">
+    <div class="nav-left">
+      <button id="btn-listar" class="nav-btn">Listar</button>
+      <button id="btn-patch" class="nav-btn">Patch</button>
+      <button id="btn-diff" class="nav-btn">Diff</button>
+      <button id="btn-simular" class="nav-btn">Simular</button>
 
-    <!-- =========================== -->
-    <!--        NAV SUPERIOR         -->
-    <!-- =========================== -->
-
-    <header class="top-nav">
-
-        <button id="btn-listar" class="nav-btn">Listar</button>
-        <button id="btn-patch" class="nav-btn">Patch</button>
-        <button id="btn-diff" class="nav-btn">Diff</button>
-        <button id="btn-simular" class="nav-btn">Simular</button>
-
-        <div class="deploy-dropdown">
-            <button id="deploy-toggle" class="nav-btn">Deploy ▾</button>
-
-            <div class="deploy-menu">
-                <button id="deploy-list-btn">Listar Staging</button>
-                <button id="deploy-show-btn">Mostrar Patch</button>
-                <button id="deploy-diff-btn">Gerar Diff</button>
-                <button id="deploy-dryrun-btn">Simular Deploy</button>
-                <button id="deploy-apply-btn">Aplicar Deploy</button>
-                <button id="deploy-discard-btn">Descartar Staging</button>
-            </div>
+      <div class="deploy-dropdown">
+        <button id="deploy-toggle" class="nav-btn">Deploy ▾</button>
+        <div class="deploy-menu">
+          <button id="deploy-list-btn">Listar Staging</button>
+          <button id="deploy-show-btn">Mostrar Patch</button>
+          <button id="deploy-diff-btn">Gerar Diff</button>
+          <button id="deploy-dryrun-btn">Simular Deploy</button>
+          <button id="deploy-apply-btn">Aplicar Deploy</button>
+          <button id="deploy-discard-btn">Descartar Staging</button>
         </div>
+      </div>
 
-        <button id="btn-descartar" class="nav-btn danger">Descartar</button>
+      <button id="btn-descartar" class="nav-btn danger">Descartar</button>
+    </div>
 
-        <span id="mode-badge" class="mode-badge">Modo: CHAT normal</span>
-        <span id="status-text" class="status-text">Inicializando…</span>
-    </header>
+    <div class="nav-right">
+      <span id="mode-badge" class="mode-badge mode-chat">Modo: CHAT normal</span>
+      <span id="status-text" class="status-badge status-ok">
+        Painel NV-Control pronto — use CHAT, ENGENHARIA ou BRAIN.
+      </span>
+    </div>
+  </header>
 
-    <!-- =========================== -->
-    <!--          PAINEL             -->
-    <!-- =========================== -->
+  <!-- =========================== -->
+  <!--        ÁREAS PRINCIPAIS     -->
+  <!-- =========================== -->
+  <main class="main-grid">
+    <!-- CHAT -->
+    <section class="chat-panel">
+      <div id="chat-log" class="chat-log"></div>
 
-    <main class="main-grid">
+      <div class="input-area">
+        <textarea id="input" placeholder="Digite sua mensagem…"></textarea>
 
-        <!-- CHAT -->
-        <section class="chat-panel">
-            <div id="chat-log" class="chat-log"></div>
+        <div class="input-buttons">
+          <button id="engineer-btn" class="toggle-btn">Engineer</button>
+          <button id="brain-btn" class="toggle-btn">Brain</button>
+          <button id="send-btn" class="send-btn">Enviar</button>
+        </div>
+      </div>
+    </section>
 
-            <div class="input-area">
-                <textarea id="input" placeholder="Digite sua mensagem…"></textarea>
+    <!-- TELEMETRIA / HISTÓRICO / AVANÇADO -->
+    <section class="tech-panel">
+      <div class="tabs">
+        <button id="tab-telemetria" class="tab active">Telemetria</button>
+        <button id="tab-historico" class="tab">Histórico</button>
+        <button id="tab-avancado" class="tab">Avançado</button>
+      </div>
 
-                <div class="input-buttons">
-                    <button id="engineer-btn" class="toggle-btn">Engineer</button>
-                    <button id="brain-btn" class="toggle-btn">Brain</button>
-                    <button id="send-btn" class="send-btn">Enviar</button>
-                </div>
-            </div>
-        </section>
+      <div class="logs-container">
+        <div id="telemetry-log" class="log-panel active-log"></div>
+        <div id="history-log" class="log-panel"></div>
+        <div id="advanced-log" class="log-panel"></div>
+      </div>
+    </section>
+  </main>
 
-        <!-- TELEMETRIA / HISTÓRICO -->
-        <section class="tech-panel">
-
-            <div class="tabs">
-    <button id="tab-telemetria" class="tab active">Telemetria</button>
-    <button id="tab-historico" class="tab">Histórico</button>
-    <button id="tab-avancado" class="tab">Avançado</button>
-</div>
-
-<div id="json-log" class="json-log"></div>
-<div id="history-log" class="json-log hidden"></div>
-<div id="advanced-log" class="json-log hidden"></div>
-
-        </section>
-
-    </main>
-
-    <script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
-
