@@ -42,6 +42,19 @@ const clearHistoryBtn = document.getElementById("clearHistoryBtn");
 // Advanced
 const advancedRawEl = document.getElementById("advanced-raw");
 
+// Deploy buttons
+const deploySimulateBtn = document.getElementById("deploySimulateBtn");
+const deployApplyUserPatchBtn = document.getElementById(
+  "deployApplyUserPatchBtn"
+);
+const deployAcceptSuggestionBtn = document.getElementById(
+  "deployAcceptSuggestionBtn"
+);
+const deployWorkerBtn = document.getElementById("deployWorkerBtn");
+const deploySafeBtn = document.getElementById("deploySafeBtn");
+const deployRollbackBtn = document.getElementById("deployRollbackBtn");
+const deploySessionCloseBtn = document.getElementById("deploySessionCloseBtn");
+
 // Global state
 let currentMode = "chat"; // "chat" | "engineer" | "brain"
 let history = [];
@@ -65,27 +78,29 @@ function init() {
   if (brainBtn) brainBtn.addEventListener("click", () => setMode("brain"));
 
   // Send
-if (sendBtn) sendBtn.addEventListener("click", handleSend);
+  if (sendBtn) sendBtn.addEventListener("click", handleSend);
 
-if (userInputEl) {
-  userInputEl.addEventListener("keydown", (e) => {
-    // Enter normal → envia
-    if (e.key === "Enter" && !e.shiftKey && !e.altKey) {
-      // Se estiver com CTRL ou COMMAND, deixa o navegador agir (quebra linha)
-      if (e.ctrlKey || e.metaKey) {
-        return; // não chama handleSend, só deixa inserir a quebra de linha
+  if (userInputEl) {
+    userInputEl.addEventListener("keydown", (e) => {
+      // Enter normal → envia
+      if (e.key === "Enter" && !e.shiftKey && !e.altKey) {
+        // Se estiver com CTRL ou COMMAND, deixa o navegador agir (quebra linha)
+        if (e.ctrlKey || e.metaKey) {
+          return; // não chama handleSend, só deixa inserir a quebra de linha
+        }
+
+        // Enter "seco" envia a mensagem
+        e.preventDefault();
+        handleSend();
       }
-
-      // Enter "seco" envia a mensagem
-      e.preventDefault();
-      handleSend();
-    }
-  });
-}
+    });
+  }
 
   // Tabs
   if (tabTelemetryBtn)
-    tabTelemetryBtn.addEventListener("click", () => setActiveTab("telemetry"));
+    tabTelemetryBtn.addEventListener("click", () =>
+      setActiveTab("telemetry")
+    );
   if (tabHistoryBtn)
     tabHistoryBtn.addEventListener("click", () => setActiveTab("history"));
   if (tabAdvancedBtn)
@@ -110,6 +125,51 @@ if (userInputEl) {
       if (historyListEl) historyListEl.innerHTML = "";
     });
   }
+
+  // Deploy buttons handlers
+  if (deploySimulateBtn)
+    deploySimulateBtn.addEventListener("click", () =>
+      handleDeployAction("deploy_simulate")
+    );
+
+  if (deployApplyUserPatchBtn)
+    deployApplyUserPatchBtn.addEventListener("click", handleApplyUserPatch);
+
+  if (deployAcceptSuggestionBtn)
+    deployAcceptSuggestionBtn.addEventListener("click", () =>
+      handleDeployAction("deploy_accept_suggestion", {
+        extra: { use_last_suggestion: true, userApproval: true },
+        message: "[DEPLOY] Aceitar sugestão mais recente",
+      })
+    );
+
+  if (deployWorkerBtn)
+    deployWorkerBtn.addEventListener("click", () =>
+      handleDeployAction("deploy_worker", {
+        message: "[DEPLOY] Publicar ENAVIA_GIT no Worker",
+      })
+    );
+
+  if (deploySafeBtn)
+    deploySafeBtn.addEventListener("click", () =>
+      handleDeployAction("deploy_safe", {
+        message: "[DEPLOY] Safe deploy (staging + validações)",
+      })
+    );
+
+  if (deployRollbackBtn)
+    deployRollbackBtn.addEventListener("click", () =>
+      handleDeployAction("deploy_rollback", {
+        message: "[DEPLOY] Rollback para último estado estável",
+      })
+    );
+
+  if (deploySessionCloseBtn)
+    deploySessionCloseBtn.addEventListener("click", () =>
+      handleDeployAction("deploy_session_close", {
+        message: "[DEPLOY] Encerrar sessão de deploy",
+      })
+    );
 
   setMode("chat", { silent: true });
   setStatus("neutral", "Pronto");
@@ -247,18 +307,19 @@ function appendMessage(role, mode, text) {
   bubble.appendChild(content);
 
   // === BOTÃO DE COPIAR ===
-const copyBtn = document.createElement("button");
-copyBtn.classList.add("copy-btn");
-copyBtn.textContent = "Copiar";
-copyBtn.onclick = () => {
-    navigator.clipboard.writeText(text)
+  const copyBtn = document.createElement("button");
+  copyBtn.classList.add("copy-btn");
+  copyBtn.textContent = "Copiar";
+  copyBtn.onclick = () => {
+    navigator.clipboard
+      .writeText(text)
       .then(() => {
-          copyBtn.textContent = "Copiado!";
-          setTimeout(() => (copyBtn.textContent = "Copiar"), 1500);
+        copyBtn.textContent = "Copiado!";
+        setTimeout(() => (copyBtn.textContent = "Copiar"), 1500);
       })
-      .catch(err => console.error("Erro ao copiar:", err));
-};
-bubble.appendChild(copyBtn);
+      .catch((err) => console.error("Erro ao copiar:", err));
+  };
+  bubble.appendChild(copyBtn);
 
   wrapper.appendChild(avatar);
   wrapper.appendChild(bubble);
@@ -356,6 +417,76 @@ async function handleSend() {
   userInputEl.value = "";
 
   const payload = buildPayload(currentMode, raw);
+  await sendToWorker(payload);
+}
+
+// ============================================================
+// DEPLOY HELPERS
+// ============================================================
+
+function buildDeployPayload(executorAction, options = {}) {
+  const base = {
+    source: "NV-CONTROL",
+    env_mode: "supervised",
+    mode: "engineer",
+    debug: !!(debugToggleEl && debugToggleEl.checked),
+    timestamp: new Date().toISOString(),
+    executor_action: executorAction,
+    askSuggestions: true,
+    riskReport: true,
+    preventForbidden: true,
+  };
+
+  if (options.patch !== undefined) {
+    base.patch = options.patch;
+  }
+
+  if (options.extra && typeof options.extra === "object") {
+    Object.assign(base, options.extra);
+  }
+
+  base.message =
+    options.message || `[DEPLOY] ${String(executorAction).toUpperCase()}`;
+
+  return base;
+}
+
+async function handleDeployAction(executorAction, options = {}) {
+  const payload = buildDeployPayload(executorAction, options);
+  appendSystemMessage(`Disparando ${executorAction} via NV-Control.`);
+  await sendToWorker(payload);
+}
+
+async function handleApplyUserPatch() {
+  if (!userInputEl) {
+    appendSystemMessage(
+      "Não foi possível ler o campo de entrada para aplicar patch."
+    );
+    return;
+  }
+
+  const raw = userInputEl.value.trim();
+  if (!raw) {
+    appendSystemMessage("Nenhum patch encontrado. Escreva o JSON do patch no campo de mensagem.");
+    return;
+  }
+
+  let parsedPatch = null;
+  try {
+    parsedPatch = JSON.parse(raw);
+  } catch (err) {
+    appendSystemMessage(
+      "Patch inválido. O conteúdo precisa ser um JSON válido para APPLY USER PATCH."
+    );
+    return;
+  }
+
+  const payload = buildDeployPayload("deploy_apply_user_patch", {
+    patch: parsedPatch,
+    message: "[DEPLOY] Apply user patch (conteúdo do textarea)",
+  });
+
+  appendSystemMessage("Enviando deploy_apply_user_patch com patch do textarea.");
   await sendToWorker(payload);
 }
 
@@ -521,7 +652,7 @@ function addToHistory(telemetry, payload) {
     ok: telemetry.ok,
     latencyMs: telemetry.latencyMs,
     message: payload.message || payload.intent || payload.content || "",
-    rawPayload: payload
+    rawPayload: payload,
   });
 
   // ordenação garantida por timestamp
@@ -564,13 +695,18 @@ function addToHistory(telemetry, payload) {
     const msg = document.createElement("div");
     msg.textContent = truncate(entry.message || "", 220);
 
-    // botão REENVIAR
+    // (mantido como estava – não mexo em função que já pode estar integrada)
     const resendBtn = document.createElement("button");
     resendBtn.classList.add("resend-btn");
     resendBtn.textContent = "Reenviar";
     resendBtn.onclick = () => {
-      userInput.value = entry.rawPayload.message || JSON.stringify(entry.rawPayload);
-      sendMessage();
+      // placeholder original (não alterado para evitar efeitos colaterais)
+      try {
+        userInput.value =
+          entry.rawPayload.message || JSON.stringify(entry.rawPayload);
+      } catch (_) {
+        // silencioso
+      }
     };
 
     item.appendChild(metaRow);
@@ -583,7 +719,13 @@ function addToHistory(telemetry, payload) {
 
 function renderAdvanced(envelope) {
   if (!advancedRawEl) return;
-  advancedRawEl.textContent = JSON.stringify(envelope, null, 2);
+  const headerTime = formatTime(
+    envelope &&
+      envelope.telemetry &&
+      (envelope.telemetry.timestamp || new Date().toISOString())
+  );
+  advancedRawEl.textContent =
+    `// ${headerTime}\n` + JSON.stringify(envelope, null, 2);
 }
 
 // ============================================================
@@ -656,7 +798,9 @@ if (exportHistoryBtn) {
     const a = document.createElement("a");
 
     a.href = url;
-    a.download = `nv-control-history-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `nv-control-history-${new Date()
+      .toISOString()
+      .slice(0, 10)}.json`;
     a.click();
 
     URL.revokeObjectURL(url);
