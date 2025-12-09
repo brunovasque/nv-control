@@ -242,6 +242,25 @@ body {
   background: rgba(15, 23, 42, 0.8);
 }
 
+/* ⬇️ AQUI ENTRA O COPY BUTTON ⬇️ */
+.copy-btn {
+  margin-top: 6px;
+  background: rgba(79, 70, 229, 0.15);
+  border: 1px solid rgba(129, 140, 248, 0.4);
+  color: var(--accent-strong);
+  font-size: 0.68rem;
+  padding: 3px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.copy-btn:hover {
+  background: rgba(79, 70, 229, 0.35);
+  color: #fff;
+}
+/* ⬆️ FIM DO COPY BUTTON ⬆️ */
+
 .message .meta {
   font-size: 0.7rem;
   color: var(--text-muted);
