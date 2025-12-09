@@ -239,6 +239,20 @@ function appendMessage(role, mode, text) {
   bubble.appendChild(meta);
   bubble.appendChild(content);
 
+  // === BOTÃO DE COPIAR ===
+const copyBtn = document.createElement("button");
+copyBtn.classList.add("copy-btn");
+copyBtn.textContent = "Copiar";
+copyBtn.onclick = () => {
+    navigator.clipboard.writeText(text)
+      .then(() => {
+          copyBtn.textContent = "Copiado!";
+          setTimeout(() => (copyBtn.textContent = "Copiar"), 1500);
+      })
+      .catch(err => console.error("Erro ao copiar:", err));
+};
+bubble.appendChild(copyBtn);
+
   wrapper.appendChild(avatar);
   wrapper.appendChild(bubble);
 
@@ -641,5 +655,6 @@ if (exportHistoryBtn) {
     URL.revokeObjectURL(url);
   });
 }
+
 
 
