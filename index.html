@@ -47,7 +47,7 @@
             <textarea
               id="userInput"
               rows="3"
-              placeholder="Digite sua mensagem para a ENAVIA... (Ctrl+Enter para enviar)"
+              placeholder="Digite sua mensagem para a ENAVIA... (Enter envia, Ctrl+Enter quebra linha)"
             ></textarea>
             <div class="input-toolbar">
               <div class="mode-buttons">
@@ -82,6 +82,72 @@
                   Enviar
                 </button>
               </div>
+            </div>
+
+            <!-- 🔧 BARRA DE DEPLOY (7 BOTÕES) -->
+            <div class="deploy-toolbar">
+              <button
+                id="deploySimulateBtn"
+                type="button"
+                class="btn btn-icon deploy-btn deploy-btn-simulate"
+                title="Simular deploy (sem aplicar mudanças)"
+              >
+                Simulate
+              </button>
+
+              <button
+                id="deployApplyUserPatchBtn"
+                type="button"
+                class="btn btn-icon deploy-btn deploy-btn-apply"
+                title="Aplicar patch escrito por você no ENAVIA_GIT"
+              >
+                Apply Patch
+              </button>
+
+              <button
+                id="deployAcceptSuggestionBtn"
+                type="button"
+                class="btn btn-icon deploy-btn deploy-btn-suggestion"
+                title="Aceitar e aplicar a última sugestão da ENAVIA"
+              >
+                Accept Suggestion
+              </button>
+
+              <button
+                id="deployWorkerBtn"
+                type="button"
+                class="btn btn-icon deploy-btn deploy-btn-worker"
+                title="Deploy direto para o Worker NV-ENAVIA"
+              >
+                Deploy Worker
+              </button>
+
+              <button
+                id="deploySafeBtn"
+                type="button"
+                class="btn btn-icon deploy-btn deploy-btn-safe"
+                title="Deploy supervisionado (staging + validações)"
+              >
+                Safe Deploy
+              </button>
+
+              <button
+                id="deployRollbackBtn"
+                type="button"
+                class="btn btn-icon deploy-btn deploy-btn-rollback"
+                title="Rollback para último estado estável"
+              >
+                Rollback
+              </button>
+
+              <button
+                id="deploySessionCloseBtn"
+                type="button"
+                class="btn btn-icon deploy-btn deploy-btn-close"
+                title="Encerrar / cancelar sessão de deploy"
+              >
+                Close Deploy
+              </button>
             </div>
           </div>
         </section>
@@ -164,35 +230,35 @@
             </div>
 
             <!-- HISTÓRICO -->
-<div id="panel-history" class="tab-panel">
-  <div class="card">
-    <div class="card-header">
-      <span>Histórico de chamadas</span>
+            <div id="panel-history" class="tab-panel">
+              <div class="card">
+                <div class="card-header">
+                  <span>Histórico de chamadas</span>
 
-      <div class="header-actions">
-        <button
-          type="button"
-          id="exportHistoryBtn"
-          class="btn-icon"
-          title="Exportar histórico"
-        >
-          Exportar
-        </button>
+                  <div class="header-actions">
+                    <button
+                      type="button"
+                      id="exportHistoryBtn"
+                      class="btn-icon"
+                      title="Exportar histórico"
+                    >
+                      Exportar
+                    </button>
 
-        <button
-          type="button"
-          id="clearHistoryBtn"
-          class="btn-icon"
-          title="Limpar histórico"
-        >
-          Limpar
-        </button>
-      </div>
-    </div>
+                    <button
+                      type="button"
+                      id="clearHistoryBtn"
+                      class="btn-icon"
+                      title="Limpar histórico"
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                </div>
 
-    <div id="history-list" class="card-body history-list"></div>
-  </div>
-</div>
+                <div id="history-list" class="card-body history-list"></div>
+              </div>
+            </div>
 
             <!-- AVANÇADO -->
             <div id="panel-advanced" class="tab-panel">
@@ -228,4 +294,3 @@
     <script src="script.js"></script>
   </body>
 </html>
-
