@@ -283,6 +283,25 @@ function buildPayload(mode, content) {
   };
 
   if (mode === "engineer") {
+    let parsed = null;
+    try {
+      parsed = JSON.parse(content);
+    } catch (_) {}
+
+    // Se houver executor_action → enviar direto para o executor
+    if (parsed && typeof parsed === "object" && parsed.executor_action) {
+      return {
+        ...base,
+        executor_action: parsed.executor_action,
+        patch: parsed.patch || null,
+        message: `[ENGINEER/DEPLOY] ${parsed.executor_action}`,
+        askSuggestions: true,
+        riskReport: true,
+        preventForbidden: true,
+      };
+    }
+
+    // Caso contrário → ENGINEER normal
     return {
       ...base,
       intent: content,
@@ -301,7 +320,6 @@ function buildPayload(mode, content) {
     };
   }
 
-  // default: chat
   return {
     ...base,
     message: content,
@@ -623,4 +641,5 @@ if (exportHistoryBtn) {
     URL.revokeObjectURL(url);
   });
 }
+
 
