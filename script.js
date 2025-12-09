@@ -437,8 +437,11 @@ function buildDeployPayload(executorAction, options = {}) {
     mode: "engineer",
     debug: !!(debugToggleEl && debugToggleEl.checked),
     timestamp: new Date().toISOString(),
+
+    // 🔥 IMPORTANTE: enviar o executor_action correto
     executor_action: executorAction,
-    askSuggestions: true,  
+
+    askSuggestions: true,
     riskReport: true,
     preventForbidden: true,
   };
@@ -446,13 +449,6 @@ function buildDeployPayload(executorAction, options = {}) {
   if (options.patch !== undefined) {
     base.patch = options.patch;
   }
-
-  if (options.extra && typeof options.extra === "object") {
-    Object.assign(base, options.extra);
-  }
-
-  base.message =
-    options.message || `[DEPLOY] ${String(executorAction).toUpperCase()}`;
 
   return base;
 }
@@ -809,5 +805,6 @@ if (exportHistoryBtn) {
     URL.revokeObjectURL(url);
   });
 }
+
 
 
