@@ -80,16 +80,16 @@ function init() {
   // Send
   if (sendBtn) sendBtn.addEventListener("click", handleSend);
 
+  // Enter / Ctrl+Enter behavior
   if (userInputEl) {
     userInputEl.addEventListener("keydown", (e) => {
-      // Enter normal → envia
-      if (e.key === "Enter" && !e.shiftKey && !e.altKey) {
-        // Se estiver com CTRL ou COMMAND, deixa o navegador agir (quebra linha)
-        if (e.ctrlKey || e.metaKey) {
-          return; // não chama handleSend, só deixa inserir a quebra de linha
-        }
+      // Ctrl+Enter ou Shift+Enter → quebra linha
+      if (e.key === "Enter" && (e.ctrlKey || e.shiftKey)) {
+        return; // deixa inserir normalmente a quebra de linha
+      }
 
-        // Enter "seco" envia a mensagem
+      // Enter "seco" → enviar
+      if (e.key === "Enter") {
         e.preventDefault();
         handleSend();
       }
@@ -126,7 +126,10 @@ function init() {
     });
   }
 
-  // Deploy buttons handlers
+  // ============================================================
+  // DEPLOY BUTTONS – HANDLERS (TODOS OS 7)
+  // ============================================================
+
   if (deploySimulateBtn)
     deploySimulateBtn.addEventListener("click", () =>
       handleDeployAction("deploy_simulate")
@@ -171,6 +174,7 @@ function init() {
       })
     );
 
+  // Finalize init
   setMode("chat", { silent: true });
   setStatus("neutral", "Pronto");
   appendSystemMessage(
@@ -806,3 +810,4 @@ if (exportHistoryBtn) {
     URL.revokeObjectURL(url);
   });
 }
+
