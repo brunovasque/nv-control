@@ -65,16 +65,23 @@ function init() {
   if (brainBtn) brainBtn.addEventListener("click", () => setMode("brain"));
 
   // Send
-  if (sendBtn) sendBtn.addEventListener("click", handleSend);
+if (sendBtn) sendBtn.addEventListener("click", handleSend);
 
-  if (userInputEl) {
-    userInputEl.addEventListener("keydown", (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-        e.preventDefault();
-        handleSend();
+if (userInputEl) {
+  userInputEl.addEventListener("keydown", (e) => {
+    // Enter normal → envia
+    if (e.key === "Enter" && !e.shiftKey && !e.altKey) {
+      // Se estiver com CTRL ou COMMAND, deixa o navegador agir (quebra linha)
+      if (e.ctrlKey || e.metaKey) {
+        return; // não chama handleSend, só deixa inserir a quebra de linha
       }
-    });
-  }
+
+      // Enter "seco" envia a mensagem
+      e.preventDefault();
+      handleSend();
+    }
+  });
+}
 
   // Tabs
   if (tabTelemetryBtn)
@@ -655,6 +662,3 @@ if (exportHistoryBtn) {
     URL.revokeObjectURL(url);
   });
 }
-
-
-
