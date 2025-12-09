@@ -434,7 +434,7 @@ function buildDeployPayload(executorAction, options = {}) {
   const base = {
     source: "NV-CONTROL",
     env_mode: "supervised",
-    mode: "deploy",
+    mode: "engineer",
     debug: !!(debugToggleEl && debugToggleEl.checked),
     timestamp: new Date().toISOString(),
     executor_action: executorAction,
@@ -809,4 +809,5 @@ if (exportHistoryBtn) {
     URL.revokeObjectURL(url);
   });
 }
+
 
