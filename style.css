@@ -242,7 +242,7 @@ body {
   background: rgba(15, 23, 42, 0.8);
 }
 
-/* ⬇️ AQUI ENTRA O COPY BUTTON ⬇️ */
+/* ⬇️ COPY BUTTON ⬇️ */
 .copy-btn {
   margin-top: 6px;
   background: rgba(79, 70, 229, 0.15);
@@ -410,15 +410,18 @@ body {
   background: rgba(79, 70, 229, 0.2);
 }
 
-.btn-icon {
-  background: rgba(15, 23, 42, 0.9);
-  border-color: rgba(148, 163, 184, 0.4);
-  color: var(--text-muted);
+/* 🔆 Destaque extra nos botões de modo selecionado */
+.btn-mode {
+  position: relative;
+  overflow: hidden;
 }
 
-.btn-icon:hover {
-  background: rgba(30, 64, 175, 0.18);
-  color: var(--accent-strong);
+.btn-mode.active {
+  background: radial-gradient(circle at top, rgba(79, 70, 229, 0.45), rgba(30, 64, 175, 0.3));
+  border-color: rgba(129, 140, 248, 0.95);
+  box-shadow:
+    0 0 0 1px rgba(129, 140, 248, 0.6),
+    0 0 18px rgba(79, 70, 229, 0.9);
 }
 
 /* Checkbox */
@@ -433,6 +436,58 @@ body {
 
 .checkbox-inline input {
   accent-color: var(--accent);
+}
+
+/* 🔧 BARRA DE DEPLOY */
+
+.deploy-toolbar {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.deploy-btn {
+  font-size: 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: rgba(15, 23, 42, 0.9);
+  color: var(--text-muted);
+  padding: 4px 9px;
+}
+
+.deploy-btn:hover {
+  background: rgba(30, 64, 175, 0.25);
+  color: var(--accent-strong);
+}
+
+/* variações leves por tipo de deploy */
+.deploy-btn-simulate {
+  border-color: rgba(129, 140, 248, 0.7);
+}
+
+.deploy-btn-apply {
+  border-color: rgba(56, 189, 248, 0.7);
+}
+
+.deploy-btn-suggestion {
+  border-color: rgba(45, 212, 191, 0.7);
+}
+
+.deploy-btn-worker {
+  border-color: rgba(79, 70, 229, 0.9);
+}
+
+.deploy-btn-safe {
+  border-color: rgba(34, 197, 94, 0.8);
+}
+
+.deploy-btn-rollback {
+  border-color: rgba(248, 113, 113, 0.8);
+}
+
+.deploy-btn-close {
+  border-color: rgba(148, 163, 184, 0.7);
 }
 
 /* SIDE PANEL (RIGHT) */
