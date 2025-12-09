@@ -131,48 +131,50 @@ function init() {
   // ============================================================
 
   if (deploySimulateBtn)
-    deploySimulateBtn.addEventListener("click", () =>
-      handleDeployAction("deploy_simulate")
-    );
+  deploySimulateBtn.addEventListener("click", () =>
+    handleDeployAction("deploy_simulate", {
+      message: "simular deploy",
+    })
+  );
 
-  if (deployApplyUserPatchBtn)
-    deployApplyUserPatchBtn.addEventListener("click", handleApplyUserPatch);
+if (deployApplyUserPatchBtn)
+  deployApplyUserPatchBtn.addEventListener("click", handleApplyUserPatch);
 
-  if (deployAcceptSuggestionBtn)
-    deployAcceptSuggestionBtn.addEventListener("click", () =>
-      handleDeployAction("deploy_accept_suggestion", {
-        extra: { use_last_suggestion: true, userApproval: true },
-        message: "[DEPLOY] Aceitar sugestão mais recente",
-      })
-    );
+if (deployAcceptSuggestionBtn)
+  deployAcceptSuggestionBtn.addEventListener("click", () =>
+    handleDeployAction("deploy_accept_suggestion", {
+      extra: { use_last_suggestion: true, userApproval: true },
+      message: "aprovar deploy",
+    })
+  );
 
-  if (deployWorkerBtn)
-    deployWorkerBtn.addEventListener("click", () =>
-      handleDeployAction("deploy_worker", {
-        message: "[DEPLOY] Publicar ENAVIA_GIT no Worker",
-      })
-    );
+if (deployWorkerBtn)
+  deployWorkerBtn.addEventListener("click", () =>
+    handleDeployAction("deploy_worker", {
+      message: "publicar worker",
+    })
+  );
 
-  if (deploySafeBtn)
-    deploySafeBtn.addEventListener("click", () =>
-      handleDeployAction("deploy_safe", {
-        message: "[DEPLOY] Safe deploy (staging + validações)",
-      })
-    );
+if (deploySafeBtn)
+  deploySafeBtn.addEventListener("click", () =>
+    handleDeployAction("deploy_safe", {
+      message: "aprovar deploy",
+    })
+  );
 
-  if (deployRollbackBtn)
-    deployRollbackBtn.addEventListener("click", () =>
-      handleDeployAction("deploy_rollback", {
-        message: "[DEPLOY] Rollback para último estado estável",
-      })
-    );
+if (deployRollbackBtn)
+  deployRollbackBtn.addEventListener("click", () =>
+    handleDeployAction("deploy_rollback", {
+      message: "rollback para versão anterior",
+    })
+  );
 
-  if (deploySessionCloseBtn)
-    deploySessionCloseBtn.addEventListener("click", () =>
-      handleDeployAction("deploy_session_close", {
-        message: "[DEPLOY] Encerrar sessão de deploy",
-      })
-    );
+if (deploySessionCloseBtn)
+  deploySessionCloseBtn.addEventListener("click", () =>
+    handleDeployAction("deploy_session_close", {
+      message: "encerrar sessão de deploy",
+    })
+  );
 
   // Finalize init
   setMode("chat", { silent: true });
