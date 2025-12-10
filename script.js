@@ -474,15 +474,24 @@ async function handleApplyUserPatch() {
     return;
   }
 
-  // ❗ AGORA O PATCH É STRING PURA — NADA DE JSON.parse!
-  const patchText = raw;
+  // 🧠 Agora tentamos interpretar o conteúdo como JSON.
+  // Se for JSON válido → vira objeto real.
+  // Se não for → mantemos como string (fallback seguro).
+  let patchPayload = raw;
+  try {
+    patchPayload = JSON.parse(raw);
+  } catch (_) {
+    console.warn("PATCH enviado como string — não é JSON válido (fallback mantido).");
+  }
 
   const payload = buildDeployPayload("deploy_apply_user_patch", {
-    patch: patchText, // <<< CORREÇÃO AQUI (string pura)
-    message: "[DEPLOY] Apply user patch (conteúdo do textarea)",
+    patch: patchPayload,
+    message: "[DEPLOY] Apply user patch (conteúdo do textarea corrigido)",
   });
 
-  appendSystemMessage("Enviando deploy_apply_user_patch com patch do textarea.");
+  appendSystemMessage(
+    "Enviando deploy_apply_user_patch com patch interpretado corretamente."
+  );
   await sendToWorker(payload);
 }
 
@@ -814,6 +823,7 @@ if (exportHistoryBtn) {
     URL.revokeObjectURL(url);
   });
 }
+
 
 
 
