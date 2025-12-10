@@ -446,8 +446,9 @@ function buildDeployPayload(executorAction, options = {}) {
     preventForbidden: true,
   };
 
+  // Se veio patch no options → aplica
   if (options.patch !== undefined) {
-    base.patch = options.patch;
+    base.patch = options.patch; // ← aqui agora receberá string, não objeto
   }
 
   return base;
@@ -469,22 +470,15 @@ async function handleApplyUserPatch() {
 
   const raw = userInputEl.value.trim();
   if (!raw) {
-    appendSystemMessage("Nenhum patch encontrado. Escreva o JSON do patch no campo de mensagem.");
+    appendSystemMessage("Nenhum patch encontrado. Escreva o PATCH no campo de mensagem.");
     return;
   }
 
-  let parsedPatch = null;
-  try {
-    parsedPatch = JSON.parse(raw);
-  } catch (err) {
-    appendSystemMessage(
-      "Patch inválido. O conteúdo precisa ser um JSON válido para APPLY USER PATCH."
-    );
-    return;
-  }
+  // ❗ AGORA O PATCH É STRING PURA — NADA DE JSON.parse!
+  const patchText = raw;
 
   const payload = buildDeployPayload("deploy_apply_user_patch", {
-    patch: parsedPatch,
+    patch: patchText, // <<< CORREÇÃO AQUI (string pura)
     message: "[DEPLOY] Apply user patch (conteúdo do textarea)",
   });
 
@@ -820,6 +814,7 @@ if (exportHistoryBtn) {
     URL.revokeObjectURL(url);
   });
 }
+
 
 
 
