@@ -501,7 +501,22 @@ async function sendToWorker(payload) {
     return;
   }
 
-  const endpoint = url.endsWith("/") ? url : url + "/";
+// ============================================================
+// DEFINIÇÃO DA ROTA CORRETA (chat → "/", engineer → "/engineer")
+// ============================================================
+let endpoint;
+
+if (payload.mode === "engineer") {
+  // envia para /engineer SEMPRE no modo ENGINEER
+  endpoint = url.replace(/\/$/, "") + "/engineer";
+} else if (payload.mode === "brain") {
+  // futuro: rota exclusiva do brain
+  endpoint = url.replace(/\/$/, "") + "/brain";
+} else {
+  // chat normal → manda pra raiz "/"
+  endpoint = url.replace(/\/$/, "") + "/";
+}
+
   const startedAt = performance.now();
   setStatus("pending", "Enviando...");
 
@@ -805,6 +820,7 @@ if (exportHistoryBtn) {
     URL.revokeObjectURL(url);
   });
 }
+
 
 
 
