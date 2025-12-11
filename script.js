@@ -514,7 +514,7 @@ if (payload.mode === "engineer") {
   endpoint = url.replace(/\/$/, "") + "/engineer";
 } else if (payload.mode === "brain") {
   // futuro: rota exclusiva do brain
-  endpoint = url.replace(/\/$/, "") + "/brain";
+  endpoint = url.replace(/\/$/, "") + "/";
 } else {
   // chat normal → manda pra raiz "/"
   endpoint = url.replace(/\/$/, "") + "/";
@@ -823,6 +823,7 @@ if (exportHistoryBtn) {
     URL.revokeObjectURL(url);
   });
 }
+
 
 
 
