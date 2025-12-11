@@ -26,9 +26,12 @@
           </div>
           <div class="badges">
             <span id="status-badge" class="badge badge-neutral">Pronto</span>
-            <span id="mode-badge" class="badge badge-mode badge-mode-chat"
-              >CHAT</span
+            <span
+              id="mode-badge"
+              class="badge badge-mode badge-mode-director"
             >
+              DIRECTOR
+            </span>
           </div>
         </div>
       </header>
@@ -47,26 +50,34 @@
             <textarea
               id="userInput"
               rows="3"
-              placeholder="Digite sua mensagem para a ENAVIA... (Enter envia, Ctrl+Enter quebra linha)"
+              placeholder="Digite sua mensagem... (Enter envia, Ctrl+Enter quebra linha)"
             ></textarea>
             <div class="input-toolbar">
               <div class="mode-buttons">
+                <!-- NOVOS BOTÕES DE MODO -->
                 <button
-                  id="chatBtn"
+                  id="modeDirectorBtn"
                   type="button"
                   class="btn btn-secondary btn-mode active"
                 >
-                  Chat
+                  Director
                 </button>
                 <button
-                  id="engineerBtn"
+                  id="modeEnaviaBtn"
+                  type="button"
+                  class="btn btn-secondary btn-mode"
+                >
+                  Enavia
+                </button>
+                <button
+                  id="modeEngineerBtn"
                   type="button"
                   class="btn btn-secondary btn-mode"
                 >
                   Engineer
                 </button>
                 <button
-                  id="brainBtn"
+                  id="modeBrainBtn"
                   type="button"
                   class="btn btn-secondary btn-mode"
                 >
@@ -236,6 +247,20 @@
                   <span>Histórico de chamadas</span>
 
                   <div class="header-actions">
+                    <!-- NOVO FILTRO DE MODO -->
+                    <select
+                      id="historyModeFilter"
+                      class="history-filter-select"
+                      title="Filtrar histórico por modo"
+                    >
+                      <option value="all">All</option>
+                      <option value="director">Director</option>
+                      <option value="enavia">Enavia</option>
+                      <option value="engineer">Engineer</option>
+                      <option value="brain">Brain</option>
+                      <option value="executor">Executor</option>
+                    </select>
+
                     <button
                       type="button"
                       id="exportHistoryBtn"
@@ -284,10 +309,10 @@
       <!-- FOOTER -->
       <footer class="app-footer">
         <span>NV-Control • ENAVIA supervisionada (modo <strong>supervised</strong>)</span>
-        <span class="hint"
-          >Dica: use <strong>Chat</strong> para conversa normal, <strong>Engineer</strong> para
-          plano/patch e <strong>Brain</strong> para treinamento.</span
-        >
+        <span class="hint">
+          Dica: use <strong>Director</strong> para decisão, <strong>Enavia</strong> para execução,
+          <strong>Engineer</strong> para plano/patch e <strong>Brain</strong> para treinamento.
+        </span>
       </footer>
     </div>
 
