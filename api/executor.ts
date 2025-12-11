@@ -22,24 +22,30 @@ export default async function handler(req: Request) {
 
     // Se o painel pedir simulação → devolvemos MOCK
     if (body.simulate === true) {
-      return json({
-        ok: true,
-        mode: "simulate",
-        executor: "vercel-executor-v1",
-        message: "Simulação executada com sucesso.",
-        received: body,
-        result: {
-          mock: true,
-          notes:
-            "Este é o executor Vercel V1. A ENAVIA poderá evoluir esta função.",
-        },
-        telemetry: {
-          source: "Vercel",
-          stage: "simulate",
-          timestamp: Date.now(),
-        },
-      });
-    }
+  return json({
+    ok: true,
+    mode: "simulate",
+    executor: "vercel-executor-v1",
+    message: "Simulação executada com sucesso.",
+    received: body,
+    result: {
+      mock: true,
+      notes:
+        "Este é o executor Vercel V1. A ENAVIA poderá evoluir esta função.",
+      steps: [
+        "Recebi o comando do painel (simulate: true).",
+        "Validei a estrutura básica do payload.",
+        "Simulei a análise do patch/código.",
+        "Preparei este resultado para o painel exibir na tela."
+      ]
+    },
+    telemetry: {
+      source: "Vercel",
+      stage: "simulate",
+      timestamp: Date.now(),
+    },
+  });
+}
 
     // Caso contrário → encaminha ao NV-FIRST (executor real)
     const forward = await fetch(NV_FIRST_URL, {
