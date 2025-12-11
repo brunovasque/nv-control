@@ -157,7 +157,7 @@ body {
   color: var(--accent-strong);
 }
 
-/* NOVOS MODOS DO BADGE */
+/* MODOS DO BADGE */
 
 .badge-mode-director {
   border-color: var(--accent-strong);
@@ -249,7 +249,8 @@ body {
   background: rgba(15, 23, 42, 0.8);
 }
 
-/* ⬇️ COPY BUTTON ⬇️ */
+/* BOTÃO COPIAR NA BOLHA */
+
 .copy-btn {
   margin-top: 6px;
   background: rgba(79, 70, 229, 0.15);
@@ -266,7 +267,6 @@ body {
   background: rgba(79, 70, 229, 0.35);
   color: #fff;
 }
-/* ⬆️ FIM DO COPY BUTTON ⬆️ */
 
 .message .meta {
   font-size: 0.7rem;
@@ -417,12 +417,8 @@ body {
   color: var(--accent-strong);
 }
 
-.btn-secondary.active,
-.btn-secondary.mode-active {
-  background: rgba(79, 70, 229, 0.2);
-}
+/* botões de modo */
 
-/* 🔆 Destaque extra nos botões de modo selecionado */
 .btn-mode {
   position: relative;
   overflow: hidden;
@@ -455,7 +451,7 @@ body {
   accent-color: var(--accent);
 }
 
-/* 🔧 BARRA DE DEPLOY */
+/* BARRA DE DEPLOY */
 
 .deploy-toolbar {
   margin-top: 6px;
@@ -478,7 +474,6 @@ body {
   color: var(--accent-strong);
 }
 
-/* variações leves por tipo de deploy */
 .deploy-btn-simulate {
   border-color: rgba(129, 140, 248, 0.7);
 }
@@ -507,7 +502,7 @@ body {
   border-color: rgba(148, 163, 184, 0.7);
 }
 
-/* SIDE PANEL (RIGHT) */
+/* SIDE PANEL */
 
 .side-panel {
   background: radial-gradient(circle at top right, #020617 0, #020617 40%, #030712 100%);
@@ -597,21 +592,12 @@ body {
   font-size: 0.78rem;
 }
 
-/* Ações do header (export, limpar, filtro) */
+/* AÇÕES HEADER (history/export/clear/filtro) */
 
 .header-actions {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-}
-
-.history-filter-select {
-  background: rgba(15, 23, 42, 0.9);
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.5);
-  color: var(--text-muted);
-  font-size: 0.7rem;
-  padding: 3px 8px;
 }
 
 /* Telemetry grid */
@@ -677,6 +663,80 @@ body {
 .history-mode {
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+.history-filter-select {
+  background: rgba(15, 23, 42, 0.9);
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  padding: 3px 8px;
+}
+
+/* RUN LOG (Execução) */
+
+.run-log {
+  max-height: 430px;
+  overflow-y: auto;
+  padding: 4px 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.78rem;
+}
+
+.run-log-item {
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  opacity: 0;
+  transform: translateY(4px);
+  animation: runLogEnter 0.18s ease-out forwards;
+}
+
+.run-log-meta {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.run-log-text {
+  font-size: 0.78rem;
+}
+
+/* cores por origem (via data-source) */
+
+.run-log-item[data-source="DIRECTOR"] {
+  border-color: rgba(129, 140, 248, 0.8);
+}
+
+.run-log-item[data-source="ENAVIA"],
+.run-log-item[data-source="ENAVIA/ENGINEER"],
+.run-log-item[data-source="ENAVIA/BRAIN"] {
+  border-color: rgba(56, 189, 248, 0.8);
+}
+
+.run-log-item[data-source="EXECUTOR"] {
+  border-color: rgba(34, 197, 94, 0.85);
+}
+
+.run-log-item[data-source="NV-FIRST"] {
+  border-color: rgba(234, 179, 8, 0.85);
+}
+
+/* animação de entrada */
+
+@keyframes runLogEnter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* FOOTER */
