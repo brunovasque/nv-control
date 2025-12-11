@@ -4,13 +4,23 @@
 
 const DEFAULT_WORKER_URL = "https://nv-enavia.brunovasque.workers.dev";
 
+// MODOS CANÔNICOS
+const MODE_DIRECTOR = "director";
+const MODE_ENAVIA = "enavia";
+const MODE_ENGINEER = "engineer";
+const MODE_BRAIN = "brain";
+
 // DOM ELEMENTS
 const messagesEl = document.getElementById("messages");
 const userInputEl = document.getElementById("userInput");
 const sendBtn = document.getElementById("sendBtn");
-const chatBtn = document.getElementById("chatBtn");
-const engineerBtn = document.getElementById("engineerBtn");
-const brainBtn = document.getElementById("brainBtn");
+
+// NOVOS BOTÕES DE MODO
+const modeDirectorBtn = document.getElementById("modeDirectorBtn");
+const modeEnaviaBtn = document.getElementById("modeEnaviaBtn");
+const modeEngineerBtn = document.getElementById("modeEngineerBtn");
+const modeBrainBtn = document.getElementById("modeBrainBtn");
+
 const statusBadgeEl = document.getElementById("status-badge");
 const modeBadgeEl = document.getElementById("mode-badge");
 const workerUrlInputEl = document.getElementById("workerUrlInput");
@@ -38,6 +48,8 @@ const telemetryErrorEl = document.getElementById("telemetry-error");
 // History
 const historyListEl = document.getElementById("history-list");
 const clearHistoryBtn = document.getElementById("clearHistoryBtn");
+const exportHistoryBtn = document.getElementById("exportHistoryBtn");
+const historyModeFilterEl = document.getElementById("historyModeFilter");
 
 // Advanced
 const advancedRawEl = document.getElementById("advanced-raw");
@@ -56,8 +68,9 @@ const deployRollbackBtn = document.getElementById("deployRollbackBtn");
 const deploySessionCloseBtn = document.getElementById("deploySessionCloseBtn");
 
 // Global state
-let currentMode = "chat"; // "chat" | "engineer" | "brain"
-let history = [];
+let currentMode = MODE_DIRECTOR; // modo padrão: DIRECTOR
+let history = []; // histórico de chamadas (telemetria)
+let historyFilterMode = "all"; // filtro do histórico (All / Director / Enavia / ...)
 
 // ============================================================
 // INIT
@@ -72,10 +85,18 @@ function init() {
   }
 
   // Mode buttons
-  if (chatBtn) chatBtn.addEventListener("click", () => setMode("chat"));
-  if (engineerBtn)
-    engineerBtn.addEventListener("click", () => setMode("engineer"));
-  if (brainBtn) brainBtn.addEventListener("click", () => setMode("brain"));
+  if (modeDirectorBtn)
+    modeDirectorBtn.addEventListener("click", () =>
+      setMode(MODE_DIRECTOR)
+    );
+  if (modeEnaviaBtn)
+    modeEnaviaBtn.addEventListener("click", () => setMode(MODE_ENAVIA));
+  if (modeEngineerBtn)
+    modeEngineerBtn.addEventListener("click", () =>
+      setMode(MODE_ENGINEER)
+    );
+  if (modeBrainBtn)
+    modeBrainBtn.addEventListener("click", () => setMode(MODE_BRAIN));
 
   // Send
   if (sendBtn) sendBtn.addEventListener("click", handleSend);
@@ -126,61 +147,89 @@ function init() {
     });
   }
 
+  // Filtro de histórico
+  if (historyModeFilterEl) {
+    historyModeFilterEl.addEventListener("change", (e) => {
+      historyFilterMode = e.target.value || "all";
+      renderHistory();
+    });
+  }
+
+  // EXPORTAR HISTÓRICO
+  if (exportHistoryBtn) {
+    exportHistoryBtn.addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(history, null, 2)], {
+        type: "application/json",
+      });
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+
+      a.href = url;
+      a.download = `nv-control-history-${new Date()
+        .toISOString()
+        .slice(0, 10)}.json`;
+      a.click();
+
+      URL.revokeObjectURL(url);
+    });
+  }
+
   // ============================================================
   // DEPLOY BUTTONS – HANDLERS (TODOS OS 7)
   // ============================================================
 
   if (deploySimulateBtn)
-  deploySimulateBtn.addEventListener("click", () =>
-    handleDeployAction("deploy_simulate", {
-      message: "simular deploy",
-    })
-  );
+    deploySimulateBtn.addEventListener("click", () =>
+      handleDeployAction("deploy_simulate", {
+        message: "simular deploy",
+      })
+    );
 
-if (deployApplyUserPatchBtn)
-  deployApplyUserPatchBtn.addEventListener("click", handleApplyUserPatch);
+  if (deployApplyUserPatchBtn)
+    deployApplyUserPatchBtn.addEventListener("click", handleApplyUserPatch);
 
-if (deployAcceptSuggestionBtn)
-  deployAcceptSuggestionBtn.addEventListener("click", () =>
-    handleDeployAction("deploy_accept_suggestion", {
-      extra: { use_last_suggestion: true, userApproval: true },
-      message: "aprovar deploy",
-    })
-  );
+  if (deployAcceptSuggestionBtn)
+    deployAcceptSuggestionBtn.addEventListener("click", () =>
+      handleDeployAction("deploy_accept_suggestion", {
+        extra: { use_last_suggestion: true, userApproval: true },
+        message: "aprovar deploy",
+      })
+    );
 
-if (deployWorkerBtn)
-  deployWorkerBtn.addEventListener("click", () =>
-    handleDeployAction("deploy_worker", {
-      message: "publicar worker",
-    })
-  );
+  if (deployWorkerBtn)
+    deployWorkerBtn.addEventListener("click", () =>
+      handleDeployAction("deploy_worker", {
+        message: "publicar worker",
+      })
+    );
 
-if (deploySafeBtn)
-  deploySafeBtn.addEventListener("click", () =>
-    handleDeployAction("deploy_safe", {
-      message: "aprovar deploy",
-    })
-  );
+  if (deploySafeBtn)
+    deploySafeBtn.addEventListener("click", () =>
+      handleDeployAction("deploy_safe", {
+        message: "aprovar deploy",
+      })
+    );
 
-if (deployRollbackBtn)
-  deployRollbackBtn.addEventListener("click", () =>
-    handleDeployAction("deploy_rollback", {
-      message: "rollback para versão anterior",
-    })
-  );
+  if (deployRollbackBtn)
+    deployRollbackBtn.addEventListener("click", () =>
+      handleDeployAction("deploy_rollback", {
+        message: "rollback para versão anterior",
+      })
+    );
 
-if (deploySessionCloseBtn)
-  deploySessionCloseBtn.addEventListener("click", () =>
-    handleDeployAction("deploy_session_close", {
-      message: "encerrar sessão de deploy",
-    })
-  );
+  if (deploySessionCloseBtn)
+    deploySessionCloseBtn.addEventListener("click", () =>
+      handleDeployAction("deploy_session_close", {
+        message: "encerrar sessão de deploy",
+      })
+    );
 
   // Finalize init
-  setMode("chat", { silent: true });
+  setMode(MODE_DIRECTOR, { silent: true });
   setStatus("neutral", "Pronto");
   appendSystemMessage(
-    "NV-Control inicializado. Conectando à ENAVIA via rota / (supervised)."
+    "NV-Control inicializado. DIRECTOR definido como modo padrão."
   );
 }
 
@@ -197,25 +246,35 @@ function setMode(mode, options = {}) {
   if (modeBadgeEl) {
     modeBadgeEl.textContent = mode.toUpperCase();
     modeBadgeEl.classList.remove(
-      "badge-mode-chat",
+      "badge-mode-director",
+      "badge-mode-enavia",
       "badge-mode-engineer",
       "badge-mode-brain"
     );
-    if (mode === "chat") modeBadgeEl.classList.add("badge-mode-chat");
-    if (mode === "engineer") modeBadgeEl.classList.add("badge-mode-engineer");
-    if (mode === "brain") modeBadgeEl.classList.add("badge-mode-brain");
+
+    if (mode === MODE_DIRECTOR) {
+      modeBadgeEl.classList.add("badge-mode-director");
+    } else if (mode === MODE_ENAVIA) {
+      modeBadgeEl.classList.add("badge-mode-enavia");
+    } else if (mode === MODE_ENGINEER) {
+      modeBadgeEl.classList.add("badge-mode-engineer");
+    } else if (mode === MODE_BRAIN) {
+      modeBadgeEl.classList.add("badge-mode-brain");
+    }
   }
 
   // Mode buttons visual
   const modes = [
-    { btn: chatBtn, id: "chat" },
-    { btn: engineerBtn, id: "engineer" },
-    { btn: brainBtn, id: "brain" },
+    { btn: modeDirectorBtn, id: MODE_DIRECTOR },
+    { btn: modeEnaviaBtn, id: MODE_ENAVIA },
+    { btn: modeEngineerBtn, id: MODE_ENGINEER },
+    { btn: modeBrainBtn, id: MODE_BRAIN },
   ];
   modes.forEach(({ btn, id }) => {
     if (!btn) return;
-    if (id === mode) btn.classList.add("active");
-    else btn.classList.remove("active");
+    const isActive = id === mode;
+    btn.classList.toggle("active", isActive);
+    btn.classList.toggle("mode-active", isActive);
   });
 
   if (!options.silent) {
@@ -226,10 +285,18 @@ function setMode(mode, options = {}) {
 }
 
 function modeDescription(mode) {
-  if (mode === "chat") return "conversa normal";
-  if (mode === "engineer")
+  if (mode === MODE_DIRECTOR) {
+    return "decisão estratégica (Director recebe sua intenção e coordena a ENAVIA";
+  }
+  if (mode === MODE_ENAVIA) {
+    return "execução direta com a engenheira ENAVIA";
+  }
+  if (mode === MODE_ENGINEER) {
     return "plano técnico, patch e fluxo supervisionado de deploy";
-  if (mode === "brain") return "treinamento (conteúdo será aprendido)";
+  }
+  if (mode === MODE_BRAIN) {
+    return "treinamento (conteúdo será aprendido)";
+  }
   return "";
 }
 
@@ -298,7 +365,7 @@ function appendMessage(role, mode, text) {
 
   if (role === "user") {
     avatar.textContent = "VC";
-    meta.textContent = `Você (${mode.toUpperCase()}) • ${when}`;
+    meta.textContent = `Você (${(mode || "").toUpperCase()}) • ${when}`;
   } else if (role === "assistant") {
     avatar.textContent = "NV";
     meta.textContent = `ENAVIA • ${when}`;
@@ -370,7 +437,7 @@ function buildPayload(mode, content) {
     timestamp: new Date().toISOString(),
   };
 
-  if (mode === "engineer") {
+  if (mode === MODE_ENGINEER) {
     let parsed = null;
     try {
       parsed = JSON.parse(content);
@@ -400,7 +467,7 @@ function buildPayload(mode, content) {
     };
   }
 
-  if (mode === "brain") {
+  if (mode === MODE_BRAIN) {
     return {
       ...base,
       content,
@@ -408,6 +475,15 @@ function buildPayload(mode, content) {
     };
   }
 
+  // ENAVIA (chat técnico/executora)
+  if (mode === MODE_ENAVIA) {
+    return {
+      ...base,
+      message: content,
+    };
+  }
+
+  // fallback genérico
   return {
     ...base,
     message: content,
@@ -422,8 +498,111 @@ async function handleSend() {
   appendUserMessage(raw, currentMode);
   userInputEl.value = "";
 
-  const payload = buildPayload(currentMode, raw);
+  // Director fala com rota /api/director no Vercel
+  if (currentMode === MODE_DIRECTOR) {
+    await sendToDirector(raw);
+    return;
+  }
+
+  // Demais modos continuam indo para o Worker
+  let payloadMode = MODE_ENAVIA;
+  if (currentMode === MODE_ENAVIA) payloadMode = MODE_ENAVIA;
+  else if (currentMode === MODE_ENGINEER) payloadMode = MODE_ENGINEER;
+  else if (currentMode === MODE_BRAIN) payloadMode = MODE_BRAIN;
+
+  const payload = buildPayload(payloadMode, raw);
   await sendToWorker(payload);
+}
+
+// ============================================================
+// DIRECTOR FLOW – /api/director (Vercel)
+// ============================================================
+
+async function sendToDirector(message) {
+  const endpoint = "/api/director";
+
+  const payload = {
+    source: "NV-CONTROL",
+    role: "ceo",
+    env_mode: "supervised",
+    mode: MODE_DIRECTOR,
+    debug: !!(debugToggleEl && debugToggleEl.checked),
+    timestamp: new Date().toISOString(),
+    message,
+    context: {
+      from: "NV-Control",
+      workerUrl: getWorkerUrl(),
+    },
+  };
+
+  const startedAt = performance.now();
+  setStatus("pending", "Enviando para DIRECTOR...");
+
+  let responseStatus = null;
+  let responseJson = null;
+  let responseText = null;
+  let error = null;
+
+  try {
+    const resp = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    responseStatus = resp.status;
+    responseText = await resp.text();
+
+    try {
+      responseJson = responseText ? JSON.parse(responseText) : null;
+    } catch (_) {
+      responseJson = null;
+    }
+  } catch (err) {
+    error = err;
+  }
+
+  const latencyMs = Math.round(performance.now() - startedAt);
+
+  const telemetry = {
+    timestamp: new Date().toISOString(),
+    latencyMs,
+    status: responseStatus,
+    mode: MODE_DIRECTOR,
+    url: endpoint,
+    ok: !error && responseStatus >= 200 && responseStatus < 300,
+  };
+
+  const advancedEnvelope = {
+    request: payload,
+    responseStatus,
+    responseJson,
+    responseText,
+    error: error ? String(error) : null,
+    telemetry,
+  };
+
+  // Render telemetry + history + advanced
+  renderTelemetry(telemetry, payload, responseJson, error, responseText);
+  addToHistory(telemetry, payload);
+  renderAdvanced(advancedEnvelope);
+
+  if (error) {
+    setStatus("error", "Erro na requisição.");
+    appendSystemMessage(`Erro ao falar com o DIRECTOR: ${String(error)}`);
+    return;
+  }
+
+  if (telemetry.ok) {
+    setStatus("ok", `OK • ${latencyMs} ms • ${responseStatus}`);
+  } else {
+    setStatus("error", `HTTP ${responseStatus || "-"} • ver Telemetria`);
+  }
+
+  const assistantText = extractAssistantMessage(responseJson, responseText);
+  appendAssistantMessage(assistantText);
 }
 
 // ============================================================
@@ -434,7 +613,7 @@ function buildDeployPayload(executorAction, options = {}) {
   const base = {
     source: "NV-CONTROL",
     env_mode: "supervised",
-    mode: "engineer",
+    mode: MODE_ENGINEER,
     debug: !!(debugToggleEl && debugToggleEl.checked),
     timestamp: new Date().toISOString(),
 
@@ -448,7 +627,7 @@ function buildDeployPayload(executorAction, options = {}) {
 
   // Se veio patch no options → aplica
   if (options.patch !== undefined) {
-    base.patch = options.patch; // ← aqui agora receberá string, não objeto
+    base.patch = options.patch; // ← aqui agora receberá string ou objeto
   }
 
   return base;
@@ -470,18 +649,20 @@ async function handleApplyUserPatch() {
 
   const raw = userInputEl.value.trim();
   if (!raw) {
-    appendSystemMessage("Nenhum patch encontrado. Escreva o PATCH no campo de mensagem.");
+    appendSystemMessage(
+      "Nenhum patch encontrado. Escreva o PATCH no campo de mensagem."
+    );
     return;
   }
 
-  // 🧠 Agora tentamos interpretar o conteúdo como JSON.
-  // Se for JSON válido → vira objeto real.
-  // Se não for → mantemos como string (fallback seguro).
+  // Tenta interpretar o conteúdo como JSON. Se falhar, mantém como string.
   let patchPayload = raw;
   try {
     patchPayload = JSON.parse(raw);
   } catch (_) {
-    console.warn("PATCH enviado como string — não é JSON válido (fallback mantido).");
+    console.warn(
+      "PATCH enviado como string — não é JSON válido (fallback mantido)."
+    );
   }
 
   const payload = buildDeployPayload("deploy_apply_user_patch", {
@@ -495,6 +676,10 @@ async function handleApplyUserPatch() {
   await sendToWorker(payload);
 }
 
+// ============================================================
+// WORKER FLOW – NV-ENAVIA
+// ============================================================
+
 async function sendToWorker(payload) {
   const url = getWorkerUrl();
 
@@ -504,18 +689,13 @@ async function sendToWorker(payload) {
     return;
   }
 
-// ============================================================
-// DEFINIÇÃO DA ROTA CORRETA (chat → "/", engineer → "/engineer")
-// ============================================================
-let endpoint;
-
-if (payload.mode === "engineer") {
-  // ENGINEER sempre usa /engineer
-  endpoint = url.replace(/\/$/, "") + "/engineer";
-} else {
-  // CHAT e BRAIN usam a rota raiz "/"
-  endpoint = url.replace(/\/$/, "") + "/";
-}
+  // DEFINIÇÃO DA ROTA CORRETA (ENGINEER → "/engineer", demais → "/")
+  let endpoint;
+  if (payload.mode === MODE_ENGINEER) {
+    endpoint = url.replace(/\/$/, "") + "/engineer";
+  } else {
+    endpoint = url.replace(/\/$/, "") + "/";
+  }
 
   const startedAt = performance.now();
   setStatus("pending", "Enviando...");
@@ -540,7 +720,6 @@ if (payload.mode === "engineer") {
     try {
       responseJson = responseText ? JSON.parse(responseText) : null;
     } catch (parseErr) {
-      // keep as text only
       responseJson = null;
     }
   } catch (err) {
@@ -558,7 +737,6 @@ if (payload.mode === "engineer") {
     ok: !error && responseStatus >= 200 && responseStatus < 300,
   };
 
-  // Build a compact envelope for advanced log
   const advancedEnvelope = {
     request: payload,
     responseStatus,
@@ -594,8 +772,28 @@ if (payload.mode === "engineer") {
 // TELEMETRIA / HISTÓRICO / AVANÇADO
 // ============================================================
 
-function renderTelemetry(telemetry, payload, responseJson, error, responseText) {
+function renderTelemetry(
+  telemetry,
+  payload,
+  responseJson,
+  error,
+  responseText
+) {
   if (!telemetrySummaryEl) return;
+
+  // Monta uma visão simples de pipeline hierárquico
+  let pipeline = "[CEO]";
+  if (payload.mode === MODE_DIRECTOR) {
+    pipeline += " → [DIRECTOR] → [ENAVIA] → [EXECUTOR] → [NV-FIRST]";
+  } else if (payload.mode === MODE_ENGINEER) {
+    pipeline += " → [DIRECTOR] → [ENAVIA] → [EXECUTOR] → [NV-FIRST]";
+  } else if (payload.mode === MODE_BRAIN) {
+    pipeline += " → [ENAVIA/BRAIN] → [EXECUTOR] → [NV-FIRST]";
+  } else if (payload.mode === MODE_ENAVIA) {
+    pipeline += " → [ENAVIA] → [EXECUTOR] → [NV-FIRST]";
+  } else {
+    pipeline += " → [ENAVIA] → [EXECUTOR]";
+  }
 
   // Summary grid
   telemetrySummaryEl.innerHTML = "";
@@ -607,6 +805,7 @@ function renderTelemetry(telemetry, payload, responseJson, error, responseText) 
     { label: "URL", value: telemetry.url || "-" },
     { label: "Latência", value: `${telemetry.latencyMs} ms` },
     { label: "Hora", value: formatTime(telemetry.timestamp) },
+    { label: "Pipeline", value: pipeline },
   ];
 
   items.forEach((item) => {
@@ -673,12 +872,28 @@ function addToHistory(telemetry, payload) {
   });
 
   // ordenação garantida por timestamp
-  history.sort((a, b) => b.at - a.at);
+  history.sort((a, b) => {
+    const aTime = typeof a.at === "string" ? new Date(a.at).getTime() : a.at;
+    const bTime = typeof b.at === "string" ? new Date(b.at).getTime() : b.at;
+    return bTime - aTime;
+  });
 
+  renderHistory();
+}
+
+function renderHistory() {
   if (!historyListEl) return;
   historyListEl.innerHTML = "";
 
-  history.forEach((entry) => {
+  const filtered = history.filter((entry) => {
+    if (historyFilterMode === "all") return true;
+    if (historyFilterMode === "executor") {
+      return entry.mode === "executor";
+    }
+    return (entry.mode || "").toLowerCase() === historyFilterMode;
+  });
+
+  filtered.forEach((entry) => {
     const item = document.createElement("div");
     item.classList.add("history-item");
 
@@ -704,7 +919,9 @@ function addToHistory(telemetry, payload) {
     `;
 
     const right = document.createElement("div");
-    right.textContent = `${entry.ok ? "OK" : "ERRO"} • ${entry.latencyMs} ms`;
+    right.textContent = `${entry.ok ? "OK" : "ERRO"} • ${
+      entry.latencyMs
+    } ms`;
 
     metaRow.appendChild(left);
     metaRow.appendChild(right);
@@ -712,7 +929,6 @@ function addToHistory(telemetry, payload) {
     const msg = document.createElement("div");
     msg.textContent = truncate(entry.message || "", 220);
 
-    // (❗ CORREÇÃO CIRÚRGICA — APENAS ESTA LINHA ALTERADA)
     const resendBtn = document.createElement("button");
     resendBtn.classList.add("resend-btn");
     resendBtn.textContent = "Reenviar";
@@ -738,8 +954,22 @@ function renderAdvanced(envelope) {
       envelope.telemetry &&
       (envelope.telemetry.timestamp || new Date().toISOString())
   );
+
+  // Pequeno cabeçalho hierárquico no log avançado
+  const mode = envelope.telemetry && envelope.telemetry.mode;
+  let headerLine = `// [LOG] ${headerTime}`;
+  if (mode === MODE_DIRECTOR) {
+    headerLine += " • Pipeline: [CEO] → [DIRECTOR] → [ENAVIA] → [EXECUTOR] → [NV-FIRST]";
+  } else if (mode === MODE_ENGINEER) {
+    headerLine += " • Pipeline: [CEO] → [DIRECTOR] → [ENAVIA] → [EXECUTOR] → [NV-FIRST]";
+  } else if (mode === MODE_ENAVIA) {
+    headerLine += " • Pipeline: [CEO] → [ENAVIA] → [EXECUTOR] → [NV-FIRST]";
+  } else if (mode === MODE_BRAIN) {
+    headerLine += " • Pipeline: [CEO] → [ENAVIA/BRAIN] → [EXECUTOR] → [NV-FIRST]";
+  }
+
   advancedRawEl.textContent =
-    `// ${headerTime}\n` + JSON.stringify(envelope, null, 2);
+    `${headerLine}\n` + JSON.stringify(envelope, null, 2);
 }
 
 // ============================================================
@@ -767,7 +997,7 @@ function formatTime(iso) {
 function extractAssistantMessage(json, textFallback) {
   if (!json && !textFallback) return "<sem conteúdo>";
 
-  // Prioridade para formatos esperados da ENAVIA
+  // Prioridade para formatos esperados da ENAVIA / DIRECTOR
   if (json) {
     if (typeof json.output === "string") return json.output;
     if (typeof json.message === "string") return json.message;
@@ -796,36 +1026,3 @@ async function copyToClipboard(text) {
     setStatus("error", "Não foi possível copiar.");
   }
 }
-
-// ===============================
-// EXPORTAR HISTÓRICO
-// ===============================
-const exportHistoryBtn = document.getElementById("exportHistoryBtn");
-
-if (exportHistoryBtn) {
-  exportHistoryBtn.addEventListener("click", () => {
-    const blob = new Blob([JSON.stringify(history, null, 2)], {
-      type: "application/json",
-    });
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-
-    a.href = url;
-    a.download = `nv-control-history-${new Date()
-      .toISOString()
-      .slice(0, 10)}.json`;
-    a.click();
-
-    URL.revokeObjectURL(url);
-  });
-}
-
-
-
-
-
-
-
-
-
