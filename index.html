@@ -54,7 +54,7 @@
             ></textarea>
             <div class="input-toolbar">
               <div class="mode-buttons">
-                <!-- NOVOS BOTÕES DE MODO -->
+                <!-- MODOS PRINCIPAIS -->
                 <button
                   id="modeDirectorBtn"
                   type="button"
@@ -95,7 +95,7 @@
               </div>
             </div>
 
-            <!-- 🔧 BARRA DE DEPLOY (7 BOTÕES) -->
+            <!-- BARRA DE DEPLOY -->
             <div class="deploy-toolbar">
               <button
                 id="deploySimulateBtn"
@@ -163,7 +163,7 @@
           </div>
         </section>
 
-        <!-- RIGHT: TELEMETRIA / HISTÓRICO / AVANÇADO -->
+        <!-- RIGHT: TELEMETRIA / EXECUÇÃO / HISTÓRICO / AVANÇADO -->
         <section class="side-panel">
           <div class="tabs">
             <button
@@ -172,6 +172,9 @@
               data-tab="telemetry"
             >
               Telemetria
+            </button>
+            <button id="tab-run" class="tab" data-tab="run">
+              Execução
             </button>
             <button id="tab-history" class="tab" data-tab="history">
               Histórico
@@ -240,6 +243,26 @@
               </div>
             </div>
 
+            <!-- EXECUÇÃO (NOVO) -->
+            <div id="panel-run" class="tab-panel">
+              <div class="card">
+                <div class="card-header">
+                  <span>Execução da ENAVIA</span>
+                  <div class="header-actions">
+                    <button
+                      type="button"
+                      id="clearRunLogBtn"
+                      class="btn-icon"
+                      title="Limpar execução"
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                </div>
+                <div id="run-log" class="run-log"></div>
+              </div>
+            </div>
+
             <!-- HISTÓRICO -->
             <div id="panel-history" class="tab-panel">
               <div class="card">
@@ -247,7 +270,6 @@
                   <span>Histórico de chamadas</span>
 
                   <div class="header-actions">
-                    <!-- NOVO FILTRO DE MODO -->
                     <select
                       id="historyModeFilter"
                       class="history-filter-select"
