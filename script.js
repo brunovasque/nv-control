@@ -510,13 +510,10 @@ async function sendToWorker(payload) {
 let endpoint;
 
 if (payload.mode === "engineer") {
-  // envia para /engineer SEMPRE no modo ENGINEER
+  // ENGINEER sempre usa /engineer
   endpoint = url.replace(/\/$/, "") + "/engineer";
-} else if (payload.mode === "brain") {
-  // futuro: rota exclusiva do brain
-  endpoint = url.replace(/\/$/, "") + "/";
 } else {
-  // chat normal → manda pra raiz "/"
+  // CHAT e BRAIN usam a rota raiz "/"
   endpoint = url.replace(/\/$/, "") + "/";
 }
 
@@ -823,6 +820,7 @@ if (exportHistoryBtn) {
     URL.revokeObjectURL(url);
   });
 }
+
 
 
 
