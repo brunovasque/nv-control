@@ -4,7 +4,7 @@
 
 const DEFAULT_WORKER_URL = "https://nv-enavia.brunovasque.workers.dev";
 
-// MODOS CANÔNICOS
+// MODOS
 const MODE_DIRECTOR = "director";
 const MODE_ENAVIA = "enavia";
 const MODE_ENGINEER = "engineer";
@@ -15,7 +15,7 @@ const messagesEl = document.getElementById("messages");
 const userInputEl = document.getElementById("userInput");
 const sendBtn = document.getElementById("sendBtn");
 
-// NOVOS BOTÕES DE MODO
+// mode buttons
 const modeDirectorBtn = document.getElementById("modeDirectorBtn");
 const modeEnaviaBtn = document.getElementById("modeEnaviaBtn");
 const modeEngineerBtn = document.getElementById("modeEngineerBtn");
@@ -28,10 +28,12 @@ const debugToggleEl = document.getElementById("debugToggle");
 
 // Tabs
 const tabTelemetryBtn = document.getElementById("tab-telemetry");
+const tabRunBtn = document.getElementById("tab-run");
 const tabHistoryBtn = document.getElementById("tab-history");
 const tabAdvancedBtn = document.getElementById("tab-advanced");
 
 const panelTelemetryEl = document.getElementById("panel-telemetry");
+const panelRunEl = document.getElementById("panel-run");
 const panelHistoryEl = document.getElementById("panel-history");
 const panelAdvancedEl = document.getElementById("panel-advanced");
 
@@ -54,6 +56,10 @@ const historyModeFilterEl = document.getElementById("historyModeFilter");
 // Advanced
 const advancedRawEl = document.getElementById("advanced-raw");
 
+// Run log (Execução)
+const runLogEl = document.getElementById("run-log");
+const clearRunLogBtn = document.getElementById("clearRunLogBtn");
+
 // Deploy buttons
 const deploySimulateBtn = document.getElementById("deploySimulateBtn");
 const deployApplyUserPatchBtn = document.getElementById(
@@ -68,19 +74,16 @@ const deployRollbackBtn = document.getElementById("deployRollbackBtn");
 const deploySessionCloseBtn = document.getElementById("deploySessionCloseBtn");
 
 // Global state
-let currentMode = MODE_DIRECTOR; // modo padrão: DIRECTOR
-let history = []; // histórico de chamadas (telemetria)
-let historyFilterMode = "all"; // filtro do histórico (All / Director / Enavia / ...)
+let currentMode = MODE_DIRECTOR;
+let history = [];
+let historyFilterMode = "all";
 
 // ============================================================
 // INIT
 // ============================================================
 
 function init() {
-  // Worker URL fallback
-  if (!workerUrlInputEl) {
-    console.warn("workerUrlInput element not found; using default URL only.");
-  } else if (!workerUrlInputEl.value) {
+  if (workerUrlInputEl && !workerUrlInputEl.value) {
     workerUrlInputEl.value = DEFAULT_WORKER_URL;
   }
 
@@ -101,15 +104,12 @@ function init() {
   // Send
   if (sendBtn) sendBtn.addEventListener("click", handleSend);
 
-  // Enter / Ctrl+Enter behavior
+  // Enter / Ctrl+Enter
   if (userInputEl) {
     userInputEl.addEventListener("keydown", (e) => {
-      // Ctrl+Enter ou Shift+Enter → quebra linha
       if (e.key === "Enter" && (e.ctrlKey || e.shiftKey)) {
-        return; // deixa inserir normalmente a quebra de linha
+        return; // quebra linha normal
       }
-
-      // Enter "seco" → enviar
       if (e.key === "Enter") {
         e.preventDefault();
         handleSend();
@@ -122,14 +122,15 @@ function init() {
     tabTelemetryBtn.addEventListener("click", () =>
       setActiveTab("telemetry")
     );
+  if (tabRunBtn)
+    tabRunBtn.addEventListener("click", () => setActiveTab("run"));
   if (tabHistoryBtn)
     tabHistoryBtn.addEventListener("click", () => setActiveTab("history"));
   if (tabAdvancedBtn)
     tabAdvancedBtn.addEventListener("click", () => setActiveTab("advanced"));
 
   // Copy buttons
-  const copyButtons = document.querySelectorAll(".copy-btn");
-  copyButtons.forEach((btn) => {
+  document.querySelectorAll(".copy-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const targetId = btn.getAttribute("data-copy-target");
       if (!targetId) return;
@@ -147,7 +148,24 @@ function init() {
     });
   }
 
-  // Filtro de histórico
+  // Export history
+  if (exportHistoryBtn) {
+    exportHistoryBtn.addEventListener("click", () => {
+      const blob = new Blob([JSON.stringify(history, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `nv-control-history-${new Date()
+        .toISOString()
+        .slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  }
+
+  // Filter history
   if (historyModeFilterEl) {
     historyModeFilterEl.addEventListener("change", (e) => {
       historyFilterMode = e.target.value || "all";
@@ -155,30 +173,14 @@ function init() {
     });
   }
 
-  // EXPORTAR HISTÓRICO
-  if (exportHistoryBtn) {
-    exportHistoryBtn.addEventListener("click", () => {
-      const blob = new Blob([JSON.stringify(history, null, 2)], {
-        type: "application/json",
-      });
-
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-
-      a.href = url;
-      a.download = `nv-control-history-${new Date()
-        .toISOString()
-        .slice(0, 10)}.json`;
-      a.click();
-
-      URL.revokeObjectURL(url);
+  // Clear run log
+  if (clearRunLogBtn) {
+    clearRunLogBtn.addEventListener("click", () => {
+      if (runLogEl) runLogEl.innerHTML = "";
     });
   }
 
-  // ============================================================
-  // DEPLOY BUTTONS – HANDLERS (TODOS OS 7)
-  // ============================================================
-
+  // Deploy buttons
   if (deploySimulateBtn)
     deploySimulateBtn.addEventListener("click", () =>
       handleDeployAction("deploy_simulate", {
@@ -225,7 +227,6 @@ function init() {
       })
     );
 
-  // Finalize init
   setMode(MODE_DIRECTOR, { silent: true });
   setStatus("neutral", "Pronto");
   appendSystemMessage(
@@ -236,13 +237,12 @@ function init() {
 document.addEventListener("DOMContentLoaded", init);
 
 // ============================================================
-// MODE & STATUS
+// MODE / STATUS
 // ============================================================
 
 function setMode(mode, options = {}) {
   currentMode = mode;
 
-  // Update badge
   if (modeBadgeEl) {
     modeBadgeEl.textContent = mode.toUpperCase();
     modeBadgeEl.classList.remove(
@@ -251,19 +251,15 @@ function setMode(mode, options = {}) {
       "badge-mode-engineer",
       "badge-mode-brain"
     );
-
-    if (mode === MODE_DIRECTOR) {
-      modeBadgeEl.classList.add("badge-mode-director");
-    } else if (mode === MODE_ENAVIA) {
+    if (mode === MODE_DIRECTOR) modeBadgeEl.classList.add("badge-mode-director");
+    else if (mode === MODE_ENAVIA)
       modeBadgeEl.classList.add("badge-mode-enavia");
-    } else if (mode === MODE_ENGINEER) {
+    else if (mode === MODE_ENGINEER)
       modeBadgeEl.classList.add("badge-mode-engineer");
-    } else if (mode === MODE_BRAIN) {
+    else if (mode === MODE_BRAIN)
       modeBadgeEl.classList.add("badge-mode-brain");
-    }
   }
 
-  // Mode buttons visual
   const modes = [
     { btn: modeDirectorBtn, id: MODE_DIRECTOR },
     { btn: modeEnaviaBtn, id: MODE_ENAVIA },
@@ -285,18 +281,12 @@ function setMode(mode, options = {}) {
 }
 
 function modeDescription(mode) {
-  if (mode === MODE_DIRECTOR) {
-    return "decisão estratégica (Director recebe sua intenção e coordena a ENAVIA";
-  }
-  if (mode === MODE_ENAVIA) {
-    return "execução direta com a engenheira ENAVIA";
-  }
-  if (mode === MODE_ENGINEER) {
+  if (mode === MODE_DIRECTOR)
+    return "decisão estratégica (DIRECTOR coordena a ENAVIA)";
+  if (mode === MODE_ENAVIA) return "execução direta com a engenheira ENAVIA";
+  if (mode === MODE_ENGINEER)
     return "plano técnico, patch e fluxo supervisionado de deploy";
-  }
-  if (mode === MODE_BRAIN) {
-    return "treinamento (conteúdo será aprendido)";
-  }
+  if (mode === MODE_BRAIN) return "treinamento (conteúdo será aprendido)";
   return "";
 }
 
@@ -324,6 +314,7 @@ function setStatus(type, text) {
 function setActiveTab(tabId) {
   const tabs = [
     { btn: tabTelemetryBtn, panel: panelTelemetryEl, id: "telemetry" },
+    { btn: tabRunBtn, panel: panelRunEl, id: "run" },
     { btn: tabHistoryBtn, panel: panelHistoryEl, id: "history" },
     { btn: tabAdvancedBtn, panel: panelAdvancedEl, id: "advanced" },
   ];
@@ -379,7 +370,6 @@ function appendMessage(role, mode, text) {
   bubble.appendChild(meta);
   bubble.appendChild(content);
 
-  // === BOTÃO DE COPIAR ===
   const copyBtn = document.createElement("button");
   copyBtn.classList.add("copy-btn");
   copyBtn.textContent = "Copiar";
@@ -419,6 +409,37 @@ function scrollMessagesToBottom() {
 }
 
 // ============================================================
+// RUN LOG (Execução cinematográfica)
+// ============================================================
+
+function appendRunLog(source, message) {
+  if (!runLogEl || !message) return;
+
+  const item = document.createElement("div");
+  item.classList.add("run-log-item");
+  item.dataset.source = source;
+
+  const meta = document.createElement("div");
+  meta.classList.add("run-log-meta");
+  const when = new Date().toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  meta.textContent = `[${source}] • ${when}`;
+
+  const textEl = document.createElement("div");
+  textEl.classList.add("run-log-text");
+  textEl.textContent = message;
+
+  item.appendChild(meta);
+  item.appendChild(textEl);
+
+  runLogEl.appendChild(item);
+  runLogEl.scrollTop = runLogEl.scrollHeight;
+}
+
+// ============================================================
 // SEND FLOW
 // ============================================================
 
@@ -443,7 +464,6 @@ function buildPayload(mode, content) {
       parsed = JSON.parse(content);
     } catch (_) {}
 
-    // Se houver executor_action → enviar direto para o executor
     if (parsed && typeof parsed === "object" && parsed.executor_action) {
       return {
         ...base,
@@ -456,7 +476,6 @@ function buildPayload(mode, content) {
       };
     }
 
-    // Caso contrário → ENGINEER normal
     return {
       ...base,
       intent: content,
@@ -475,7 +494,6 @@ function buildPayload(mode, content) {
     };
   }
 
-  // ENAVIA (chat técnico/executora)
   if (mode === MODE_ENAVIA) {
     return {
       ...base,
@@ -483,7 +501,6 @@ function buildPayload(mode, content) {
     };
   }
 
-  // fallback genérico
   return {
     ...base,
     message: content,
@@ -498,24 +515,35 @@ async function handleSend() {
   appendUserMessage(raw, currentMode);
   userInputEl.value = "";
 
-  // Director fala com rota /api/director no Vercel
   if (currentMode === MODE_DIRECTOR) {
+    appendRunLog("DIRECTOR", `Intenção recebida: "${truncate(raw, 80)}"`);
     await sendToDirector(raw);
     return;
   }
 
-  // Demais modos continuam indo para o Worker
   let payloadMode = MODE_ENAVIA;
   if (currentMode === MODE_ENAVIA) payloadMode = MODE_ENAVIA;
   else if (currentMode === MODE_ENGINEER) payloadMode = MODE_ENGINEER;
   else if (currentMode === MODE_BRAIN) payloadMode = MODE_BRAIN;
 
   const payload = buildPayload(payloadMode, raw);
+
+  if (payloadMode === MODE_ENGINEER && payload.executor_action) {
+    appendRunLog(
+      "ENAVIA/ENGINEER",
+      `Recebido pedido de ${payload.executor_action} a partir do console.`
+    );
+  } else if (payloadMode === MODE_ENAVIA) {
+    appendRunLog("ENAVIA", `Chamando ENAVIA com mensagem técnica.`);
+  } else if (payloadMode === MODE_BRAIN) {
+    appendRunLog("ENAVIA/BRAIN", `Enviando conteúdo de treinamento para o cérebro.`);
+  }
+
   await sendToWorker(payload);
 }
 
 // ============================================================
-// DIRECTOR FLOW – /api/director (Vercel)
+// DIRECTOR FLOW – /api/director
 // ============================================================
 
 async function sendToDirector(message) {
@@ -537,6 +565,7 @@ async function sendToDirector(message) {
 
   const startedAt = performance.now();
   setStatus("pending", "Enviando para DIRECTOR...");
+  appendRunLog("DIRECTOR", "Analisando intenção e preparando resposta...");
 
   let responseStatus = null;
   let responseJson = null;
@@ -584,7 +613,6 @@ async function sendToDirector(message) {
     telemetry,
   };
 
-  // Render telemetry + history + advanced
   renderTelemetry(telemetry, payload, responseJson, error, responseText);
   addToHistory(telemetry, payload);
   renderAdvanced(advancedEnvelope);
@@ -592,17 +620,30 @@ async function sendToDirector(message) {
   if (error) {
     setStatus("error", "Erro na requisição.");
     appendSystemMessage(`Erro ao falar com o DIRECTOR: ${String(error)}`);
+    appendRunLog(
+      "DIRECTOR",
+      `Falha de comunicação com /api/director: ${String(error)}`
+    );
     return;
   }
 
   if (telemetry.ok) {
     setStatus("ok", `OK • ${latencyMs} ms • ${responseStatus}`);
+    appendRunLog(
+      "DIRECTOR",
+      `Resposta concluída em ${latencyMs} ms (HTTP ${responseStatus}).`
+    );
   } else {
     setStatus("error", `HTTP ${responseStatus || "-"} • ver Telemetria`);
+    appendRunLog(
+      "DIRECTOR",
+      `Resposta com falha (HTTP ${responseStatus || "-"}) – ver Telemetria.`
+    );
   }
 
   const assistantText = extractAssistantMessage(responseJson, responseText);
   appendAssistantMessage(assistantText);
+  appendRunLog("DIRECTOR", assistantText);
 }
 
 // ============================================================
@@ -616,18 +657,14 @@ function buildDeployPayload(executorAction, options = {}) {
     mode: MODE_ENGINEER,
     debug: !!(debugToggleEl && debugToggleEl.checked),
     timestamp: new Date().toISOString(),
-
-    // 🔥 IMPORTANTE: enviar o executor_action correto
     executor_action: executorAction,
-
     askSuggestions: true,
     riskReport: true,
     preventForbidden: true,
   };
 
-  // Se veio patch no options → aplica
   if (options.patch !== undefined) {
-    base.patch = options.patch; // ← aqui agora receberá string ou objeto
+    base.patch = options.patch;
   }
 
   return base;
@@ -635,7 +672,13 @@ function buildDeployPayload(executorAction, options = {}) {
 
 async function handleDeployAction(executorAction, options = {}) {
   const payload = buildDeployPayload(executorAction, options);
+
   appendSystemMessage(`Disparando ${executorAction} via NV-Control.`);
+  appendRunLog(
+    "EXECUTOR",
+    `Iniciando fluxo ${executorAction} solicitado pelo console.`
+  );
+
   await sendToWorker(payload);
 }
 
@@ -655,7 +698,6 @@ async function handleApplyUserPatch() {
     return;
   }
 
-  // Tenta interpretar o conteúdo como JSON. Se falhar, mantém como string.
   let patchPayload = raw;
   try {
     patchPayload = JSON.parse(raw);
@@ -667,12 +709,16 @@ async function handleApplyUserPatch() {
 
   const payload = buildDeployPayload("deploy_apply_user_patch", {
     patch: patchPayload,
-    message: "[DEPLOY] Apply user patch (conteúdo do textarea corrigido)",
   });
 
   appendSystemMessage(
     "Enviando deploy_apply_user_patch com patch interpretado corretamente."
   );
+  appendRunLog(
+    "EXECUTOR",
+    "Recebendo patch manual do NV-Control para deploy_apply_user_patch."
+  );
+
   await sendToWorker(payload);
 }
 
@@ -686,10 +732,10 @@ async function sendToWorker(payload) {
   if (!url.startsWith("http")) {
     setStatus("error", "URL do worker inválida.");
     appendSystemMessage("URL do worker inválida. Ajuste no topo do painel.");
+    appendRunLog("EXECUTOR", "Abortado: URL do worker inválida.");
     return;
   }
 
-  // DEFINIÇÃO DA ROTA CORRETA (ENGINEER → "/engineer", demais → "/")
   let endpoint;
   if (payload.mode === MODE_ENGINEER) {
     endpoint = url.replace(/\/$/, "") + "/engineer";
@@ -746,26 +792,48 @@ async function sendToWorker(payload) {
     telemetry,
   };
 
-  // Render telemetry + history + advanced
   renderTelemetry(telemetry, payload, responseJson, error, responseText);
   addToHistory(telemetry, payload);
   renderAdvanced(advancedEnvelope);
 
-  // Chat console output
+  const runSource =
+    payload.mode === MODE_ENGINEER
+      ? payload.executor_action
+        ? "EXECUTOR"
+        : "ENAVIA/ENGINEER"
+      : payload.mode === MODE_ENAVIA
+      ? "ENAVIA"
+      : payload.mode === MODE_BRAIN
+      ? "ENAVIA/BRAIN"
+      : "ENAVIA";
+
   if (error) {
     setStatus("error", "Erro na requisição.");
     appendSystemMessage(`Erro ao falar com o worker: ${String(error)}`);
+    appendRunLog(
+      runSource,
+      `Erro de comunicação com worker (${endpoint}): ${String(error)}`
+    );
     return;
   }
 
   if (telemetry.ok) {
     setStatus("ok", `OK • ${latencyMs} ms • ${responseStatus}`);
+    appendRunLog(
+      runSource,
+      `Resposta concluída em ${latencyMs} ms (HTTP ${responseStatus}).`
+    );
   } else {
     setStatus("error", `HTTP ${responseStatus || "-"} • ver Telemetria`);
+    appendRunLog(
+      runSource,
+      `Resposta com falha (HTTP ${responseStatus || "-"}) – ver Telemetria.`
+    );
   }
 
   const assistantText = extractAssistantMessage(responseJson, responseText);
   appendAssistantMessage(assistantText);
+  appendRunLog(runSource, assistantText);
 }
 
 // ============================================================
@@ -781,7 +849,6 @@ function renderTelemetry(
 ) {
   if (!telemetrySummaryEl) return;
 
-  // Monta uma visão simples de pipeline hierárquico
   let pipeline = "[CEO]";
   if (payload.mode === MODE_DIRECTOR) {
     pipeline += " → [DIRECTOR] → [ENAVIA] → [EXECUTOR] → [NV-FIRST]";
@@ -795,7 +862,6 @@ function renderTelemetry(
     pipeline += " → [ENAVIA] → [EXECUTOR]";
   }
 
-  // Summary grid
   telemetrySummaryEl.innerHTML = "";
 
   const items = [
@@ -825,12 +891,10 @@ function renderTelemetry(
     telemetrySummaryBadgeEl.textContent = telemetry.ok ? "SUCESSO" : "FALHA";
   }
 
-  // Request
   if (telemetryRequestEl) {
     telemetryRequestEl.textContent = JSON.stringify(payload, null, 2);
   }
 
-  // Response
   if (telemetryResponseEl) {
     if (responseJson) {
       telemetryResponseEl.textContent = JSON.stringify(responseJson, null, 2);
@@ -841,7 +905,6 @@ function renderTelemetry(
     }
   }
 
-  // Error
   if (telemetryErrorCardEl && telemetryErrorEl) {
     if (error || !telemetry.ok) {
       telemetryErrorCardEl.style.display = "flex";
@@ -871,7 +934,6 @@ function addToHistory(telemetry, payload) {
     rawPayload: payload,
   });
 
-  // ordenação garantida por timestamp
   history.sort((a, b) => {
     const aTime = typeof a.at === "string" ? new Date(a.at).getTime() : a.at;
     const bTime = typeof b.at === "string" ? new Date(b.at).getTime() : b.at;
@@ -897,7 +959,6 @@ function renderHistory() {
     const item = document.createElement("div");
     item.classList.add("history-item");
 
-    // timestamp formatado
     const date = new Date(entry.at);
     const hh = String(date.getHours()).padStart(2, "0");
     const mm = String(date.getMinutes()).padStart(2, "0");
@@ -905,7 +966,6 @@ function renderHistory() {
     const day = String(date.getDate()).padStart(2, "0");
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const year = date.getFullYear();
-
     const formattedTime = `${hh}:${mm}:${ss} • ${day}/${month}/${year}`;
 
     const metaRow = document.createElement("div");
@@ -955,17 +1015,20 @@ function renderAdvanced(envelope) {
       (envelope.telemetry.timestamp || new Date().toISOString())
   );
 
-  // Pequeno cabeçalho hierárquico no log avançado
   const mode = envelope.telemetry && envelope.telemetry.mode;
   let headerLine = `// [LOG] ${headerTime}`;
   if (mode === MODE_DIRECTOR) {
-    headerLine += " • Pipeline: [CEO] → [DIRECTOR] → [ENAVIA] → [EXECUTOR] → [NV-FIRST]";
+    headerLine +=
+      " • Pipeline: [CEO] → [DIRECTOR] → [ENAVIA] → [EXECUTOR] → [NV-FIRST]";
   } else if (mode === MODE_ENGINEER) {
-    headerLine += " • Pipeline: [CEO] → [DIRECTOR] → [ENAVIA] → [EXECUTOR] → [NV-FIRST]";
+    headerLine +=
+      " • Pipeline: [CEO] → [DIRECTOR] → [ENAVIA] → [EXECUTOR] → [NV-FIRST]";
   } else if (mode === MODE_ENAVIA) {
-    headerLine += " • Pipeline: [CEO] → [ENAVIA] → [EXECUTOR] → [NV-FIRST]";
+    headerLine +=
+      " • Pipeline: [CEO] → [ENAVIA] → [EXECUTOR] → [NV-FIRST]";
   } else if (mode === MODE_BRAIN) {
-    headerLine += " • Pipeline: [CEO] → [ENAVIA/BRAIN] → [EXECUTOR] → [NV-FIRST]";
+    headerLine +=
+      " • Pipeline: [CEO] → [ENAVIA/BRAIN] → [EXECUTOR] → [NV-FIRST]";
   }
 
   advancedRawEl.textContent =
@@ -997,7 +1060,6 @@ function formatTime(iso) {
 function extractAssistantMessage(json, textFallback) {
   if (!json && !textFallback) return "<sem conteúdo>";
 
-  // Prioridade para formatos esperados da ENAVIA / DIRECTOR
   if (json) {
     if (typeof json.output === "string") return json.output;
     if (typeof json.message === "string") return json.message;
@@ -1008,7 +1070,6 @@ function extractAssistantMessage(json, textFallback) {
       if (typeof r.summary === "string") return r.summary;
       if (typeof r.plan === "string") return r.plan;
     }
-    // fallback: JSON completo
     return JSON.stringify(json, null, 2);
   }
 
