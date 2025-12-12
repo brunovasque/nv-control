@@ -748,6 +748,8 @@ async function handleDeployAction(executorAction, options = {}) {
   await sendToWorker(payload);
 }
 
+  window.handleDeployAction = handleDeployAction;
+
 async function handleApplyUserPatch() {
   if (!userInputEl) {
     appendSystemMessage(
@@ -1170,6 +1172,7 @@ async function copyToClipboard(text) {
     setStatus("error", "Não foi possível copiar.");
   }
 }
+
 
 
 
