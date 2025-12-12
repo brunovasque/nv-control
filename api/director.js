@@ -45,6 +45,37 @@ function inferIntent(message = "") {
 
 const intent = inferIntent(message);
 
+// ============================================================================
+// 🎛️ Mapa de estilo por INTENT
+// ============================================================================
+const intentStyleMap = {
+  deploy_incident: {
+    verbosity: "low",
+    tone: "firme e direto",
+  },
+  deploy_planning: {
+    verbosity: "medium",
+    tone: "conversacional com alerta",
+  },
+  strategy_vision: {
+    verbosity: "high",
+    tone: "reflexivo e estratégico",
+  },
+  product_decision: {
+    verbosity: "medium",
+    tone: "objetivo e comparativo",
+  },
+  process_improvement: {
+    verbosity: "medium",
+    tone: "prático",
+  },
+  generic: {
+    verbosity: "medium",
+    tone: "equilibrado",
+  }
+};
+
+const intentStyle = intentStyleMap[intent];
 
 // ============================================================================
 // 🧠 CÉREBRO CANÔNICO DO DIRECTOR (via ENAVIA Worker)
