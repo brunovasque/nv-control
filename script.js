@@ -91,15 +91,11 @@ function init() {
 
   // Mode buttons
   if (modeDirectorBtn)
-    modeDirectorBtn.addEventListener("click", () =>
-      setMode(MODE_DIRECTOR)
-    );
+    modeDirectorBtn.addEventListener("click", () => setMode(MODE_DIRECTOR));
   if (modeEnaviaBtn)
     modeEnaviaBtn.addEventListener("click", () => setMode(MODE_ENAVIA));
   if (modeEngineerBtn)
-    modeEngineerBtn.addEventListener("click", () =>
-      setMode(MODE_ENGINEER)
-    );
+    modeEngineerBtn.addEventListener("click", () => setMode(MODE_ENGINEER));
   if (modeBrainBtn)
     modeBrainBtn.addEventListener("click", () => setMode(MODE_BRAIN));
 
@@ -121,11 +117,8 @@ function init() {
 
   // Tabs
   if (tabTelemetryBtn)
-    tabTelemetryBtn.addEventListener("click", () =>
-      setActiveTab("telemetry")
-    );
-  if (tabRunBtn)
-    tabRunBtn.addEventListener("click", () => setActiveTab("run"));
+    tabTelemetryBtn.addEventListener("click", () => setActiveTab("telemetry"));
+  if (tabRunBtn) tabRunBtn.addEventListener("click", () => setActiveTab("run"));
   if (tabHistoryBtn)
     tabHistoryBtn.addEventListener("click", () => setActiveTab("history"));
   if (tabAdvancedBtn)
@@ -183,12 +176,12 @@ function init() {
   }
 
   // Deploy buttons
-if (deploySimulateBtn)
-  deploySimulateBtn.addEventListener("click", () =>
-    window.handleDeployAction("deploy_simulate", {
-      message: "simular deploy",
-    })
-  );
+  if (deploySimulateBtn)
+    deploySimulateBtn.addEventListener("click", () =>
+      handleDeployAction("deploy_simulate", {
+        message: "simular deploy",
+      })
+    );
 
   if (deployApplyUserPatchBtn)
     deployApplyUserPatchBtn.addEventListener("click", handleApplyUserPatch);
@@ -258,8 +251,7 @@ function setMode(mode, options = {}) {
       modeBadgeEl.classList.add("badge-mode-enavia");
     else if (mode === MODE_ENGINEER)
       modeBadgeEl.classList.add("badge-mode-engineer");
-    else if (mode === MODE_BRAIN)
-      modeBadgeEl.classList.add("badge-mode-brain");
+    else if (mode === MODE_BRAIN) modeBadgeEl.classList.add("badge-mode-brain");
   }
 
   const modes = [
@@ -434,13 +426,9 @@ function renderMemoryProposal(proposal) {
   content.classList.add("content");
 
   const preview =
-    typeof proposal === "string"
-      ? proposal
-      : JSON.stringify(proposal, null, 2);
+    typeof proposal === "string" ? proposal : JSON.stringify(proposal, null, 2);
 
-  content.textContent =
-    "Sugestão detectada pelo Director:\n\n" +
-    truncate(preview, 800);
+  content.textContent = "Sugestão detectada pelo Director:\n\n" + truncate(preview, 800);
 
   // Ações
   const actions = document.createElement("div");
@@ -708,9 +696,13 @@ async function sendToDirector(message) {
     );
   }
 
-const assistantText = extractAssistantMessage(responseJson, responseText);
-appendAssistantMessage(assistantText);
-appendRunLog(runSource, assistantText);
+  // ✅ CORREÇÃO CIRÚRGICA AQUI:
+  // - runSource não existe nesse escopo
+  // - a função sendToDirector estava sem fechamento "}"
+  const assistantText = extractAssistantMessage(responseJson, responseText);
+  appendAssistantMessage(assistantText);
+  appendRunLog("DIRECTOR", assistantText);
+} // ✅ FECHAMENTO QUE FALTAVA (causa do Unexpected end of input)
 
 // ============================================================
 // DEPLOY HELPERS
@@ -938,15 +930,7 @@ window.handleApplyUserPatch = handleApplyUserPatch;
 // TELEMETRIA / HISTÓRICO / AVANÇADO
 // ============================================================
 
-// Funções de renderização, histórico e helpers NÃO precisam de alteração.
-// Mantemos a estrutura intacta abaixo.
-function renderTelemetry(
-  telemetry,
-  payload,
-  responseJson,
-  error,
-  responseText
-) {
+function renderTelemetry(telemetry, payload, responseJson, error, responseText) {
   if (!telemetrySummaryEl) return;
 
   let pipeline = "[CEO]";
@@ -1079,9 +1063,7 @@ function renderHistory() {
     `;
 
     const right = document.createElement("div");
-    right.textContent = `${entry.ok ? "OK" : "ERRO"} • ${
-      entry.latencyMs
-    } ms`;
+    right.textContent = `${entry.ok ? "OK" : "ERRO"} • ${entry.latencyMs} ms`;
 
     metaRow.appendChild(left);
     metaRow.appendChild(right);
@@ -1124,8 +1106,7 @@ function renderAdvanced(envelope) {
     headerLine +=
       " • Pipeline: [CEO] → [DIRECTOR] → [ENAVIA] → [EXECUTOR] → [NV-FIRST]";
   } else if (mode === MODE_ENAVIA) {
-    headerLine +=
-      " • Pipeline: [CEO] → [ENAVIA] → [EXECUTOR] → [NV-FIRST]";
+    headerLine += " • Pipeline: [CEO] → [ENAVIA] → [EXECUTOR] → [NV-FIRST]";
   } else if (mode === MODE_BRAIN) {
     headerLine +=
       " • Pipeline: [CEO] → [ENAVIA/BRAIN] → [EXECUTOR] → [NV-FIRST]";
