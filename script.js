@@ -78,6 +78,8 @@ let currentMode = MODE_DIRECTOR;
 let history = [];
 let historyFilterMode = "all";
 
+window.pendingMemoryProposal = null;
+
 // ============================================================
 // INIT
 // ============================================================
@@ -711,22 +713,6 @@ appendAssistantMessage(assistantText);
 appendRunLog(runSource, assistantText);
 
 // ============================================================
-// PASSO 6.1 — detectar sugestão de memória (sem salvar)
-// ============================================================
-if (responseJson && responseJson.memory_proposal) {
-  try {
-    window.pendingMemoryProposal = responseJson.memory_proposal;
-    renderMemoryProposal(responseJson.memory_proposal);
-    appendRunLog(
-      "SYSTEM",
-      "🧠 Sugestão de memória estratégica detectada (aguardando aprovação)."
-    );
-  } catch (err) {
-    console.warn("Falha ao renderizar memory_proposal:", err);
-  }
-}
-
-// ============================================================
 // DEPLOY HELPERS
 // ============================================================
 
@@ -914,6 +900,23 @@ async function sendToWorker(payload) {
   const assistantText = extractAssistantMessage(responseJson, responseText);
   appendAssistantMessage(assistantText);
   appendRunLog(runSource, assistantText);
+}
+
+// ============================================================
+// PASSO 6.1 — detectar sugestão de memória (sem salvar)
+// ============================================================
+if (responseJson && responseJson.memory_proposal) {
+  try {
+    window.pendingMemoryProposal = responseJson.memory_proposal;
+    renderMemoryProposal(responseJson.memory_proposal);
+    appendRunLog(
+      "SYSTEM",
+      "🧠 Sugestão de memória estratégica detectada (aguardando aprovação)."
+    );
+  } catch (err) {
+    console.warn("Falha ao renderizar memory_proposal:", err);
+  }
+}
 }
 
 // ============================================================
@@ -1167,5 +1170,6 @@ async function copyToClipboard(text) {
     setStatus("error", "Não foi possível copiar.");
   }
 }
+
 
 
