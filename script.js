@@ -938,6 +938,8 @@ window.handleApplyUserPatch = handleApplyUserPatch;
 // TELEMETRIA / HISTÓRICO / AVANÇADO
 // ============================================================
 
+// Funções de renderização, histórico e helpers NÃO precisam de alteração.
+// Mantemos a estrutura intacta abaixo.
 function renderTelemetry(
   telemetry,
   payload,
@@ -1185,9 +1187,3 @@ async function copyToClipboard(text) {
     setStatus("error", "Não foi possível copiar.");
   }
 }
-
-
-
-
-
-
