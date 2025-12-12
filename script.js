@@ -409,6 +409,71 @@ function scrollMessagesToBottom() {
 }
 
 // ============================================================
+// MEMORY PROPOSAL UI — Passo 6.2 / 6.3
+// ============================================================
+function renderMemoryProposal(proposal) {
+  if (!messagesEl || !proposal) return;
+
+  const wrapper = document.createElement("div");
+  wrapper.classList.add("message", "system");
+
+  const avatar = document.createElement("div");
+  avatar.classList.add("avatar");
+  avatar.textContent = "🧠";
+
+  const bubble = document.createElement("div");
+  bubble.classList.add("bubble");
+
+  const meta = document.createElement("div");
+  meta.classList.add("meta");
+  meta.textContent = "Sistema • Sugestão de Memória Estratégica";
+
+  const content = document.createElement("div");
+  content.classList.add("content");
+
+  const preview =
+    typeof proposal === "string"
+      ? proposal
+      : JSON.stringify(proposal, null, 2);
+
+  content.textContent =
+    "Sugestão detectada pelo Director:\n\n" +
+    truncate(preview, 800);
+
+  // Ações
+  const actions = document.createElement("div");
+  actions.style.marginTop = "10px";
+  actions.style.display = "flex";
+  actions.style.gap = "8px";
+
+  const ignoreBtn = document.createElement("button");
+  ignoreBtn.textContent = "Ignorar";
+  ignoreBtn.onclick = () => {
+    window.pendingMemoryProposal = null;
+    wrapper.remove();
+    appendRunLog("SYSTEM", "Sugestão de memória ignorada pelo usuário.");
+  };
+
+  // Botão Salvar NÃO implementado (por design)
+  const saveBtn = document.createElement("button");
+  saveBtn.textContent = "Salvar (em breve)";
+  saveBtn.disabled = true;
+
+  actions.appendChild(saveBtn);
+  actions.appendChild(ignoreBtn);
+
+  bubble.appendChild(meta);
+  bubble.appendChild(content);
+  bubble.appendChild(actions);
+
+  wrapper.appendChild(avatar);
+  wrapper.appendChild(bubble);
+
+  messagesEl.appendChild(wrapper);
+  scrollMessagesToBottom();
+}
+
+// ============================================================
 // RUN LOG (Execução cinematográfica)
 // ============================================================
 
@@ -1102,4 +1167,5 @@ async function copyToClipboard(text) {
     setStatus("error", "Não foi possível copiar.");
   }
 }
+
 
