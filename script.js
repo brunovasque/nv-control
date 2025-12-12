@@ -733,6 +733,14 @@ function buildDeployPayload(executorAction, options = {}) {
     base.patch = options.patch;
   }
 
+  if (options.extra !== undefined) {
+    base.extra = options.extra;
+  }
+
+  if (options.message !== undefined) {
+    base.message = options.message;
+  }
+
   return base;
 }
 
@@ -747,8 +755,6 @@ async function handleDeployAction(executorAction, options = {}) {
 
   await sendToWorker(payload);
 }
-
-  window.handleDeployAction = handleDeployAction;
 
 async function handleApplyUserPatch() {
   if (!userInputEl) {
@@ -777,6 +783,7 @@ async function handleApplyUserPatch() {
 
   const payload = buildDeployPayload("deploy_apply_user_patch", {
     patch: patchPayload,
+    message: "patch manual enviado pelo usuário",
   });
 
   appendSystemMessage(
@@ -833,7 +840,7 @@ async function sendToWorker(payload) {
 
     try {
       responseJson = responseText ? JSON.parse(responseText) : null;
-    } catch (parseErr) {
+    } catch (_) {
       responseJson = null;
     }
   } catch (err) {
@@ -902,24 +909,30 @@ async function sendToWorker(payload) {
   const assistantText = extractAssistantMessage(responseJson, responseText);
   appendAssistantMessage(assistantText);
   appendRunLog(runSource, assistantText);
+
+  // ============================================================
+  // PASSO 6.1 — detectar sugestão de memória (LOCAL CORRETO)
+  // ============================================================
+  if (responseJson && responseJson.memory_proposal) {
+    try {
+      window.pendingMemoryProposal = responseJson.memory_proposal;
+      renderMemoryProposal(responseJson.memory_proposal);
+      appendRunLog(
+        "SYSTEM",
+        "🧠 Sugestão de memória estratégica detectada (aguardando aprovação)."
+      );
+    } catch (err) {
+      console.warn("Falha ao renderizar memory_proposal:", err);
+    }
+  }
 }
 
 // ============================================================
-// PASSO 6.1 — detectar sugestão de memória (sem salvar)
+// EXPOSIÇÃO GLOBAL — FINAL DO ARQUIVO
 // ============================================================
-if (responseJson && responseJson.memory_proposal) {
-  try {
-    window.pendingMemoryProposal = responseJson.memory_proposal;
-    renderMemoryProposal(responseJson.memory_proposal);
-    appendRunLog(
-      "SYSTEM",
-      "🧠 Sugestão de memória estratégica detectada (aguardando aprovação)."
-    );
-  } catch (err) {
-    console.warn("Falha ao renderizar memory_proposal:", err);
-  }
-}
-}
+
+window.handleDeployAction = handleDeployAction;
+window.handleApplyUserPatch = handleApplyUserPatch;
 
 // ============================================================
 // TELEMETRIA / HISTÓRICO / AVANÇADO
@@ -1172,6 +1185,7 @@ async function copyToClipboard(text) {
     setStatus("error", "Não foi possível copiar.");
   }
 }
+
 
 
 
