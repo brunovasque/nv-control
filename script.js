@@ -183,12 +183,12 @@ function init() {
   }
 
   // Deploy buttons
-  if (deploySimulateBtn)
-    deploySimulateBtn.addEventListener("click", () =>
-      handleDeployAction("deploy_simulate", {
-        message: "simular deploy",
-      })
-    );
+if (deploySimulateBtn)
+  deploySimulateBtn.addEventListener("click", () =>
+    window.handleDeployAction("deploy_simulate", {
+      message: "simular deploy",
+    })
+  );
 
   if (deployApplyUserPatchBtn)
     deployApplyUserPatchBtn.addEventListener("click", handleApplyUserPatch);
@@ -1172,6 +1172,7 @@ async function copyToClipboard(text) {
     setStatus("error", "Não foi possível copiar.");
   }
 }
+
 
 
 
