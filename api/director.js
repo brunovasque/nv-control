@@ -29,6 +29,41 @@ export default async function handler(req, res) {
   }
 
   // ============================================================================
+// 🧠 CÉREBRO CANÔNICO DO DIRECTOR (via ENAVIA Worker)
+// ============================================================================
+let directorBrain = "";
+
+try {
+  const brainRes = await fetch(
+    "https://nv-enavia.brunovasque.workers.dev/brain/director-query",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        role: "director",
+        intent: "generic",
+        context
+      })
+    }
+  );
+
+  const brainData = await brainRes.json();
+
+  if (!brainData.ok || !brainData.brain?.content) {
+    throw new Error("DIRECTOR_BRAIN_INVALID");
+  }
+
+  directorBrain = brainData.brain.content;
+
+} catch (err) {
+  return res.status(500).json({
+    ok: false,
+    error: "DIRECTOR_BRAIN_LOAD_FAILED",
+    detail: String(err)
+  });
+}
+
+  // ============================================================================
   // SISTEMA DO DIRETOR — É LITERALMENTE O "CLONE GPT" COM MENTALIDADE DE CTO
   // ============================================================================
   const systemPrompt = `
