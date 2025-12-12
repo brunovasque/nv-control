@@ -28,7 +28,25 @@ export default async function handler(req, res) {
     });
   }
 
-  // ============================================================================
+// ============================================================================
+// 🎯 Inferência de INTENT do Director
+// ============================================================================
+function inferIntent(message = "") {
+  const m = message.toLowerCase();
+
+  if (m.includes("deploy") && m.includes("erro")) return "deploy_incident";
+  if (m.includes("acelerar") && m.includes("deploy")) return "deploy_planning";
+  if (m.includes("futuro") || m.includes("visão") || m.includes("roadmap")) return "strategy_vision";
+  if (m.includes("produto") || m.includes("feature")) return "product_decision";
+  if (m.includes("processo") || m.includes("fluxo")) return "process_improvement";
+
+  return "generic";
+}
+
+const intent = inferIntent(message);
+
+
+// ============================================================================
 // 🧠 CÉREBRO CANÔNICO DO DIRECTOR (via ENAVIA Worker)
 // ============================================================================
 let directorBrain = "";
