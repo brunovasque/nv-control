@@ -716,6 +716,10 @@ function buildDeployPayload(executorAction, options = {}) {
     debug: !!(debugToggleEl && debugToggleEl.checked),
     timestamp: new Date().toISOString(),
     executor_action: executorAction,
+
+    // 🔑 AQUI ESTÁ A CORREÇÃO
+    workerId: options.workerId || window.currentWorkerId || null,
+
     askSuggestions: true,
     riskReport: true,
     preventForbidden: true,
@@ -1168,3 +1172,4 @@ async function copyToClipboard(text) {
     setStatus("error", "Não foi possível copiar.");
   }
 }
+
