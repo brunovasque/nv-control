@@ -526,27 +526,37 @@ function buildPayload(mode, content) {
       parsed = JSON.parse(content);
     } catch (_) {}
 
-    if (parsed && typeof parsed === "object" && parsed.executor_action) {
-      return {
-        ...base,
-        executor_action: parsed.executor_action,
-        patch: parsed.patch || null,
-        message: `[ENGINEER/DEPLOY] ${parsed.executor_action}`,
-        askSuggestions: true,
-        riskReport: true,
-        preventForbidden: true,
-      };
-    }
+  // ============================================================
+  // 🔑 FIX CRÍTICO — preservar workerId para QUALQUER comando ENGINEER
+  // ============================================================
+  const resolvedWorkerId =
+    (parsed && parsed.workerId) ||
+    window.currentWorkerId ||
+    null;
 
+  if (parsed && typeof parsed === "object" && parsed.executor_action) {
     return {
       ...base,
-      intent: content,
-      message: `[ENGINEER] ${content}`,
+      executor_action: parsed.executor_action,
+      patch: parsed.patch || null,
+      workerId: resolvedWorkerId, // ✅ AQUI
+      message: `[ENGINEER/DEPLOY] ${parsed.executor_action}`,
       askSuggestions: true,
       riskReport: true,
       preventForbidden: true,
     };
   }
+
+  return {
+    ...base,
+    intent: content,
+    workerId: resolvedWorkerId, // ✅ E AQUI
+    message: `[ENGINEER] ${content}`,
+    askSuggestions: true,
+    riskReport: true,
+    preventForbidden: true,
+  };
+}
 
   if (mode === MODE_BRAIN) {
     return {
@@ -1186,6 +1196,7 @@ async function copyToClipboard(text) {
     setStatus("error", "Não foi possível copiar.");
   }
 }
+
 
 
 
