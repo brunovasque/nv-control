@@ -4,6 +4,13 @@
 
 const DEFAULT_WORKER_URL = "https://nv-enavia.brunovasque.workers.dev";
 
+// ============================================================
+// WORKER ATIVO (TESTE / PRODUÇÃO)
+// ============================================================
+
+// 🔒 TEMPORÁRIO PARA TESTE
+window.currentWorkerId = "enavia-worker-teste";
+
 // MODOS
 const MODE_DIRECTOR = "director";
 const MODE_ENAVIA = "enavia";
@@ -1179,5 +1186,6 @@ async function copyToClipboard(text) {
     setStatus("error", "Não foi possível copiar.");
   }
 }
+
 
 
