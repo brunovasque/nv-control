@@ -717,8 +717,15 @@ function buildDeployPayload(executorAction, options = {}) {
     timestamp: new Date().toISOString(),
     executor_action: executorAction,
 
-    // 🔑 AQUI ESTÁ A CORREÇÃO
-    workerId: options.workerId || window.currentWorkerId || null,
+    // 🔑 workerId agora é preservado corretamente
+    // prioridade:
+    // 1) options.workerId (quando passado explicitamente)
+    // 2) window.currentWorkerId (estado global do painel)
+    // 3) null (executor vai bloquear, como proteção)
+    workerId:
+      options.workerId ??
+      window.currentWorkerId ??
+      null,
 
     askSuggestions: true,
     riskReport: true,
@@ -1172,4 +1179,5 @@ async function copyToClipboard(text) {
     setStatus("error", "Não foi possível copiar.");
   }
 }
+
 
