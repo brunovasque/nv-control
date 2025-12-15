@@ -8,8 +8,11 @@ const DEFAULT_WORKER_URL = "https://nv-enavia.brunovasque.workers.dev";
 // WORKER ATIVO (TESTE / PRODUÇÃO)
 // ============================================================
 
-// 🔒 TEMPORÁRIO PARA TESTE
-window.currentWorkerId = "enavia-worker-teste";
+// 🔒 WORKER IDs (TESTE/REAL) — fonte única do painel
+window.workerIdTest = "enavia-worker-teste";
+window.workerIdReal = "enavia-worker-real";
+window.currentEnv = "test";
+window.currentWorkerId = window.workerIdTest;
 
 // MODOS
 const MODE_DIRECTOR = "director";
@@ -67,18 +70,16 @@ const advancedRawEl = document.getElementById("advanced-raw");
 const runLogEl = document.getElementById("run-log");
 const clearRunLogBtn = document.getElementById("clearRunLogBtn");
 
-// Deploy buttons
-const deploySimulateBtn = document.getElementById("deploySimulateBtn");
-const deployApplyUserPatchBtn = document.getElementById(
-  "deployApplyUserPatchBtn"
-);
-const deployAcceptSuggestionBtn = document.getElementById(
-  "deployAcceptSuggestionBtn"
-);
-const deployWorkerBtn = document.getElementById("deployWorkerBtn");
-const deploySafeBtn = document.getElementById("deploySafeBtn");
-const deployRollbackBtn = document.getElementById("deployRollbackBtn");
-const deploySessionCloseBtn = document.getElementById("deploySessionCloseBtn");
+// Canonical pipeline controls
+const envSelectEl = document.getElementById("envSelect");
+const workerIdTestInputEl = document.getElementById("workerIdTestInput");
+const workerIdRealInputEl = document.getElementById("workerIdRealInput");
+
+const canonAuditBtn = document.getElementById("canonAuditBtn");
+const canonProposeBtn = document.getElementById("canonProposeBtn");
+const canonApplyTestBtn = document.getElementById("canonApplyTestBtn");
+const canonPromoteRealBtn = document.getElementById("canonPromoteRealBtn");
+const canonRollbackBtn = document.getElementById("canonRollbackBtn");
 
 // Global state
 let currentMode = MODE_DIRECTOR;
@@ -182,52 +183,107 @@ function init() {
     });
   }
 
-  // Deploy buttons
-  if (deploySimulateBtn)
-    deploySimulateBtn.addEventListener("click", () =>
+  // Canonical pipeline buttons (AUDIT → PROPOSE → APPLY TEST → PROMOTE REAL → ROLLBACK)
+  // Sync defaults into UI
+  if (workerIdTestInputEl && !workerIdTestInputEl.value) workerIdTestInputEl.value = window.workerIdTest || "";
+  if (workerIdRealInputEl && !workerIdRealInputEl.value) workerIdRealInputEl.value = window.workerIdReal || "";
+  if (envSelectEl) envSelectEl.value = window.currentEnv || "test";
+
+  if (envSelectEl) {
+    envSelectEl.addEventListener("change", () => {
+      syncWorkerIdsFromUI();
+      appendRunLog("SYSTEM", `Ambiente ativo: ${window.currentEnv.toUpperCase()} • workerId: ${getActiveWorkerId() || "-"}`);
+    });
+  }
+
+  if (workerIdTestInputEl) workerIdTestInputEl.addEventListener("change", () => syncWorkerIdsFromUI());
+  if (workerIdRealInputEl) workerIdRealInputEl.addEventListener("change", () => syncWorkerIdsFromUI());
+
+  if (canonAuditBtn) {
+    canonAuditBtn.addEventListener("click", () => {
+      // Read-only: usa o action existente de simulação, mas sinaliza fase no extra
       handleDeployAction("deploy_simulate", {
-        message: "simular deploy",
-      })
-    );
+        message: "AUDIT + simulação (read-only)",
+        extra: { phase: "audit_simulate" },
+        workerId: getActiveWorkerId(),
+      });
+    });
+  }
 
-  if (deployApplyUserPatchBtn)
-    deployApplyUserPatchBtn.addEventListener("click", handleApplyUserPatch);
+  if (canonProposeBtn) {
+    canonProposeBtn.addEventListener("click", async () => {
+      // PROPOSE não aplica nada: dispara um pedido em ENGINEER (sem executor_action)
+      const manual = (userInputEl && userInputEl.value ? userInputEl.value.trim() : "") || "";
+      const activeWorkerId = getActiveWorkerId();
 
-  if (deployAcceptSuggestionBtn)
-    deployAcceptSuggestionBtn.addEventListener("click", () =>
+      const proposeEnvelope = {
+        executor_action: "propose_patch",
+        workerId: activeWorkerId,
+        // Se você colar um bloco/manual aqui, ele entra como base
+        manual_block: manual ? manual : null,
+        rules: [
+          "NÃO aplicar mudanças",
+          "Gerar patchText + testPlan + impactAnalysis + riskReport",
+          "Se manual_block existir, use-o como base (validar encaixe/impacto)",
+          "Ambiente de alteração SEMPRE é TESTE (propor promoção só após TESTE OK)"
+        ],
+      };
+
+      // Envia como JSON para cair no caminho já existente do buildPayload (preserva workerId)
+      appendSystemMessage("PROPOSE: solicitando patch + plano + impactos (sem aplicar).");
+      appendRunLog("ENAVIA/ENGINEER", "PROPOSE disparado (sem apply).");
+      await sendToWorker(buildPayload(MODE_ENGINEER, JSON.stringify(proposeEnvelope)));
+    });
+  }
+
+  if (canonApplyTestBtn) {
+    canonApplyTestBtn.addEventListener("click", () => {
+      // Força TESTE, confirmação obrigatória
+      const ok = confirm("APPLY TEST: aplicar a última proposta no ambiente TESTE? (isso cria snapshot e pode exigir rollback se falhar)");
+      if (!ok) return;
+
+      setActiveEnv("test");
       handleDeployAction("deploy_accept_suggestion", {
-        extra: { use_last_suggestion: true, userApproval: true },
-        message: "aprovar deploy",
-      })
-    );
+        message: "APPLY TEST (somente TESTE)",
+        extra: { userApproval: true, target_env: "test", require_env: "test" },
+        workerId: window.workerIdTest || getActiveWorkerId(),
+      });
+    });
+  }
 
-  if (deployWorkerBtn)
-    deployWorkerBtn.addEventListener("click", () =>
-      handleDeployAction("deploy_worker", {
-        message: "publicar worker",
-      })
-    );
+  if (canonPromoteRealBtn) {
+    canonPromoteRealBtn.addEventListener("click", () => {
+      // Força REAL, confirmação obrigatória
+      const ok = confirm("PROMOTE REAL: promover para REAL o patch JÁ testado? (NUNCA promove sem TESTE OK)");
+      if (!ok) return;
 
-  if (deploySafeBtn)
-    deploySafeBtn.addEventListener("click", () =>
+      setActiveEnv("real");
       handleDeployAction("deploy_safe", {
-        message: "aprovar deploy",
-      })
-    );
+        message: "PROMOTE REAL (apenas após TESTE OK)",
+        extra: {
+          userApproval: true,
+          target_env: "real",
+          promote: true,
+          require_test_success: true,
+          explain_impacts: true,
+        },
+        workerId: window.workerIdReal || getActiveWorkerId(),
+      });
+    });
+  }
 
-  if (deployRollbackBtn)
-    deployRollbackBtn.addEventListener("click", () =>
+  if (canonRollbackBtn) {
+    canonRollbackBtn.addEventListener("click", () => {
+      const ok = confirm("ROLLBACK: voltar para o último estado estável do worker ativo?");
+      if (!ok) return;
+
       handleDeployAction("deploy_rollback", {
-        message: "rollback para versão anterior",
-      })
-    );
+        message: "ROLLBACK (emergência)",
+        workerId: getActiveWorkerId(),
+      });
+    });
+  }
 
-  if (deploySessionCloseBtn)
-    deploySessionCloseBtn.addEventListener("click", () =>
-      handleDeployAction("deploy_session_close", {
-        message: "encerrar sessão de deploy",
-      })
-    );
 
   setMode(MODE_DIRECTOR, { silent: true });
   setStatus("neutral", "Pronto");
@@ -511,6 +567,35 @@ function getWorkerUrl() {
   return raw;
 }
 
+function normalizeWorkerId(value) {
+  const v = (value || "").trim();
+  return v || null;
+}
+
+function syncWorkerIdsFromUI() {
+  const testId = normalizeWorkerId(workerIdTestInputEl && workerIdTestInputEl.value);
+  const realId = normalizeWorkerId(workerIdRealInputEl && workerIdRealInputEl.value);
+
+  if (testId) window.workerIdTest = testId;
+  if (realId) window.workerIdReal = realId;
+
+  const env = (envSelectEl && envSelectEl.value) || window.currentEnv || "test";
+  window.currentEnv = env === "real" ? "real" : "test";
+  window.currentWorkerId = window.currentEnv === "real" ? window.workerIdReal : window.workerIdTest;
+}
+
+function setActiveEnv(env) {
+  window.currentEnv = env === "real" ? "real" : "test";
+  if (envSelectEl) envSelectEl.value = window.currentEnv;
+  window.currentWorkerId = window.currentEnv === "real" ? window.workerIdReal : window.workerIdTest;
+}
+
+function getActiveWorkerId() {
+  syncWorkerIdsFromUI();
+  return window.currentWorkerId || null;
+}
+
+
 function buildPayload(mode, content) {
   const base = {
     source: "NV-CONTROL",
@@ -531,7 +616,7 @@ function buildPayload(mode, content) {
   // ============================================================
   const resolvedWorkerId =
     (parsed && parsed.workerId) ||
-    window.currentWorkerId ||
+    getActiveWorkerId() ||
     null;
 
   if (parsed && typeof parsed === "object" && parsed.executor_action) {
@@ -741,7 +826,7 @@ function buildDeployPayload(executorAction, options = {}) {
     // 3) null (executor vai bloquear, como proteção)
     workerId:
       options.workerId ??
-      window.currentWorkerId ??
+      getActiveWorkerId() ??
       null,
 
     askSuggestions: true,
@@ -1196,7 +1281,3 @@ async function copyToClipboard(text) {
     setStatus("error", "Não foi possível copiar.");
   }
 }
-
-
-
-
