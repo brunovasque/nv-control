@@ -1,99 +1,502 @@
 <!DOCTYPE html>
-<div class="header-actions">
-<button type="button" id="clearAllBtn" class="btn btn-secondary">Limpar tudo</button>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>NV-Control — ENAVIA</title>
+
+    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <body>
+    <div class="app">
+      <!-- HEADER -->
+      <header class="app-header">
+        <div class="app-header-left">
+          <div class="app-title">
+            <span class="title">NV-Control</span>
+            <span class="subtitle">ENAVIA supervisionada</span>
+          </div>
+
+          <div class="header-badges">
+            <span id="status-badge" class="badge badge-neutral">Pronto</span>
+            <span id="mode-badge" class="badge badge-mode badge-mode-director"
+              >DIRECTOR</span
+            >
+          </div>
+        </div>
+
+        <div class="app-header-right">
+          <div class="worker-url">
+            <label for="workerUrlInput">Worker URL</label>
+            <input
+              id="workerUrlInput"
+              type="text"
+              spellcheck="false"
+              placeholder="https://..."
+              value=""
+            />
+          </div>
+
+          <div class="header-actions">
+            <button
+              type="button"
+              id="clearAllBtn"
+              class="btn btn-secondary"
+              title="Limpar console + histórico + telemetria"
+            >
+              Limpar tudo
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- MAIN -->
+      <main class="app-main">
+        <!-- LEFT: CONSOLE -->
+        <section class="console">
+          <div class="console-header">
+            <span>Console NV-Control</span>
+            <span class="hint"
+              >Enter envia • Ctrl+Enter quebra linha</span
+            >
+          </div>
+
+          <div id="messages" class="messages"></div>
+
+          <div class="input-area">
+            <textarea
+              id="userInput"
+              rows="3"
+              placeholder="Digite sua mensagem... (Enter envia, Ctrl+Enter quebra linha)"
+            ></textarea>
+
+            <div class="input-toolbar">
+              <div class="mode-buttons">
+                <button
+                  id="modeDirectorBtn"
+                  type="button"
+                  class="btn btn-secondary btn-mode active"
+                >
+                  Director
+                </button>
+                <button
+                  id="modeEnaviaBtn"
+                  type="button"
+                  class="btn btn-secondary btn-mode"
+                >
+                  Enavia
+                </button>
+                <button
+                  id="modeEngineerBtn"
+                  type="button"
+                  class="btn btn-secondary btn-mode"
+                >
+                  Engineer
+                </button>
+                <button
+                  id="modeBrainBtn"
+                  type="button"
+                  class="btn btn-secondary btn-mode"
+                >
+                  Brain
+                </button>
+              </div>
+
+              <div class="send-area">
+                <label class="checkbox-inline">
+                  <input id="debugToggle" type="checkbox" checked />
+                  <span>Debug</span>
+                </label>
+                <button id="sendBtn" type="button" class="btn btn-primary">
+                  Enviar
+                </button>
+              </div>
+            </div>
+
+            <!-- BARRA CANÔNICA (TESTE → REAL) -->
+            <div class="deploy-toolbar" id="canonical-toolbar">
+  <div
+    class="deploy-toolbar-row"
+    style="display:flex; flex-wrap:wrap; gap:6px; width:100%; align-items:center;"
+  >
+    <span
+      style="font-size:0.7rem; color: var(--text-muted); margin-right:6px; letter-spacing:0.08em; text-transform:uppercase;"
+    >
+      Pipeline
+    </span>
+
+    <label
+      class="checkbox-inline"
+      title="Define qual workerId será usado para as ações."
+    >
+      <span style="opacity:0.9;">Ambiente</span>
+      <select
+        id="envSelect"
+        class="history-filter-select"
+        style="padding:4px 10px;"
+      >
+        <option value="test" selected>TESTE</option>
+        <option value="real">REAL</option>
+      </select>
+    </label>
+
+    <label
+      class="checkbox-inline"
+      title="workerId do ambiente TESTE (onde toda mudança é aplicada primeiro)."
+    >
+      <span>workerId TEST</span>
+      <input
+        id="workerIdTestInput"
+        type="text"
+        spellcheck="false"
+        style="min-width:210px; padding:4px 10px; border-radius:999px; border:1px solid rgba(148,163,184,0.45); background: rgba(15,23,42,0.9); color: var(--text);"
+      />
+    </label>
+
+    <label
+      class="checkbox-inline"
+      title="workerId do ambiente REAL (só promove após TESTE OK)."
+    >
+      <span>workerId REAL</span>
+      <input
+        id="workerIdRealInput"
+        type="text"
+        spellcheck="false"
+        style="min-width:210px; padding:4px 10px; border-radius:999px; border:1px solid rgba(148,163,184,0.45); background: rgba(15,23,42,0.9); color: var(--text);"
+      />
+    </label>
+  </div>
+
+  <!-- 🔥 NOVO: wrapper correto para os botões -->
+  <div class="deploy-toolbar-buttons">
+
+    <button
+      id="canonAuditBtn"
+      type="button"
+      class="btn btn-icon deploy-btn deploy-btn-simulate"
+      title="AUDIT + simulação (read-only). Não aplica mudanças."
+    >
+      AUDIT
+    </button>
+
+    <button
+      id="canonProposeBtn"
+      type="button"
+      class="btn btn-icon deploy-btn deploy-btn-apply"
+      title="PROPOSE: pedir patch + plano de teste + impactos (não aplica). Se houver bloco no campo, será usado como base."
+    >
+      PROPOSE
+    </button>
+
+    <button
+      id="canonApplyTestBtn"
+      type="button"
+      class="btn btn-icon deploy-btn deploy-btn-safe"
+      title="APPLY TEST: aplica a última proposta/sugestão SOMENTE no TESTE (com confirmação)."
+    >
+      APPLY TEST
+    </button>
+
+    <button
+      id="canonDeployTestBtn"
+      type="button"
+      class="btn btn-icon deploy-btn deploy-btn-worker"
+      title="Deploy real no ambiente TESTE. Gera prova obrigatória para liberar PRODUÇÃO."
+    >
+      DEPLOY TESTE
+    </button>
+
+    <button
+      id="canonApproveBtn"
+      type="button"
+      class="btn btn-icon deploy-btn deploy-btn-safe"
+      title="APPROVE: confirma e aplica o deploy no TESTE usando o execution_id ativo."
+    >
+      APPROVE
+    </button>
+
+    <button
+      id="canonPromoteRealBtn"
+      type="button"
+      class="btn btn-icon deploy-btn deploy-btn-worker"
+      title="PROMOTE REAL: promove para REAL SOMENTE após TESTE OK (com confirmação + impacto)."
+    >
+      PROMOTE REAL
+    </button>
+
+    <button
+      id="canonCancelBtn"
+      type="button"
+      class="btn btn-icon deploy-btn deploy-btn-close"
+      title="Cancela o ciclo atual sem aplicar deploy."
+    >
+      CANCELAR
+    </button>
+
+    <button
+      id="canonRollbackBtn"
+      type="button"
+      class="btn btn-icon deploy-btn deploy-btn-rollback"
+      title="ROLLBACK: volta para último estado estável (emergência)."
+    >
+      ROLLBACK
+    </button>
+
+  </div>
 </div>
-</div>
-</header>
 
+>
+  AUDIT
+</button>
 
-<!-- MAIN -->
-<main class="app-main">
-<section class="console">
-<div class="console-header">
-<span>Console NV-Control</span>
-<span class="hint">Enter envia • Ctrl+Enter quebra linha</span>
-</div>
+<button
+  id="canonProposeBtn"
+  type="button"
+  class="btn btn-icon deploy-btn deploy-btn-apply"
+  title="PROPOSE: pedir patch + plano de teste + impactos (não aplica). Se houver bloco no campo, será usado como base."
+>
+  PROPOSE
+</button>
 
+<button
+  id="canonApplyTestBtn"
+  type="button"
+  class="btn btn-icon deploy-btn deploy-btn-safe"
+  title="APPLY TEST: aplica a última proposta/sugestão SOMENTE no TESTE (com confirmação)."
+>
+  APPLY TEST
+</button>
 
-<div id="messages" class="messages"></div>
+<!-- ✅ NOVO (FASE 2): DEPLOY TESTE -->
+<button
+  id="canonDeployTestBtn"
+  type="button"
+  class="btn btn-icon deploy-btn deploy-btn-worker"
+  title="Deploy real no ambiente TESTE. Gera prova obrigatória para liberar PRODUÇÃO."
+>
+  DEPLOY TESTE
+</button>
 
+<!-- 🔥 BOTÃO QUE FALTAVA: APPROVE -->
+<button
+  id="canonApproveBtn"
+  type="button"
+  class="btn btn-icon deploy-btn deploy-btn-safe"
+  title="APPROVE: confirma e aplica o deploy no TESTE usando o execution_id ativo."
+>
+  APPROVE
+</button>
 
-<div class="input-area">
-<textarea id="userInput" rows="3" placeholder="Digite sua mensagem..."></textarea>
+<button
+  id="canonPromoteRealBtn"
+  type="button"
+  class="btn btn-icon deploy-btn deploy-btn-worker"
+  title="PROMOTE REAL: promove para REAL SOMENTE após TESTE OK (com confirmação + impacto)."
+>
+  PROMOTE REAL
+</button>
 
+<!-- ✅ NOVO (FASE 2): CANCELAR -->
+<button
+  id="canonCancelBtn"
+  type="button"
+  class="btn btn-icon deploy-btn deploy-btn-close"
+  title="Cancela o ciclo atual sem aplicar deploy."
+>
+  CANCELAR
+</button>
 
-<div class="input-toolbar">
-<div class="mode-buttons">
-<button id="modeDirectorBtn" class="btn btn-secondary btn-mode active">Director</button>
-<button id="modeEnaviaBtn" class="btn btn-secondary btn-mode">Enavia</button>
-<button id="modeEngineerBtn" class="btn btn-secondary btn-mode">Engineer</button>
-<button id="modeBrainBtn" class="btn btn-secondary btn-mode">Brain</button>
-</div>
+<button
+  id="canonRollbackBtn"
+  type="button"
+  class="btn btn-icon deploy-btn deploy-btn-rollback"
+  title="ROLLBACK: volta para último estado estável (emergência)."
+>
+  ROLLBACK
+</button>
 
+        <!-- RIGHT: TELEMETRIA / EXECUÇÃO / HISTÓRICO / AVANÇADO -->
+        <section class="side-panel">
+          <div class="tabs">
+            <button
+              id="tab-telemetry"
+              class="tab active"
+              data-tab="telemetry"
+            >
+              Telemetria
+            </button>
+            <button id="tab-run" class="tab" data-tab="run">
+              Execução
+            </button>
+            <button id="tab-history" class="tab" data-tab="history">
+              Histórico
+            </button>
+            <button id="tab-advanced" class="tab" data-tab="advanced">
+              Avançado
+            </button>
+          </div>
 
-<div class="send-area">
-<label class="checkbox-inline"><input id="debugToggle" type="checkbox" checked /> Debug</label>
-<button id="sendBtn" class="btn btn-primary">Enviar</button>
-</div>
-</div>
+          <div class="tab-panels">
+            <!-- TELEMETRIA -->
+            <div id="panel-telemetry" class="tab-panel active">
+              <div class="card">
+                <div class="card-header">
+                  <span>Resumo</span>
+                  <span class="card-badge" id="telemetry-summary-badge"
+                    >-</span
+                  >
+                </div>
+                <div id="telemetry-summary" class="card-body card-grid"></div>
+              </div>
 
+              <div class="card">
+                <div class="card-header">
+                  <span>Request</span>
+                  <button
+                    type="button"
+                    class="btn-icon copy-btn"
+                    data-copy-target="telemetry-request"
+                    title="Copiar JSON do request"
+                  >
+                    Copiar
+                  </button>
+                </div>
+                <pre id="telemetry-request" class="card-body code-block"></pre>
+              </div>
 
-<!-- PIPELINE COMPLETO -->
-<div class="deploy-toolbar" id="canonical-toolbar">
-<div class="deploy-toolbar-row">
-<span class="pipeline-label">Pipeline</span>
+              <div class="card">
+                <div class="card-header">
+                  <span>Response</span>
+                  <button
+                    type="button"
+                    class="btn-icon copy-btn"
+                    data-copy-target="telemetry-response"
+                    title="Copiar JSON da response"
+                  >
+                    Copiar
+                  </button>
+                </div>
+                <pre id="telemetry-response" class="card-body code-block"></pre>
+              </div>
 
+              <div class="card" id="telemetry-error-card" style="display:none;">
+                <div class="card-header">
+                  <span>Erro</span>
+                  <button
+                    type="button"
+                    class="btn-icon copy-btn"
+                    data-copy-target="telemetry-error"
+                    title="Copiar detalhes de erro"
+                  >
+                    Copiar
+                  </button>
+                </div>
+                <pre id="telemetry-error" class="card-body code-block"></pre>
+              </div>
+            </div>
 
-<label class="checkbox-inline">
-<span>Ambiente</span>
-<select id="envSelect" class="history-filter-select">
-<option value="test" selected>TESTE</option>
-<option value="real">REAL</option>
-</select>
-</label>
+            <!-- EXECUÇÃO -->
+            <div id="panel-run" class="tab-panel">
+              <div class="card">
+                <div class="card-header">
+                  <span>Log de execução</span>
+                  <button
+                    type="button"
+                    id="clearRunLogBtn"
+                    class="btn-icon"
+                    title="Limpar log de execução"
+                  >
+                    Limpar
+                  </button>
+                </div>
+                <div id="run-log" class="card-body run-log"></div>
+              </div>
+            </div>
 
+            <!-- HISTÓRICO -->
+            <div id="panel-history" class="tab-panel">
+              <div class="card">
+                <div class="card-header">
+                  <span>Histórico de chamadas</span>
 
-<label class="checkbox-inline">
-<span>workerId TEST</span>
-<input id="workerIdTestInput" type="text" />
-</label>
+                  <div class="header-actions">
+                    <select
+                      id="historyModeFilter"
+                      class="history-filter-select"
+                      title="Filtrar histórico por modo"
+                    >
+                      <option value="all">All</option>
+                      <option value="director">Director</option>
+                      <option value="enavia">Enavia</option>
+                      <option value="engineer">Engineer</option>
+                      <option value="brain">Brain</option>
+                      <option value="executor">Executor</option>
+                    </select>
 
+                    <button
+                      type="button"
+                      id="exportHistoryBtn"
+                      class="btn-icon"
+                      title="Exportar histórico"
+                    >
+                      Exportar
+                    </button>
 
-<label class="checkbox-inline">
-<span>workerId REAL</span>
-<input id="workerIdRealInput" type="text" />
-</label>
-</div>
+                    <button
+                      type="button"
+                      id="clearHistoryBtn"
+                      class="btn-icon"
+                      title="Limpar histórico"
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                </div>
 
+                <div id="history-list" class="card-body history-list"></div>
+              </div>
+            </div>
 
-<div class="deploy-toolbar-buttons">
-<button id="canonAuditBtn" class="btn deploy-btn deploy-btn-simulate">AUDIT</button>
-<button id="canonProposeBtn" class="btn deploy-btn deploy-btn-apply">PROPOSE</button>
-<button id="canonApplyTestBtn" class="btn deploy-btn deploy-btn-safe">APPLY TEST</button>
-<button id="canonDeployTestBtn" class="btn deploy-btn deploy-btn-worker">DEPLOY TESTE</button>
-<button id="canonApproveBtn" class="btn deploy-btn deploy-btn-safe">APPROVE</button>
-<button id="canonPromoteRealBtn" class="btn deploy-btn deploy-btn-worker">PROMOTE REAL</button>
-<button id="canonCancelBtn" class="btn deploy-btn deploy-btn-close">CANCELAR</button>
-<button id="canonRollbackBtn" class="btn deploy-btn deploy-btn-rollback">ROLLBACK</button>
-</div>
-</div>
-</div>
-</section>
+            <!-- AVANÇADO -->
+            <div id="panel-advanced" class="tab-panel">
+              <div class="card">
+                <div class="card-header">
+                  <span>Raw log da última interação</span>
+                  <button
+                    type="button"
+                    class="btn-icon copy-btn"
+                    data-copy-target="advanced-raw"
+                    title="Copiar log completo"
+                  >
+                    Copiar
+                  </button>
+                </div>
+                <pre id="advanced-raw" class="card-body code-block"></pre>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
 
+      <!-- FOOTER -->
+      <footer class="app-footer">
+        <span
+          >NV-Control • ENAVIA supervisionada (modo
+          <strong>supervised</strong>)</span
+        >
+        <span class="hint">
+          Dica: use <strong>Director</strong> para decisão,
+          <strong>Enavia</strong> para execução,
+          <strong>Engineer</strong> para plano/patch e <strong>Brain</strong> para
+          treinamento.
+        </span>
+      </footer>
+    </div>
 
-<section class="side-panel">
-<!-- TODO: PAINEL DIREITO COMPLETO PRESERVADO -->
-</section>
-</main>
-
-
-<footer class="app-footer">
-<span>NV-Control • ENAVIA supervisionada (modo supervised)</span>
-<span class="hint">Director • Enavia • Engineer • Brain</span>
-</footer>
-</div>
-
-
-<script src="script.js"></script>
-</body>
+    <script src="script.js"></script>
+  </body>
 </html>
