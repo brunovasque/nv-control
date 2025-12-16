@@ -330,13 +330,34 @@ async function sendEngineer(action) {
     const json = await res.json();
     state.lastResponse = json;
 
-    // captura robusta do execution_id
-    state.executionId =
-      json.execution_id ||
-      json?.result?.execution_id ||
-      json?.executor?.execution_id ||
-      json?.executor?.result?.execution_id ||
-      state.executionId;
+    // ============================================================
+// 🔐 CAPTURA CANÔNICA DO execution_id (STATEFUL)
+// ============================================================
+const newExecutionId =
+  json.execution_id ||
+  json?.result?.execution_id ||
+  json?.executor?.execution_id ||
+  json?.executor?.result?.execution_id ||
+  json?.requestId ||
+  json?.result?.requestId ||
+  json?.executor?.requestId ||
+  json?.executor?.result?.requestId ||
+  null;
+
+/*
+ Regras:
+ - audit: só gera executionId se NÃO existir pipeline ativo
+ - apply_test: fixa executionId
+ - demais ações: nunca sobrescrevem
+*/
+if (!state.executionId) {
+  if (newExecutionId) {
+    state.executionId = newExecutionId;
+  }
+} else if (action.executor_action === "audit") {
+  // audit NÃO pode quebrar pipeline ativo
+  // só cria novo executionId se o usuário tiver limpado/resetado antes
+}
 
     updateTelemetry();
 
@@ -670,6 +691,7 @@ document.addEventListener("DOMContentLoaded", () => {
   try { setMode(state.mode || "director"); } catch (_) {}
 });
 /* ============================ FIM PATCH MODE ============================ */
+
 
 
 
