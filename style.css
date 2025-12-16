@@ -412,3 +412,35 @@ textarea#userInput {
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* ============================ SCROLL FIX ============================ */
+
+.messages {
+  overflow-y: auto;
+  max-height: calc(100vh - 300px);
+}
+
+.tab-panels {
+  overflow-y: auto;
+  height: calc(100vh - 140px);
+}
+
+.card-body,
+.code-block,
+.history-list,
+.run-log {
+  overflow-y: auto;
+  max-height: 260px;
+}
+
+/* Mensagens */
+.msg {
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.msg-director { color: #a78bfa; }
+.msg-enavia { color: #4da3ff; }
+.msg-engineer { color: #f5c451; }
+.msg-brain { color: #3ddc97; }
+.msg-system { color: #9aa3b2; }
