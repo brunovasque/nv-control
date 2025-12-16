@@ -14,6 +14,22 @@ const sendBtn = document.getElementById("sendBtn");
 const userInputEl = document.getElementById("userInput");
 const messagesEl = document.getElementById("messages");
 
+// ============================================================
+// NV-CONTROL — PAINEL (CANÔNICO)
+// ============================================================
+
+const DEFAULT_WORKER_URL = "https://nv-enavia.brunovasque.workers.dev";
+
+// ============================================================
+// DOM
+// ============================================================
+
+const workerUrlInputEl = document.getElementById("workerUrlInput");
+const debugToggleEl = document.getElementById("debugToggle");
+const sendBtn = document.getElementById("sendBtn");
+const userInputEl = document.getElementById("userInput");
+const messagesEl = document.getElementById("messages");
+
 const statusBadgeEl = document.getElementById("status-badge");
 const modeBadgeEl = document.getElementById("mode-badge");
 
