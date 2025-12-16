@@ -278,6 +278,50 @@ qs("userInput").addEventListener("keydown", (e) => {
   // Shift + Enter: comportamento padrão do textarea (quebra linha)
 });
 
+/* ============================ SENDENGINEER ============================ */
+
+async function sendEngineer(action) {
+  if (!state.workerUrl) {
+    setStatus("Defina o Worker URL");
+    return;
+  }
+
+  const payload = engineerPayload(action);
+  state.lastRequest = payload;
+  updateTelemetry();
+
+  try {
+    const res = await fetch(`${state.workerUrl}/engineer`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const json = await res.json();
+    state.lastResponse = json;
+
+    // captura robusta do execution_id
+    state.executionId =
+      json.execution_id ||
+      json?.result?.execution_id ||
+      json?.executor?.execution_id ||
+      json?.executor?.result?.execution_id ||
+      state.executionId;
+
+    updateTelemetry();
+
+    // feedback humano no chat
+    if (json?.message) {
+      logMessage(json.message, "engineer");
+    } else if (json?.result) {
+      logMessage("Ação executada. Veja detalhes na telemetria.", "engineer");
+    }
+  } catch (err) {
+    showError(err);
+    logMessage("Erro ao executar ação técnica.", "system");
+  }
+}
+
 /* ============================ PIPELINE ============================ */
 
 qs("canonAuditBtn").onclick = () =>
@@ -340,6 +384,7 @@ qs("clearAllBtn").onclick = () => {
   qs("advanced-raw").textContent = "";
   state.executionId = null;
 };
+
 
 
 
