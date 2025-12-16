@@ -443,11 +443,219 @@ qs("clearAllBtn").onclick = () => {
   state.executionId = null;
 };
 
+/* ============================ PATCH CANÔNICO — vNEXT (SEM REMOVER LINHAS) ============================ */
+/* Objetivos:
+   1) Capturar executionId corretamente (requestId / result.requestId etc.)
+   2) Evitar sobrescrita acidental via Enter/Enviar durante ações do pipeline
+   3) Ativar abas: Telemetria / Execução / Histórico / Avançado
+*/
+
+let pipelineLock = false;
+
+function extractExecutionId(json) {
+  return (
+    json?.execution_id ||
+    json?.requestId ||
+    json?.result?.execution_id ||
+    json?.result?.requestId ||
+    json?.executor?.execution_id ||
+    json?.executor?.requestId ||
+    json?.executor?.result?.execution_id ||
+    json?.executor?.result?.requestId ||
+    null
+  );
+}
+
+/* Re-declara sendEngineer (override canônico) — mantém contrato e adiciona captura robusta */
+async function sendEngineer(action) {
+  if (!state.workerUrl) {
+    setStatus("Defina o Worker URL");
+    return;
+  }
+
+  const payload = engineerPayload(action);
+  state.lastRequest = payload;
+  updateTelemetry();
+
+  try {
+    const res = await fetch(`${state.workerUrl}/engineer`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const json = await res.json();
+    state.lastResponse = json;
+
+    // captura robusta do execution_id (inclui requestId)
+    const ex = extractExecutionId(json);
+    if (ex) state.executionId = ex;
+
+    updateTelemetry();
+
+    // feedback humano no chat
+    if (json?.message) {
+      logMessage(json.message, "engineer");
+    } else if (json?.result) {
+      logMessage("Ação executada. Veja detalhes na telemetria.", "engineer");
+    } else {
+      logMessage("Resposta recebida. Veja detalhes na telemetria.", "engineer");
+    }
+  } catch (err) {
+    showError(err);
+    logMessage("Erro ao executar ação técnica.", "system");
+  }
+}
+
+/* Re-binda botão Enviar com lock (override canônico) */
+(function bindSendWithLock() {
+  const btn = qs("sendBtn");
+  if (!btn) return;
+
+  btn.onclick = () => {
+    if (pipelineLock) return;
+
+    const text = qs("userInput").value.trim();
+    if (!text) return;
+
+    if (state.mode === "engineer") {
+      // Engineer envia execução
+      sendEngineer({ executor_action: text });
+    } else {
+      // Director / Enavia / Brain usam chat consultivo
+      sendChat(text);
+    }
+
+    qs("userInput").value = "";
+  };
+})();
+
+/* Tabs: Telemetria / Execução / Histórico / Avançado */
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll(".tab").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const tabKey = btn.dataset.tab; // telemetry | run | history | advanced
+      if (!tabKey) return;
+
+      document.querySelectorAll(".tab").forEach((b) => b.classList.remove("active"));
+      document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
+
+      btn.classList.add("active");
+      const panel = qs(`panel-${tabKey}`);
+      if (panel) panel.classList.add("active");
+    });
+  });
+});
+
+/* Pipeline: lock curto para evitar duplicidade e garantir ação determinística */
+document.addEventListener("DOMContentLoaded", () => {
+  const lock = () => (pipelineLock = true);
+  const unlock = () => setTimeout(() => (pipelineLock = false), 250);
+
+  const safe = async (fn) => {
+    lock();
+    try { await fn(); } finally { unlock(); }
+  };
+
+  const auditBtn = qs("canonAuditBtn");
+  if (auditBtn) auditBtn.onclick = () => safe(() => sendEngineer({ executor_action: "audit" }));
+
+  const proposeBtn = qs("canonProposeBtn");
+  if (proposeBtn) proposeBtn.onclick = () => safe(() => sendEngineer({ executor_action: "propose" }));
+
+  const applyBtn = qs("canonApplyTestBtn");
+  if (applyBtn) applyBtn.onclick = () => safe(() => {
+    if (!state.executionId) {
+      logMessage("Nenhuma execução ativa.", "system");
+      return;
+    }
+
+    const testPatch = `
+/* ===========================
+   ENAVIA TEST PATCH
+   =========================== */
+const __ENAVIA_BUILD__ = {
+  version: "2025.12.16-test",
+  build_note: "deploy real test via ENAVIA panel",
+};
+`;
+
+    return sendEngineer({
+      executor_action: "apply_test",
+      execution_id: state.executionId,
+      patch: testPatch,
+      reason: "TEST PATCH — validar deploy real",
+    });
+  });
+
+  const deployTestBtn = qs("canonDeployTestBtn");
+  if (deployTestBtn) deployTestBtn.onclick = () => safe(() => {
+    return state.executionId
+      ? sendEngineer({ executor_action: "deploy_test", execution_id: state.executionId })
+      : logMessage("Nenhuma execução ativa.", "system");
+  });
+
+  const approveBtn = qs("canonApproveBtn");
+  if (approveBtn) approveBtn.onclick = () => safe(() => {
+    return state.executionId
+      ? sendEngineer({ executor_action: "deploy_approve", execution_id: state.executionId, approve: true })
+      : logMessage("Nenhuma execução ativa.", "system");
+  });
+
+  const promoteBtn = qs("canonPromoteRealBtn");
+  if (promoteBtn) promoteBtn.onclick = () => safe(() => {
+    return state.executionId
+      ? sendEngineer({ executor_action: "promote_real", execution_id: state.executionId })
+      : logMessage("Nenhuma execução ativa.", "system");
+  });
+
+  const cancelBtn = qs("canonCancelBtn");
+  if (cancelBtn) cancelBtn.onclick = () => safe(() => {
+    return state.executionId
+      ? sendEngineer({ executor_action: "deploy_cancel", execution_id: state.executionId })
+      : logMessage("Nenhuma execução ativa.", "system");
+  });
+
+  const rollbackBtn = qs("canonRollbackBtn");
+  if (rollbackBtn) rollbackBtn.onclick = () => safe(() => sendEngineer({ executor_action: "rollback" }));
+});
+
+/* ============================ FIM PATCH CANÔNICO — vNEXT ============================ */
 
 
+/* ============================ PATCH CANÔNICO — MODE BADGE + PERSISTÊNCIA ============================ */
+/* Re-declara setMode (override canônico) para:
+   - Persistir nv_mode
+   - Atualizar badge visual (#mode-badge) e classe de cor
+*/
+function setMode(mode) {
+  state.mode = mode;
+  localStorage.setItem("nv_mode", mode);
 
+  document.querySelectorAll(".btn-mode").forEach((b) =>
+    b.classList.remove("active")
+  );
 
+  const btn = qs(`mode${mode[0].toUpperCase()}${mode.slice(1)}Btn`);
+  if (btn) btn.classList.add("active");
 
+  const badge = qs("mode-badge");
+  if (badge) {
+    badge.textContent = mode.toUpperCase();
+    badge.classList.remove(
+      "badge-mode-director",
+      "badge-mode-enavia",
+      "badge-mode-engineer",
+      "badge-mode-brain"
+    );
+    badge.classList.add(`badge-mode-${mode}`);
+  }
 
+  logMessage(`Modo alterado para ${mode.toUpperCase()}`);
+}
 
-
+/* Restaura modo no carregamento sem depender do HTML default */
+document.addEventListener("DOMContentLoaded", () => {
+  try { setMode(state.mode || "director"); } catch (_) {}
+});
+/* ============================ FIM PATCH MODE ============================ */
