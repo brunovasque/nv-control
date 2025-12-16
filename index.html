@@ -2,36 +2,54 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <title>NV-Control | ENAVIA</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>NV-Control — ENAVIA</title>
+
     <link rel="stylesheet" href="style.css" />
   </head>
+
   <body>
     <div class="app">
       <!-- HEADER -->
       <header class="app-header">
         <div class="app-header-left">
-          <h1>NV-Control</h1>
-          <p class="subtitle">Painel de supervisão da ENAVIA</p>
+          <div class="app-title">
+            <span class="title">NV-Control</span>
+            <span class="subtitle">ENAVIA supervisionada</span>
+          </div>
+
+          <div class="header-badges">
+            <span id="status-badge" class="badge badge-neutral">Pronto</span>
+            <span id="mode-badge" class="badge badge-mode badge-mode-director"
+              >DIRECTOR</span
+            >
+          </div>
         </div>
+
         <div class="app-header-right">
           <div class="worker-url">
-            <label for="workerUrlInput">Worker:</label>
+            <label for="workerUrlInput">Worker URL</label>
             <input
               id="workerUrlInput"
               type="text"
               spellcheck="false"
-              value="https://nv-enavia.brunovasque.workers.dev"
+              placeholder="https://..."
+              value=""
             />
           </div>
-          <div class="badges">
-            <span id="status-badge" class="badge badge-neutral">Pronto</span>
-            <span
-              id="mode-badge"
-              class="badge badge-mode badge-mode-director"
+
+          <div class="header-actions">
+            <button
+              type="button"
+              id="clearAllBtn"
+              class="btn btn-secondary"
+              title="Limpar console + histórico + telemetria"
             >
-              DIRECTOR
-            </span>
+              Limpar tudo
+            </button>
           </div>
         </div>
       </header>
@@ -42,6 +60,9 @@
         <section class="console">
           <div class="console-header">
             <span>Console NV-Control</span>
+            <span class="hint"
+              >Enter envia • Ctrl+Enter quebra linha</span
+            >
           </div>
 
           <div id="messages" class="messages"></div>
@@ -52,9 +73,9 @@
               rows="3"
               placeholder="Digite sua mensagem... (Enter envia, Ctrl+Enter quebra linha)"
             ></textarea>
+
             <div class="input-toolbar">
               <div class="mode-buttons">
-                <!-- MODOS PRINCIPAIS -->
                 <button
                   id="modeDirectorBtn"
                   type="button"
@@ -84,6 +105,7 @@
                   Brain
                 </button>
               </div>
+
               <div class="send-area">
                 <label class="checkbox-inline">
                   <input id="debugToggle" type="checkbox" checked />
@@ -95,54 +117,122 @@
               </div>
             </div>
 
-                        <!-- BARRA CANÔNICA (TESTE → REAL) -->
+            <!-- BARRA CANÔNICA (TESTE → REAL) -->
             <div class="deploy-toolbar" id="canonical-toolbar">
-              <div class="deploy-toolbar-row" style="display:flex; flex-wrap:wrap; gap:6px; width:100%; align-items:center;">
-                <span style="font-size:0.7rem; color: var(--text-muted); margin-right:6px; letter-spacing:0.08em; text-transform:uppercase;">
+              <div
+                class="deploy-toolbar-row"
+                style="display:flex; flex-wrap:wrap; gap:6px; width:100%; align-items:center;"
+              >
+                <span
+                  style="font-size:0.7rem; color: var(--text-muted); margin-right:6px; letter-spacing:0.08em; text-transform:uppercase;"
+                >
                   Pipeline
                 </span>
 
-                <label class="checkbox-inline" title="Define qual workerId será usado para as ações.">
+                <label
+                  class="checkbox-inline"
+                  title="Define qual workerId será usado para as ações."
+                >
                   <span style="opacity:0.9;">Ambiente</span>
-                  <select id="envSelect" class="history-filter-select" style="padding:4px 10px;">
+                  <select
+                    id="envSelect"
+                    class="history-filter-select"
+                    style="padding:4px 10px;"
+                  >
                     <option value="test" selected>TESTE</option>
                     <option value="real">REAL</option>
                   </select>
                 </label>
 
-                <label class="checkbox-inline" title="workerId do ambiente TESTE (onde toda mudança é aplicada primeiro).">
+                <label
+                  class="checkbox-inline"
+                  title="workerId do ambiente TESTE (onde toda mudança é aplicada primeiro)."
+                >
                   <span>workerId TEST</span>
-                  <input id="workerIdTestInput" type="text" spellcheck="false" style="min-width:210px; padding:4px 10px; border-radius:999px; border:1px solid rgba(148,163,184,0.45); background: rgba(15,23,42,0.9); color: var(--text);" />
+                  <input
+                    id="workerIdTestInput"
+                    type="text"
+                    spellcheck="false"
+                    style="min-width:210px; padding:4px 10px; border-radius:999px; border:1px solid rgba(148,163,184,0.45); background: rgba(15,23,42,0.9); color: var(--text);"
+                  />
                 </label>
 
-                <label class="checkbox-inline" title="workerId do ambiente REAL (só promove após TESTE OK).">
+                <label
+                  class="checkbox-inline"
+                  title="workerId do ambiente REAL (só promove após TESTE OK)."
+                >
                   <span>workerId REAL</span>
-                  <input id="workerIdRealInput" type="text" spellcheck="false" style="min-width:210px; padding:4px 10px; border-radius:999px; border:1px solid rgba(148,163,184,0.45); background: rgba(15,23,42,0.9); color: var(--text);" />
+                  <input
+                    id="workerIdRealInput"
+                    type="text"
+                    spellcheck="false"
+                    style="min-width:210px; padding:4px 10px; border-radius:999px; border:1px solid rgba(148,163,184,0.45); background: rgba(15,23,42,0.9); color: var(--text);"
+                  />
                 </label>
               </div>
 
-              <button id="canonAuditBtn" type="button" class="btn btn-icon deploy-btn deploy-btn-simulate"
-                title="AUDIT + simulação (read-only). Não aplica mudanças.">
+              <button
+                id="canonAuditBtn"
+                type="button"
+                class="btn btn-icon deploy-btn deploy-btn-simulate"
+                title="AUDIT + simulação (read-only). Não aplica mudanças."
+              >
                 AUDIT
               </button>
 
-              <button id="canonProposeBtn" type="button" class="btn btn-icon deploy-btn deploy-btn-apply"
-                title="PROPOSE: pedir patch + plano de teste + impactos (não aplica). Se houver bloco no campo, será usado como base.">
+              <button
+                id="canonProposeBtn"
+                type="button"
+                class="btn btn-icon deploy-btn deploy-btn-apply"
+                title="PROPOSE: pedir patch + plano de teste + impactos (não aplica). Se houver bloco no campo, será usado como base."
+              >
                 PROPOSE
               </button>
 
-              <button id="canonApplyTestBtn" type="button" class="btn btn-icon deploy-btn deploy-btn-safe"
-                title="APPLY TEST: aplica a última proposta/sugestão SOMENTE no TESTE (com confirmação).">
+              <button
+                id="canonApplyTestBtn"
+                type="button"
+                class="btn btn-icon deploy-btn deploy-btn-safe"
+                title="APPLY TEST: aplica a última proposta/sugestão SOMENTE no TESTE (com confirmação)."
+              >
                 APPLY TEST
               </button>
 
-              <button id="canonPromoteRealBtn" type="button" class="btn btn-icon deploy-btn deploy-btn-worker"
-                title="PROMOTE REAL: promove para REAL SOMENTE após TESTE OK (com confirmação + impacto).">
+              <!-- ✅ NOVO (FASE 2): DEPLOY TESTE -->
+              <button
+                id="canonDeployTestBtn"
+                type="button"
+                class="btn btn-icon deploy-btn deploy-btn-worker"
+                title="Deploy real no ambiente TESTE. Gera prova obrigatória para liberar PRODUÇÃO."
+              >
+                DEPLOY TESTE
+              </button>
+
+              <button
+                id="canonPromoteRealBtn"
+                type="button"
+                class="btn btn-icon deploy-btn deploy-btn-worker"
+                title="PROMOTE REAL: promove para REAL SOMENTE após TESTE OK (com confirmação + impacto)."
+              >
                 PROMOTE REAL
               </button>
 
-              <button id="canonRollbackBtn" type="button" class="btn btn-icon deploy-btn deploy-btn-rollback"
-                title="ROLLBACK: volta para último estado estável (emergência).">
+              <!-- ✅ NOVO (FASE 2): CANCELAR -->
+              <button
+                id="canonCancelBtn"
+                type="button"
+                class="btn btn-icon deploy-btn deploy-btn-close"
+                title="Cancela o ciclo atual sem aplicar deploy."
+              >
+                CANCELAR
+              </button>
+
+              <button
+                id="canonRollbackBtn"
+                type="button"
+                class="btn btn-icon deploy-btn deploy-btn-rollback"
+                title="ROLLBACK: volta para último estado estável (emergência)."
+              >
                 ROLLBACK
               </button>
             </div>
@@ -229,23 +319,21 @@
               </div>
             </div>
 
-            <!-- EXECUÇÃO (NOVO) -->
+            <!-- EXECUÇÃO -->
             <div id="panel-run" class="tab-panel">
               <div class="card">
                 <div class="card-header">
-                  <span>Execução da ENAVIA</span>
-                  <div class="header-actions">
-                    <button
-                      type="button"
-                      id="clearRunLogBtn"
-                      class="btn-icon"
-                      title="Limpar execução"
-                    >
-                      Limpar
-                    </button>
-                  </div>
+                  <span>Log de execução</span>
+                  <button
+                    type="button"
+                    id="clearRunLogBtn"
+                    class="btn-icon"
+                    title="Limpar log de execução"
+                  >
+                    Limpar
+                  </button>
                 </div>
-                <div id="run-log" class="run-log"></div>
+                <div id="run-log" class="card-body run-log"></div>
               </div>
             </div>
 
@@ -316,10 +404,15 @@
 
       <!-- FOOTER -->
       <footer class="app-footer">
-        <span>NV-Control • ENAVIA supervisionada (modo <strong>supervised</strong>)</span>
+        <span
+          >NV-Control • ENAVIA supervisionada (modo
+          <strong>supervised</strong>)</span
+        >
         <span class="hint">
-          Dica: use <strong>Director</strong> para decisão, <strong>Enavia</strong> para execução,
-          <strong>Engineer</strong> para plano/patch e <strong>Brain</strong> para treinamento.
+          Dica: use <strong>Director</strong> para decisão,
+          <strong>Enavia</strong> para execução,
+          <strong>Engineer</strong> para plano/patch e <strong>Brain</strong> para
+          treinamento.
         </span>
       </footer>
     </div>
