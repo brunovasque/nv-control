@@ -55,25 +55,6 @@
             <div class="input-toolbar">
               <div class="mode-buttons">
                 <!-- MODOS PRINCIPAIS -->
-              <button
-                id="deployTestBtn"
-                type="button"
-                class="btn btn-icon deploy-btn deploy-btn-warn"
-                title="Executa o deploy REAL no ambiente TESTE (após simulação/aceite)"
-              >
-                Deploy TESTE
-              </button>
-
-              <button
-                id="cancelCycleBtn"
-                type="button"
-                class="btn btn-icon deploy-btn deploy-btn-danger"
-                title="Cancelar ciclo atual (descartar staging/sugestão pendente)"
-              >
-                Cancelar
-              </button>
-
-              
                 <button
                   id="modeDirectorBtn"
                   type="button"
@@ -114,69 +95,55 @@
               </div>
             </div>
 
-            <!-- BARRA DE DEPLOY -->
-            <div class="deploy-toolbar">
-              <button
-                id="deploySimulateBtn"
-                type="button"
-                class="btn btn-icon deploy-btn deploy-btn-simulate"
-                title="Simular deploy (sem aplicar mudanças)"
-              >
-                Simulate
+                        <!-- BARRA CANÔNICA (TESTE → REAL) -->
+            <div class="deploy-toolbar" id="canonical-toolbar">
+              <div class="deploy-toolbar-row" style="display:flex; flex-wrap:wrap; gap:6px; width:100%; align-items:center;">
+                <span style="font-size:0.7rem; color: var(--text-muted); margin-right:6px; letter-spacing:0.08em; text-transform:uppercase;">
+                  Pipeline
+                </span>
+
+                <label class="checkbox-inline" title="Define qual workerId será usado para as ações.">
+                  <span style="opacity:0.9;">Ambiente</span>
+                  <select id="envSelect" class="history-filter-select" style="padding:4px 10px;">
+                    <option value="test" selected>TESTE</option>
+                    <option value="real">REAL</option>
+                  </select>
+                </label>
+
+                <label class="checkbox-inline" title="workerId do ambiente TESTE (onde toda mudança é aplicada primeiro).">
+                  <span>workerId TEST</span>
+                  <input id="workerIdTestInput" type="text" spellcheck="false" style="min-width:210px; padding:4px 10px; border-radius:999px; border:1px solid rgba(148,163,184,0.45); background: rgba(15,23,42,0.9); color: var(--text);" />
+                </label>
+
+                <label class="checkbox-inline" title="workerId do ambiente REAL (só promove após TESTE OK).">
+                  <span>workerId REAL</span>
+                  <input id="workerIdRealInput" type="text" spellcheck="false" style="min-width:210px; padding:4px 10px; border-radius:999px; border:1px solid rgba(148,163,184,0.45); background: rgba(15,23,42,0.9); color: var(--text);" />
+                </label>
+              </div>
+
+              <button id="canonAuditBtn" type="button" class="btn btn-icon deploy-btn deploy-btn-simulate"
+                title="AUDIT + simulação (read-only). Não aplica mudanças.">
+                AUDIT
               </button>
 
-              <button
-                id="deployApplyUserPatchBtn"
-                type="button"
-                class="btn btn-icon deploy-btn deploy-btn-apply"
-                title="Aplicar patch escrito por você no ENAVIA_GIT"
-              >
-                Apply Patch
+              <button id="canonProposeBtn" type="button" class="btn btn-icon deploy-btn deploy-btn-apply"
+                title="PROPOSE: pedir patch + plano de teste + impactos (não aplica). Se houver bloco no campo, será usado como base.">
+                PROPOSE
               </button>
 
-              <button
-                id="deployAcceptSuggestionBtn"
-                type="button"
-                class="btn btn-icon deploy-btn deploy-btn-suggestion"
-                title="Aceitar e aplicar a última sugestão da ENAVIA"
-              >
-                Accept Suggestion
+              <button id="canonApplyTestBtn" type="button" class="btn btn-icon deploy-btn deploy-btn-safe"
+                title="APPLY TEST: aplica a última proposta/sugestão SOMENTE no TESTE (com confirmação).">
+                APPLY TEST
               </button>
 
-              <button
-                id="deployWorkerBtn"
-                type="button"
-                class="btn btn-icon deploy-btn deploy-btn-worker"
-                title="Deploy direto para o Worker NV-ENAVIA"
-              >
-                Deploy Worker
+              <button id="canonPromoteRealBtn" type="button" class="btn btn-icon deploy-btn deploy-btn-worker"
+                title="PROMOTE REAL: promove para REAL SOMENTE após TESTE OK (com confirmação + impacto).">
+                PROMOTE REAL
               </button>
 
-              <button
-                id="deploySafeBtn"
-                type="button"
-                class="btn btn-icon deploy-btn deploy-btn-safe"
-                title="Deploy supervisionado (staging + validações)"
-              >
-                Safe Deploy
-              </button>
-
-              <button
-                id="deployRollbackBtn"
-                type="button"
-                class="btn btn-icon deploy-btn deploy-btn-rollback"
-                title="Rollback para último estado estável"
-              >
-                Rollback
-              </button>
-
-              <button
-                id="deploySessionCloseBtn"
-                type="button"
-                class="btn btn-icon deploy-btn deploy-btn-close"
-                title="Encerrar / cancelar sessão de deploy"
-              >
-                Close Deploy
+              <button id="canonRollbackBtn" type="button" class="btn btn-icon deploy-btn deploy-btn-rollback"
+                title="ROLLBACK: volta para último estado estável (emergência).">
+                ROLLBACK
               </button>
             </div>
           </div>
