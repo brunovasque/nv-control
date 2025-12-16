@@ -460,3 +460,21 @@ textarea#userInput {
   border-color: rgba(61, 220, 151, 0.4);
 }
 /* ============================ FIM PATCH BADGE MODES ============================ */
+
+/* ============================ TELEMETRY BASE (CANÔNICO) ============================ */
+.side-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.tab-panels {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.tab-panel .card:last-child {
+  margin-bottom: 0;
+}
+/* ============================ FIM TELEMETRY BASE ============================ */
+
+
