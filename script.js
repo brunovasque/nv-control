@@ -132,18 +132,44 @@ function showError(err) {
   qs("telemetry-error-card").style.display = "block";
 }
 
-/* ============================ COPY BUTTONS ============================ */
+/* ============================ COPY (TELEMETRIA / AVANÇADO + FALLBACK) ============================ */
 
 document.addEventListener("click", (e) => {
   const btn = e.target.closest(".copy-btn");
   if (!btn) return;
 
-  const target = btn.dataset.copyTarget;
-  const el = qs(target);
-  if (!el) return;
+  const targetId = btn.dataset.copyTarget;
+  if (!targetId) return;
 
-  navigator.clipboard.writeText(el.textContent || "");
+  const targetEl = document.getElementById(targetId);
+  if (!targetEl) return;
+
+  const text = targetEl.textContent || "";
+
+  // Tentativa moderna (HTTPS / localhost)
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
 });
+
+function fallbackCopy(text) {
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+
+  try {
+    document.execCommand("copy");
+  } catch (_) {
+    alert("Não foi possível copiar o conteúdo.");
+  }
+
+  document.body.removeChild(textarea);
+}
 
 /* ============================ MODES ============================ */
 
@@ -264,5 +290,6 @@ qs("clearAllBtn").onclick = () => {
   qs("advanced-raw").textContent = "";
   state.executionId = null;
 };
+
 
 
