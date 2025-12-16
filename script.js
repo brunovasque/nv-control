@@ -1,42 +1,27 @@
 // ============================================================
-// NV-Control Panel Script
+// NV-CONTROL — PAINEL (CANÔNICO)
 // ============================================================
 
 const DEFAULT_WORKER_URL = "https://nv-enavia.brunovasque.workers.dev";
 
 // ============================================================
-// WORKER ATIVO (TESTE / PRODUÇÃO)
+// DOM
 // ============================================================
 
-// 🔒 WORKER IDs (TESTE/REAL) — fonte única do painel
-window.workerIdTest = "enavia-worker-teste";
-window.workerIdReal = "enavia-worker-real";
-window.currentEnv = "test";
-window.currentWorkerId = window.workerIdTest;
-
-// MODOS
-const MODE_DIRECTOR = "director";
-const MODE_ENAVIA = "enavia";
-const MODE_ENGINEER = "engineer";
-const MODE_BRAIN = "brain";
-
-// DOM ELEMENTS
-const messagesEl = document.getElementById("messages");
-const userInputEl = document.getElementById("userInput");
+const workerUrlInputEl = document.getElementById("workerUrlInput");
+const debugToggleEl = document.getElementById("debugToggle");
 const sendBtn = document.getElementById("sendBtn");
+const userInputEl = document.getElementById("userInput");
+const messagesEl = document.getElementById("messages");
 
-// mode buttons
+const statusBadgeEl = document.getElementById("status-badge");
+const modeBadgeEl = document.getElementById("mode-badge");
+
 const modeDirectorBtn = document.getElementById("modeDirectorBtn");
 const modeEnaviaBtn = document.getElementById("modeEnaviaBtn");
 const modeEngineerBtn = document.getElementById("modeEngineerBtn");
 const modeBrainBtn = document.getElementById("modeBrainBtn");
 
-const statusBadgeEl = document.getElementById("status-badge");
-const modeBadgeEl = document.getElementById("mode-badge");
-const workerUrlInputEl = document.getElementById("workerUrlInput");
-const debugToggleEl = document.getElementById("debugToggle");
-
-// Tabs
 const tabTelemetryBtn = document.getElementById("tab-telemetry");
 const tabRunBtn = document.getElementById("tab-run");
 const tabHistoryBtn = document.getElementById("tab-history");
@@ -47,30 +32,23 @@ const panelRunEl = document.getElementById("panel-run");
 const panelHistoryEl = document.getElementById("panel-history");
 const panelAdvancedEl = document.getElementById("panel-advanced");
 
-// Telemetry elements
 const telemetrySummaryEl = document.getElementById("telemetry-summary");
-const telemetrySummaryBadgeEl = document.getElementById(
-  "telemetry-summary-badge"
-);
+const telemetrySummaryBadgeEl = document.getElementById("telemetry-summary-badge");
 const telemetryRequestEl = document.getElementById("telemetry-request");
 const telemetryResponseEl = document.getElementById("telemetry-response");
 const telemetryErrorCardEl = document.getElementById("telemetry-error-card");
 const telemetryErrorEl = document.getElementById("telemetry-error");
 
-// History
+const runLogEl = document.getElementById("run-log");
 const historyListEl = document.getElementById("history-list");
+const advancedRawEl = document.getElementById("advanced-raw");
+
+const clearRunLogBtn = document.getElementById("clearRunLogBtn");
 const clearHistoryBtn = document.getElementById("clearHistoryBtn");
 const exportHistoryBtn = document.getElementById("exportHistoryBtn");
 const historyModeFilterEl = document.getElementById("historyModeFilter");
+const clearAllBtn = document.getElementById("clearAllBtn");
 
-// Advanced
-const advancedRawEl = document.getElementById("advanced-raw");
-
-// Run log (Execução)
-const runLogEl = document.getElementById("run-log");
-const clearRunLogBtn = document.getElementById("clearRunLogBtn");
-
-// Canonical pipeline controls
 const envSelectEl = document.getElementById("envSelect");
 const workerIdTestInputEl = document.getElementById("workerIdTestInput");
 const workerIdRealInputEl = document.getElementById("workerIdRealInput");
@@ -80,13 +58,28 @@ const canonProposeBtn = document.getElementById("canonProposeBtn");
 const canonApplyTestBtn = document.getElementById("canonApplyTestBtn");
 const canonPromoteRealBtn = document.getElementById("canonPromoteRealBtn");
 const canonRollbackBtn = document.getElementById("canonRollbackBtn");
+const canonDeployTestBtn = document.getElementById("canonDeployTestBtn");
+const canonCancelBtn = document.getElementById("canonCancelBtn");
 
-// Global state
+// ============================================================
+// STATE
+// ============================================================
+
+const MODE_DIRECTOR = "director";
+const MODE_ENAVIA = "enavia";
+const MODE_ENGINEER = "engineer";
+const MODE_BRAIN = "brain";
+
 let currentMode = MODE_DIRECTOR;
-let history = [];
-let historyFilterMode = "all";
+let activeTab = "telemetry";
 
-window.pendingMemoryProposal = null;
+let historyEntries = []; // [{ ts, mode, payload, response, ok, latencyMs, url, status }]
+
+// Worker environment (TESTE/REAL)
+window.workerIdTest = "enavia-worker-teste";
+window.workerIdReal = "enavia-worker-real";
+window.currentEnv = "test";
+window.currentWorkerId = window.workerIdTest;
 
 // ============================================================
 // INIT
@@ -107,22 +100,6 @@ function init() {
   if (modeBrainBtn)
     modeBrainBtn.addEventListener("click", () => setMode(MODE_BRAIN));
 
-  // Send
-  if (sendBtn) sendBtn.addEventListener("click", handleSend);
-
-  // Enter / Ctrl+Enter
-  if (userInputEl) {
-    userInputEl.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && (e.ctrlKey || e.shiftKey)) {
-        return; // quebra linha normal
-      }
-      if (e.key === "Enter") {
-        e.preventDefault();
-        handleSend();
-      }
-    });
-  }
-
   // Tabs
   if (tabTelemetryBtn)
     tabTelemetryBtn.addEventListener("click", () => setActiveTab("telemetry"));
@@ -132,73 +109,81 @@ function init() {
   if (tabAdvancedBtn)
     tabAdvancedBtn.addEventListener("click", () => setActiveTab("advanced"));
 
-  // Copy buttons
-  document.querySelectorAll(".copy-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const targetId = btn.getAttribute("data-copy-target");
-      if (!targetId) return;
-      const targetEl = document.getElementById(targetId);
-      if (!targetEl) return;
-      copyToClipboard(targetEl.innerText || targetEl.textContent || "");
-    });
-  });
-
-  // Clear history
-  if (clearHistoryBtn) {
-    clearHistoryBtn.addEventListener("click", () => {
-      history = [];
-      if (historyListEl) historyListEl.innerHTML = "";
+  // Send
+  if (sendBtn) sendBtn.addEventListener("click", handleSend);
+  if (userInputEl) {
+    userInputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        // Newline
+        return;
+      }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleSend();
+      }
     });
   }
 
-  // Export history
-  if (exportHistoryBtn) {
-    exportHistoryBtn.addEventListener("click", () => {
-      const blob = new Blob([JSON.stringify(history, null, 2)], {
-        type: "application/json",
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `nv-control-history-${new Date()
-        .toISOString()
-        .slice(0, 10)}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    });
-  }
+  // Copy buttons (telemetry + advanced)
+  bindCopyButtons();
 
-  // Filter history
-  if (historyModeFilterEl) {
-    historyModeFilterEl.addEventListener("change", (e) => {
-      historyFilterMode = e.target.value || "all";
-      renderHistory();
-    });
-  }
-
-  // Clear run log
-  if (clearRunLogBtn) {
+  // Run log / history controls
+  if (clearRunLogBtn)
     clearRunLogBtn.addEventListener("click", () => {
       if (runLogEl) runLogEl.innerHTML = "";
+      appendSystemMessage("Log de execução limpo.");
     });
-  }
 
-  // Canonical pipeline buttons (AUDIT → PROPOSE → APPLY TEST → PROMOTE REAL → ROLLBACK)
-  // Sync defaults into UI
-  if (workerIdTestInputEl && !workerIdTestInputEl.value) workerIdTestInputEl.value = window.workerIdTest || "";
-  if (workerIdRealInputEl && !workerIdRealInputEl.value) workerIdRealInputEl.value = window.workerIdReal || "";
-  if (envSelectEl) envSelectEl.value = window.currentEnv || "test";
+  if (clearHistoryBtn)
+    clearHistoryBtn.addEventListener("click", () => {
+      historyEntries = [];
+      renderHistory();
+      appendSystemMessage("Histórico limpo.");
+    });
 
+  if (exportHistoryBtn)
+    exportHistoryBtn.addEventListener("click", () => exportHistory());
+
+  if (historyModeFilterEl)
+    historyModeFilterEl.addEventListener("change", () => renderHistory());
+
+  if (clearAllBtn)
+    clearAllBtn.addEventListener("click", () => {
+      if (messagesEl) messagesEl.innerHTML = "";
+      if (runLogEl) runLogEl.innerHTML = "";
+      historyEntries = [];
+      renderHistory();
+      clearTelemetry();
+      appendSystemMessage("Console + logs + histórico limpos.");
+    });
+
+  // ENV select + workerId inputs
   if (envSelectEl) {
     envSelectEl.addEventListener("change", () => {
-      syncWorkerIdsFromUI();
-      appendRunLog("SYSTEM", `Ambiente ativo: ${window.currentEnv.toUpperCase()} • workerId: ${getActiveWorkerId() || "-"}`);
+      setActiveEnv(envSelectEl.value);
+      appendSystemMessage(`Ambiente ativo: ${envSelectEl.value.toUpperCase()}.`);
     });
   }
 
-  if (workerIdTestInputEl) workerIdTestInputEl.addEventListener("change", () => syncWorkerIdsFromUI());
-  if (workerIdRealInputEl) workerIdRealInputEl.addEventListener("change", () => syncWorkerIdsFromUI());
+  if (workerIdTestInputEl) {
+    workerIdTestInputEl.value = window.workerIdTest || "";
+    workerIdTestInputEl.addEventListener("change", () => {
+      window.workerIdTest = workerIdTestInputEl.value.trim();
+      if (window.currentEnv === "test") window.currentWorkerId = window.workerIdTest;
+      appendSystemMessage(`workerId TEST atualizado: ${window.workerIdTest || "-"}`);
+    });
+  }
 
+  if (workerIdRealInputEl) {
+    workerIdRealInputEl.value = window.workerIdReal || "";
+    workerIdRealInputEl.addEventListener("change", () => {
+      window.workerIdReal = workerIdRealInputEl.value.trim();
+      if (window.currentEnv === "real") window.currentWorkerId = window.workerIdReal;
+      appendSystemMessage(`workerId REAL atualizado: ${window.workerIdReal || "-"}`);
+    });
+  }
+
+  // CANONICAL DEPLOY BUTTONS
   if (canonAuditBtn) {
     canonAuditBtn.addEventListener("click", () => {
       // Read-only: usa o action existente de simulação, mas sinaliza fase no extra
@@ -212,17 +197,15 @@ function init() {
 
   if (canonProposeBtn) {
     canonProposeBtn.addEventListener("click", async () => {
-      // PROPOSE não aplica nada: dispara um pedido em ENGINEER (sem executor_action)
-      const manual = (userInputEl && userInputEl.value ? userInputEl.value.trim() : "") || "";
-      const activeWorkerId = getActiveWorkerId();
+      // PROPOSE: não aplica, apenas solicita patch + plano + impactos
+      // Mantém compatibilidade com executor: vai como JSON string no payload
+      const manual_block = (userInputEl && userInputEl.value ? userInputEl.value.trim() : "") || null;
 
       const proposeEnvelope = {
-        executor_action: "propose_patch",
-        workerId: activeWorkerId,
-        // Se você colar um bloco/manual aqui, ele entra como base
-        manual_block: manual ? manual : null,
-        rules: [
-          "NÃO aplicar mudanças",
+        mode: "engineer",
+        intent: "ENAVIA, gerar proposta de patch + plano de testes + impactos. NÃO aplicar.",
+        manual_block,
+        require: [
           "Gerar patchText + testPlan + impactAnalysis + riskReport",
           "Se manual_block existir, use-o como base (validar encaixe/impacto)",
           "Ambiente de alteração SEMPRE é TESTE (propor promoção só após TESTE OK)"
@@ -239,13 +222,36 @@ function init() {
   if (canonApplyTestBtn) {
     canonApplyTestBtn.addEventListener("click", () => {
       // Força TESTE, confirmação obrigatória
-      const ok = confirm("APPLY TEST: aplicar a última proposta no ambiente TESTE? (isso cria snapshot e pode exigir rollback se falhar)");
+      const ok = confirm("APPLY TEST: aplicar a última proposta ... TESTE? (isso cria snapshot e pode exigir rollback se falhar)");
       if (!ok) return;
 
       setActiveEnv("test");
       handleDeployAction("deploy_accept_suggestion", {
         message: "APPLY TEST (somente TESTE)",
         extra: { userApproval: true, target_env: "test", require_env: "test" },
+        workerId: window.workerIdTest || getActiveWorkerId(),
+      });
+    });
+  }
+
+  // ✅ FASE 2 — DEPLOY TESTE (aplica deploy REAL no ambiente TESTE)
+  if (canonDeployTestBtn) {
+    canonDeployTestBtn.addEventListener("click", () => {
+      // Força TESTE, confirmação obrigatória
+      const ok = confirm(
+        "DEPLOY TESTE: aplicar deploy REAL no ambiente TESTE?\n\nIsso gera a prova obrigatória para liberar PRODUÇÃO."
+      );
+      if (!ok) return;
+
+      setActiveEnv("test");
+      handleDeployAction("deploy_execute_test", {
+        message: "DEPLOY TESTE (real aplicado no ambiente TESTE)",
+        extra: {
+          userApproval: true,
+          target_env: "test",
+          require_env: "test",
+          generate_proof: true,
+        },
         workerId: window.workerIdTest || getActiveWorkerId(),
       });
     });
@@ -268,6 +274,18 @@ function init() {
           explain_impacts: true,
         },
         workerId: window.workerIdReal || getActiveWorkerId(),
+      });
+    });
+  }
+
+  // ✅ FASE 2 — CANCELAR (encerra ciclo atual)
+  if (canonCancelBtn) {
+    canonCancelBtn.addEventListener("click", () => {
+      const ok = confirm("CANCELAR: abandonar o ciclo atual?\n\nNenhum deploy será aplicado.");
+      if (!ok) return;
+
+      handleDeployAction("deploy_cancel", {
+        message: "CANCELAR ciclo atual",
       });
     });
   }
@@ -338,391 +356,125 @@ function setMode(mode, options = {}) {
 }
 
 function modeDescription(mode) {
-  if (mode === MODE_DIRECTOR)
-    return "decisão estratégica (DIRECTOR coordena a ENAVIA)";
-  if (mode === MODE_ENAVIA) return "execução direta com a engenheira ENAVIA";
-  if (mode === MODE_ENGINEER)
-    return "plano técnico, patch e fluxo supervisionado de deploy";
-  if (mode === MODE_BRAIN) return "treinamento (conteúdo será aprendido)";
-  return "";
+  if (mode === MODE_DIRECTOR) return "decisão/controle";
+  if (mode === MODE_ENAVIA) return "execução supervisionada";
+  if (mode === MODE_ENGINEER) return "planejamento/patch";
+  if (mode === MODE_BRAIN) return "treinamento/módulos";
+  return "desconhecido";
 }
 
-function setStatus(type, text) {
+function setStatus(kind, text) {
   if (!statusBadgeEl) return;
-  statusBadgeEl.textContent = text || "";
 
-  statusBadgeEl.classList.remove(
-    "badge-neutral",
-    "badge-ok",
-    "badge-error",
-    "badge-pending"
-  );
+  statusBadgeEl.textContent = text || "-";
+  statusBadgeEl.classList.remove("badge-neutral", "badge-ok", "badge-error", "badge-pending");
 
-  if (type === "ok") statusBadgeEl.classList.add("badge-ok");
-  else if (type === "error") statusBadgeEl.classList.add("badge-error");
-  else if (type === "pending") statusBadgeEl.classList.add("badge-pending");
+  if (kind === "ok") statusBadgeEl.classList.add("badge-ok");
+  else if (kind === "error") statusBadgeEl.classList.add("badge-error");
+  else if (kind === "pending") statusBadgeEl.classList.add("badge-pending");
   else statusBadgeEl.classList.add("badge-neutral");
 }
 
 // ============================================================
-// TABS
+// TAB UI
 // ============================================================
 
-function setActiveTab(tabId) {
-  const tabs = [
-    { btn: tabTelemetryBtn, panel: panelTelemetryEl, id: "telemetry" },
-    { btn: tabRunBtn, panel: panelRunEl, id: "run" },
-    { btn: tabHistoryBtn, panel: panelHistoryEl, id: "history" },
-    { btn: tabAdvancedBtn, panel: panelAdvancedEl, id: "advanced" },
-  ];
+function setActiveTab(tab) {
+  activeTab = tab;
 
-  tabs.forEach(({ btn, panel, id }) => {
-    if (btn) btn.classList.toggle("active", id === tabId);
-    if (panel) panel.classList.toggle("active", id === tabId);
+  [tabTelemetryBtn, tabRunBtn, tabHistoryBtn, tabAdvancedBtn].forEach((btn) => {
+    if (!btn) return;
+    btn.classList.toggle("active", btn.dataset.tab === tab);
+  });
+
+  [panelTelemetryEl, panelRunEl, panelHistoryEl, panelAdvancedEl].forEach((panel) => {
+    if (!panel) return;
+    panel.classList.toggle("active", panel.id === `panel-${tab}`);
   });
 }
 
 // ============================================================
-// CHAT UI
+// ENV / WORKERID
 // ============================================================
-
-function appendMessage(role, mode, text) {
-  if (!messagesEl) return;
-  const wrapper = document.createElement("div");
-  wrapper.classList.add("message", role);
-  if (role === "user" && mode) {
-    wrapper.classList.add(`mode-${mode}`);
-  }
-
-  const avatar = document.createElement("div");
-  avatar.classList.add("avatar");
-
-  const bubble = document.createElement("div");
-  bubble.classList.add("bubble");
-
-  const meta = document.createElement("div");
-  meta.classList.add("meta");
-
-  const content = document.createElement("div");
-  content.classList.add("content");
-
-  const when = new Date().toLocaleTimeString("pt-BR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  if (role === "user") {
-    avatar.textContent = "VC";
-    meta.textContent = `Você (${(mode || "").toUpperCase()}) • ${when}`;
-  } else if (role === "assistant") {
-    avatar.textContent = "NV";
-    meta.textContent = `ENAVIA • ${when}`;
-  } else {
-    avatar.textContent = "⚙";
-    meta.textContent = `Sistema • ${when}`;
-  }
-
-  content.textContent = text;
-
-  bubble.appendChild(meta);
-  bubble.appendChild(content);
-
-  const copyBtn = document.createElement("button");
-  copyBtn.classList.add("copy-btn");
-  copyBtn.textContent = "Copiar";
-  copyBtn.onclick = () => {
-    navigator.clipboard
-      .writeText(text)
-      .then(() => {
-        copyBtn.textContent = "Copiado!";
-        setTimeout(() => (copyBtn.textContent = "Copiar"), 1500);
-      })
-      .catch((err) => console.error("Erro ao copiar:", err));
-  };
-  bubble.appendChild(copyBtn);
-
-  wrapper.appendChild(avatar);
-  wrapper.appendChild(bubble);
-
-  messagesEl.appendChild(wrapper);
-  scrollMessagesToBottom();
-}
-
-function appendUserMessage(text, mode) {
-  appendMessage("user", mode, text);
-}
-
-function appendAssistantMessage(text) {
-  appendMessage("assistant", currentMode, text);
-}
-
-function appendSystemMessage(text) {
-  appendMessage("system", null, text);
-}
-
-function scrollMessagesToBottom() {
-  if (!messagesEl) return;
-  messagesEl.scrollTop = messagesEl.scrollHeight;
-}
-
-// ============================================================
-// MEMORY PROPOSAL UI — Passo 6.2 / 6.3
-// ============================================================
-function renderMemoryProposal(proposal) {
-  if (!messagesEl || !proposal) return;
-
-  const wrapper = document.createElement("div");
-  wrapper.classList.add("message", "system");
-
-  const avatar = document.createElement("div");
-  avatar.classList.add("avatar");
-  avatar.textContent = "🧠";
-
-  const bubble = document.createElement("div");
-  bubble.classList.add("bubble");
-
-  const meta = document.createElement("div");
-  meta.classList.add("meta");
-  meta.textContent = "Sistema • Sugestão de Memória Estratégica";
-
-  const content = document.createElement("div");
-  content.classList.add("content");
-
-  const preview =
-    typeof proposal === "string" ? proposal : JSON.stringify(proposal, null, 2);
-
-  content.textContent = "Sugestão detectada pelo Director:\n\n" + truncate(preview, 800);
-
-  // Ações
-  const actions = document.createElement("div");
-  actions.style.marginTop = "10px";
-  actions.style.display = "flex";
-  actions.style.gap = "8px";
-
-  const ignoreBtn = document.createElement("button");
-  ignoreBtn.textContent = "Ignorar";
-  ignoreBtn.onclick = () => {
-    window.pendingMemoryProposal = null;
-    wrapper.remove();
-    appendRunLog("SYSTEM", "Sugestão de memória ignorada pelo usuário.");
-  };
-
-  // Botão Salvar NÃO implementado (por design)
-  const saveBtn = document.createElement("button");
-  saveBtn.textContent = "Salvar (em breve)";
-  saveBtn.disabled = true;
-
-  actions.appendChild(saveBtn);
-  actions.appendChild(ignoreBtn);
-
-  bubble.appendChild(meta);
-  bubble.appendChild(content);
-  bubble.appendChild(actions);
-
-  wrapper.appendChild(avatar);
-  wrapper.appendChild(bubble);
-
-  messagesEl.appendChild(wrapper);
-  scrollMessagesToBottom();
-}
-
-// ============================================================
-// RUN LOG (Execução cinematográfica)
-// ============================================================
-
-function appendRunLog(source, message) {
-  if (!runLogEl || !message) return;
-
-  const item = document.createElement("div");
-  item.classList.add("run-log-item");
-  item.dataset.source = source;
-
-  const meta = document.createElement("div");
-  meta.classList.add("run-log-meta");
-  const when = new Date().toLocaleTimeString("pt-BR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-  meta.textContent = `[${source}] • ${when}`;
-
-  const textEl = document.createElement("div");
-  textEl.classList.add("run-log-text");
-  textEl.textContent = message;
-
-  item.appendChild(meta);
-  item.appendChild(textEl);
-
-  runLogEl.appendChild(item);
-  runLogEl.scrollTop = runLogEl.scrollHeight;
-}
-
-// ============================================================
-// SEND FLOW
-// ============================================================
-
-function getWorkerUrl() {
-  const raw = workerUrlInputEl ? workerUrlInputEl.value.trim() : "";
-  if (!raw) return DEFAULT_WORKER_URL;
-  return raw;
-}
-
-function normalizeWorkerId(value) {
-  const v = (value || "").trim();
-  return v || null;
-}
-
-function syncWorkerIdsFromUI() {
-  const testId = normalizeWorkerId(workerIdTestInputEl && workerIdTestInputEl.value);
-  const realId = normalizeWorkerId(workerIdRealInputEl && workerIdRealInputEl.value);
-
-  if (testId) window.workerIdTest = testId;
-  if (realId) window.workerIdReal = realId;
-
-  const env = (envSelectEl && envSelectEl.value) || window.currentEnv || "test";
-  window.currentEnv = env === "real" ? "real" : "test";
-  window.currentWorkerId = window.currentEnv === "real" ? window.workerIdReal : window.workerIdTest;
-}
 
 function setActiveEnv(env) {
-  window.currentEnv = env === "real" ? "real" : "test";
-  if (envSelectEl) envSelectEl.value = window.currentEnv;
-  window.currentWorkerId = window.currentEnv === "real" ? window.workerIdReal : window.workerIdTest;
+  window.currentEnv = env;
+  if (env === "real") window.currentWorkerId = window.workerIdReal;
+  else window.currentWorkerId = window.workerIdTest;
+  if (envSelectEl) envSelectEl.value = env;
 }
 
 function getActiveWorkerId() {
-  syncWorkerIdsFromUI();
-  return window.currentWorkerId || null;
+  // prioridade: estado global > inputs > fallback
+  const fromState = window.currentWorkerId || null;
+  if (fromState) return fromState;
+
+  if (window.currentEnv === "real") {
+    return (workerIdRealInputEl && workerIdRealInputEl.value.trim()) || window.workerIdReal || null;
+  }
+  return (workerIdTestInputEl && workerIdTestInputEl.value.trim()) || window.workerIdTest || null;
 }
 
+// ============================================================
+// CONSOLE SEND (DIRECTOR / ENAVIA / ENGINEER / BRAIN)
+// ============================================================
 
-function buildPayload(mode, content) {
-  const base = {
+function getWorkerUrl() {
+  const url = (workerUrlInputEl && workerUrlInputEl.value.trim()) || DEFAULT_WORKER_URL;
+  return url;
+}
+
+function buildPayload(mode, message) {
+  return {
     source: "NV-CONTROL",
     env_mode: "supervised",
     mode,
     debug: !!(debugToggleEl && debugToggleEl.checked),
     timestamp: new Date().toISOString(),
-  };
-
-  if (mode === MODE_ENGINEER) {
-    let parsed = null;
-    try {
-      parsed = JSON.parse(content);
-    } catch (_) {}
-
-  // ============================================================
-  // 🔑 FIX CRÍTICO — preservar workerId para QUALQUER comando ENGINEER
-  // ============================================================
-  const resolvedWorkerId =
-    (parsed && parsed.workerId) ||
-    getActiveWorkerId() ||
-    null;
-
-  if (parsed && typeof parsed === "object" && parsed.executor_action) {
-    return {
-      ...base,
-      executor_action: parsed.executor_action,
-      patch: parsed.patch || null,
-      workerId: resolvedWorkerId, // ✅ AQUI
-      message: `[ENGINEER/DEPLOY] ${parsed.executor_action}`,
-      askSuggestions: true,
-      riskReport: true,
-      preventForbidden: true,
-    };
-  }
-
-  return {
-    ...base,
-    intent: content,
-    workerId: resolvedWorkerId, // ✅ E AQUI
-    message: `[ENGINEER] ${content}`,
-    askSuggestions: true,
-    riskReport: true,
-    preventForbidden: true,
-  };
-}
-
-  if (mode === MODE_BRAIN) {
-    return {
-      ...base,
-      content,
-      message: `[BRAIN] ${truncate(content, 200)}`,
-    };
-  }
-
-  if (mode === MODE_ENAVIA) {
-    return {
-      ...base,
-      message: content,
-    };
-  }
-
-  return {
-    ...base,
-    message: content,
+    message,
   };
 }
 
 async function handleSend() {
   if (!userInputEl) return;
-  const raw = userInputEl.value.trim();
-  if (!raw) return;
+  const message = userInputEl.value.trim();
+  if (!message) return;
 
-  appendUserMessage(raw, currentMode);
+  appendUserMessage(message);
   userInputEl.value = "";
 
+  const payload = buildPayload(currentMode, message);
+
   if (currentMode === MODE_DIRECTOR) {
-    appendRunLog("DIRECTOR", `Intenção recebida: "${truncate(raw, 80)}"`);
-    await sendToDirector(raw);
-    return;
+    await sendToDirector(payload);
+  } else if (currentMode === MODE_ENAVIA) {
+    await sendToWorker(payload);
+  } else if (currentMode === MODE_ENGINEER) {
+    // Engineer mode goes to /engineer for executor
+    await sendToWorker(payload);
+  } else if (currentMode === MODE_BRAIN) {
+    await sendToWorker(payload);
+  } else {
+    await sendToWorker(payload);
   }
-
-  let payloadMode = MODE_ENAVIA;
-  if (currentMode === MODE_ENAVIA) payloadMode = MODE_ENAVIA;
-  else if (currentMode === MODE_ENGINEER) payloadMode = MODE_ENGINEER;
-  else if (currentMode === MODE_BRAIN) payloadMode = MODE_BRAIN;
-
-  const payload = buildPayload(payloadMode, raw);
-
-  if (payloadMode === MODE_ENGINEER && payload.executor_action) {
-    appendRunLog(
-      "ENAVIA/ENGINEER",
-      `Recebido pedido de ${payload.executor_action} a partir do console.`
-    );
-  } else if (payloadMode === MODE_ENAVIA) {
-    appendRunLog("ENAVIA", `Chamando ENAVIA com mensagem técnica.`);
-  } else if (payloadMode === MODE_BRAIN) {
-    appendRunLog("ENAVIA/BRAIN", `Enviando conteúdo de treinamento para o cérebro.`);
-  }
-
-  await sendToWorker(payload);
 }
 
 // ============================================================
-// DIRECTOR FLOW – /api/director
+// DIRECTOR FLOW — OPENAI (ou proxy local, conforme infra)
 // ============================================================
 
-async function sendToDirector(message) {
-  const endpoint = "/api/director";
+async function sendToDirector(payload) {
+  clearTelemetry();
+  appendRunLog("DIRECTOR", "Enviando request para o DIRECTOR...");
 
-  const payload = {
-    source: "NV-CONTROL",
-    role: "ceo",
-    env_mode: "supervised",
-    mode: MODE_DIRECTOR,
-    debug: !!(debugToggleEl && debugToggleEl.checked),
-    timestamp: new Date().toISOString(),
-    message,
-    context: {
-      from: "NV-Control",
-      workerUrl: getWorkerUrl(),
-    },
-  };
+  // Aqui o painel está preparado para um endpoint local/proxy de director.
+  // Mantemos o comportamento existente: se não houver, apenas loga.
+  // (Não inventar nova lógica aqui.)
+  const url = getWorkerUrl();
+  const endpoint = url.replace(/\/$/, "") + "/";
 
   const startedAt = performance.now();
-  setStatus("pending", "Enviando para DIRECTOR...");
-  appendRunLog("DIRECTOR", "Analisando intenção e preparando resposta...");
+  setStatus("pending", "Enviando...");
 
   let responseStatus = null;
   let responseJson = null;
@@ -756,33 +508,36 @@ async function sendToDirector(message) {
     timestamp: new Date().toISOString(),
     latencyMs,
     status: responseStatus,
-    mode: MODE_DIRECTOR,
+    mode: payload.mode,
     url: endpoint,
     ok: !error && responseStatus >= 200 && responseStatus < 300,
   };
 
-  const advancedEnvelope = {
+  const rawLog = {
     request: payload,
     responseStatus,
-    responseJson,
     responseText,
+    responseJson,
     error: error ? String(error) : null,
     telemetry,
   };
 
-  renderTelemetry(telemetry, payload, responseJson, error, responseText);
-  addToHistory(telemetry, payload);
-  renderAdvanced(advancedEnvelope);
+  renderTelemetry(payload, responseText, responseJson, error, telemetry);
 
-  if (error) {
-    setStatus("error", "Erro na requisição.");
-    appendSystemMessage(`Erro ao falar com o DIRECTOR: ${String(error)}`);
-    appendRunLog(
-      "DIRECTOR",
-      `Falha de comunicação com /api/director: ${String(error)}`
-    );
-    return;
-  }
+  historyEntries.unshift({
+    ts: telemetry.timestamp,
+    mode: "director",
+    rawPayload: payload,
+    responseText,
+    responseJson,
+    ok: telemetry.ok,
+    latencyMs: telemetry.latencyMs,
+    url: telemetry.url,
+    status: telemetry.status,
+  });
+  renderHistory();
+
+  if (advancedRawEl) advancedRawEl.textContent = JSON.stringify(rawLog, null, 2);
 
   if (telemetry.ok) {
     setStatus("ok", `OK • ${latencyMs} ms • ${responseStatus}`);
@@ -963,129 +718,148 @@ async function sendToWorker(payload) {
     ok: !error && responseStatus >= 200 && responseStatus < 300,
   };
 
-  const advancedEnvelope = {
+  const rawLog = {
     request: payload,
     responseStatus,
-    responseJson,
     responseText,
+    responseJson,
     error: error ? String(error) : null,
     telemetry,
   };
 
-  renderTelemetry(telemetry, payload, responseJson, error, responseText);
-  addToHistory(telemetry, payload);
-  renderAdvanced(advancedEnvelope);
+  renderTelemetry(payload, responseText, responseJson, error, telemetry);
 
-  const runSource =
-    payload.mode === MODE_ENGINEER
-      ? payload.executor_action
-        ? "EXECUTOR"
-        : "ENAVIA/ENGINEER"
-      : payload.mode === MODE_ENAVIA
-      ? "ENAVIA"
-      : payload.mode === MODE_BRAIN
-      ? "ENAVIA/BRAIN"
-      : "ENAVIA";
+  historyEntries.unshift({
+    ts: telemetry.timestamp,
+    mode: payload.mode === MODE_ENGINEER ? "executor" : payload.mode,
+    rawPayload: payload,
+    responseText,
+    responseJson,
+    ok: telemetry.ok,
+    latencyMs: telemetry.latencyMs,
+    url: telemetry.url,
+    status: telemetry.status,
+  });
+  renderHistory();
 
-  if (error) {
-    setStatus("error", "Erro na requisição.");
-    appendSystemMessage(`Erro ao falar com o worker: ${String(error)}`);
-    appendRunLog(
-      runSource,
-      `Erro de comunicação com worker (${endpoint}): ${String(error)}`
-    );
-    return;
-  }
+  if (advancedRawEl) advancedRawEl.textContent = JSON.stringify(rawLog, null, 2);
 
   if (telemetry.ok) {
     setStatus("ok", `OK • ${latencyMs} ms • ${responseStatus}`);
     appendRunLog(
-      runSource,
+      payload.mode === MODE_ENGINEER ? "EXECUTOR" : payload.mode.toUpperCase(),
       `Resposta concluída em ${latencyMs} ms (HTTP ${responseStatus}).`
     );
   } else {
     setStatus("error", `HTTP ${responseStatus || "-"} • ver Telemetria`);
     appendRunLog(
-      runSource,
+      payload.mode === MODE_ENGINEER ? "EXECUTOR" : payload.mode.toUpperCase(),
       `Resposta com falha (HTTP ${responseStatus || "-"}) – ver Telemetria.`
     );
   }
 
   const assistantText = extractAssistantMessage(responseJson, responseText);
-  appendAssistantMessage(assistantText);
-  appendRunLog(runSource, assistantText);
 
-  // ============================================================
-  // PASSO 6.1 — detectar sugestão de memória (LOCAL CORRETO)
-  // ============================================================
-  if (responseJson && responseJson.memory_proposal) {
-    try {
-      window.pendingMemoryProposal = responseJson.memory_proposal;
-      renderMemoryProposal(responseJson.memory_proposal);
-      appendRunLog(
-        "SYSTEM",
-        "🧠 Sugestão de memória estratégica detectada (aguardando aprovação)."
-      );
-    } catch (err) {
-      console.warn("Falha ao renderizar memory_proposal:", err);
-    }
+  if (payload.mode === MODE_ENGINEER) {
+    // executor responses go to run log + console
+    appendAssistantMessage(assistantText);
+    appendRunLog("EXECUTOR", assistantText);
+  } else if (payload.mode === MODE_ENAVIA) {
+    appendAssistantMessage(assistantText);
+    appendRunLog("ENAVIA", assistantText);
+  } else if (payload.mode === MODE_BRAIN) {
+    appendAssistantMessage(assistantText);
+    appendRunLog("BRAIN", assistantText);
+  } else {
+    appendAssistantMessage(assistantText);
+    appendRunLog("SYSTEM", assistantText);
   }
 }
 
 // ============================================================
-// EXPOSIÇÃO GLOBAL — FINAL DO ARQUIVO
+// UI MESSAGES
 // ============================================================
 
-window.handleDeployAction = handleDeployAction;
-window.handleApplyUserPatch = handleApplyUserPatch;
+function appendSystemMessage(text) {
+  appendMessage("system", text);
+}
+
+function appendUserMessage(text) {
+  appendMessage("user", text);
+}
+
+function appendAssistantMessage(text) {
+  appendMessage("assistant", text);
+}
+
+function appendMessage(kind, text) {
+  if (!messagesEl) return;
+
+  const item = document.createElement("div");
+  item.className = `msg msg-${kind}`;
+
+  const head = document.createElement("div");
+  head.className = "msg-head";
+  head.textContent =
+    kind === "user"
+      ? "Você"
+      : kind === "assistant"
+      ? "Assistente"
+      : "Sistema";
+
+  const body = document.createElement("div");
+  body.className = "msg-body";
+  body.textContent = text || "";
+
+  item.appendChild(head);
+  item.appendChild(body);
+
+  messagesEl.appendChild(item);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function appendRunLog(source, text) {
+  if (!runLogEl) return;
+
+  const line = document.createElement("div");
+  line.className = "run-line";
+
+  const ts = new Date().toLocaleTimeString();
+  line.textContent = `[${ts}] ${source}: ${text}`;
+
+  runLogEl.appendChild(line);
+  runLogEl.scrollTop = runLogEl.scrollHeight;
+}
 
 // ============================================================
-// TELEMETRIA / HISTÓRICO / AVANÇADO
+// TELEMETRY
 // ============================================================
 
-function renderTelemetry(telemetry, payload, responseJson, error, responseText) {
-  if (!telemetrySummaryEl) return;
+function clearTelemetry() {
+  if (telemetrySummaryEl) telemetrySummaryEl.innerHTML = "";
+  if (telemetryRequestEl) telemetryRequestEl.textContent = "";
+  if (telemetryResponseEl) telemetryResponseEl.textContent = "";
+  if (telemetryErrorEl) telemetryErrorEl.textContent = "";
+  if (telemetryErrorCardEl) telemetryErrorCardEl.style.display = "none";
+  if (telemetrySummaryBadgeEl) telemetrySummaryBadgeEl.textContent = "-";
+}
 
-  let pipeline = "[CEO]";
-  if (payload.mode === MODE_DIRECTOR) {
-    pipeline += " → [DIRECTOR] → [ENAVIA] → [EXECUTOR] → [NV-FIRST]";
-  } else if (payload.mode === MODE_ENGINEER) {
-    pipeline += " → [DIRECTOR] → [ENAVIA] → [EXECUTOR] → [NV-FIRST]";
-  } else if (payload.mode === MODE_BRAIN) {
-    pipeline += " → [ENAVIA/BRAIN] → [EXECUTOR] → [NV-FIRST]";
-  } else if (payload.mode === MODE_ENAVIA) {
-    pipeline += " → [ENAVIA] → [EXECUTOR] → [NV-FIRST]";
-  } else {
-    pipeline += " → [ENAVIA] → [EXECUTOR]";
-  }
-
-  telemetrySummaryEl.innerHTML = "";
-
-  const items = [
-    { label: "Status", value: telemetry.status || "-" },
-    { label: "OK", value: telemetry.ok ? "true" : "false" },
-    { label: "Modo", value: telemetry.mode || "-" },
-    { label: "URL", value: telemetry.url || "-" },
-    { label: "Latência", value: `${telemetry.latencyMs} ms` },
-    { label: "Hora", value: formatTime(telemetry.timestamp) },
-    { label: "Pipeline", value: pipeline },
-  ];
-
-  items.forEach((item) => {
-    const labelEl = document.createElement("div");
-    labelEl.classList.add("card-grid-item-label");
-    labelEl.textContent = item.label;
-
-    const valueEl = document.createElement("div");
-    valueEl.classList.add("card-grid-item-value");
-    valueEl.textContent = item.value;
-
-    telemetrySummaryEl.appendChild(labelEl);
-    telemetrySummaryEl.appendChild(valueEl);
-  });
+function renderTelemetry(payload, responseText, responseJson, error, telemetry) {
+  clearTelemetry();
 
   if (telemetrySummaryBadgeEl) {
-    telemetrySummaryBadgeEl.textContent = telemetry.ok ? "SUCESSO" : "FALHA";
+    telemetrySummaryBadgeEl.textContent = telemetry.ok ? "OK" : "FAIL";
+  }
+
+  if (telemetrySummaryEl) {
+    telemetrySummaryEl.innerHTML = `
+      <div><strong>Status</strong><div>${telemetry.status ?? "-"}</div></div>
+      <div><strong>Latência</strong><div>${telemetry.latencyMs ?? "-"} ms</div></div>
+      <div><strong>Modo</strong><div>${telemetry.mode ?? "-"}</div></div>
+      <div><strong>URL</strong><div style="word-break:break-all;">${telemetry.url ?? "-"}</div></div>
+      <div><strong>OK</strong><div>${telemetry.ok ? "true" : "false"}</div></div>
+      <div><strong>Timestamp</strong><div>${telemetry.timestamp ?? "-"}</div></div>
+    `;
   }
 
   if (telemetryRequestEl) {
@@ -1093,96 +867,49 @@ function renderTelemetry(telemetry, payload, responseJson, error, responseText) 
   }
 
   if (telemetryResponseEl) {
-    if (responseJson) {
-      telemetryResponseEl.textContent = JSON.stringify(responseJson, null, 2);
-    } else if (responseText) {
-      telemetryResponseEl.textContent = responseText;
-    } else {
-      telemetryResponseEl.textContent = "<sem conteúdo>";
-    }
+    if (responseJson) telemetryResponseEl.textContent = JSON.stringify(responseJson, null, 2);
+    else telemetryResponseEl.textContent = responseText || "";
   }
 
-  if (telemetryErrorCardEl && telemetryErrorEl) {
-    if (error || !telemetry.ok) {
-      telemetryErrorCardEl.style.display = "flex";
-      const details = {
-        error: error ? String(error) : null,
-        status: telemetry.status,
-        raw: responseText || null,
-      };
-      telemetryErrorEl.textContent = JSON.stringify(details, null, 2);
-    } else {
-      telemetryErrorCardEl.style.display = "none";
-      telemetryErrorEl.textContent = "";
-    }
+  if (error) {
+    if (telemetryErrorCardEl) telemetryErrorCardEl.style.display = "block";
+    if (telemetryErrorEl) telemetryErrorEl.textContent = String(error);
   }
 }
 
-function addToHistory(telemetry, payload) {
-  const now = telemetry.timestamp || Date.now();
-
-  history.unshift({
-    at: now,
-    mode: telemetry.mode,
-    status: telemetry.status,
-    ok: telemetry.ok,
-    latencyMs: telemetry.latencyMs,
-    message: payload.message || payload.intent || payload.content || "",
-    rawPayload: payload,
-  });
-
-  history.sort((a, b) => {
-    const aTime = typeof a.at === "string" ? new Date(a.at).getTime() : a.at;
-    const bTime = typeof b.at === "string" ? new Date(b.at).getTime() : b.at;
-    return bTime - aTime;
-  });
-
-  renderHistory();
-}
+// ============================================================
+// HISTORY
+// ============================================================
 
 function renderHistory() {
   if (!historyListEl) return;
+
+  const filter = (historyModeFilterEl && historyModeFilterEl.value) || "all";
+  const list = historyEntries.filter((e) => (filter === "all" ? true : e.mode === filter));
+
   historyListEl.innerHTML = "";
+  if (list.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "history-empty";
+    empty.textContent = "Sem histórico.";
+    historyListEl.appendChild(empty);
+    return;
+  }
 
-  const filtered = history.filter((entry) => {
-    if (historyFilterMode === "all") return true;
-    if (historyFilterMode === "executor") {
-      return entry.mode === "executor";
-    }
-    return (entry.mode || "").toLowerCase() === historyFilterMode;
-  });
-
-  filtered.forEach((entry) => {
+  list.forEach((entry) => {
     const item = document.createElement("div");
-    item.classList.add("history-item");
+    item.className = "history-item";
 
-    const date = new Date(entry.at);
-    const hh = String(date.getHours()).padStart(2, "0");
-    const mm = String(date.getMinutes()).padStart(2, "0");
-    const ss = String(date.getSeconds()).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = date.getFullYear();
-    const formattedTime = `${hh}:${mm}:${ss} • ${day}/${month}/${year}`;
+    const meta = document.createElement("div");
+    meta.className = "history-meta";
+    meta.textContent = `${entry.ts} • ${entry.mode.toUpperCase()} • ${entry.ok ? "OK" : "FAIL"} • ${entry.latencyMs} ms`;
 
-    const metaRow = document.createElement("div");
-    metaRow.classList.add("history-meta");
+    const detail = document.createElement("pre");
+    detail.className = "history-detail";
+    detail.textContent = safeStringify(entry.responseJson || entry.responseText || entry.rawPayload, 2);
 
-    const left = document.createElement("div");
-    left.innerHTML = `
-      <span class="history-mode">${(entry.mode || "-").toUpperCase()}</span>
-      • HTTP ${entry.status || "-"} 
-      • <span class="history-time">${formattedTime}</span>
-    `;
-
-    const right = document.createElement("div");
-    right.textContent = `${entry.ok ? "OK" : "ERRO"} • ${entry.latencyMs} ms`;
-
-    metaRow.appendChild(left);
-    metaRow.appendChild(right);
-
-    const msg = document.createElement("div");
-    msg.textContent = truncate(entry.message || "", 220);
+    const actions = document.createElement("div");
+    actions.className = "history-actions";
 
     const resendBtn = document.createElement("button");
     resendBtn.classList.add("resend-btn");
@@ -1194,90 +921,91 @@ function renderHistory() {
       } catch (_) {}
     };
 
-    item.appendChild(metaRow);
-    item.appendChild(msg);
-    item.appendChild(resendBtn);
+    const copyBtn = document.createElement("button");
+    copyBtn.classList.add("resend-btn");
+    copyBtn.textContent = "Copiar";
+    copyBtn.onclick = async () => {
+      const toCopy = safeStringify(entry.rawPayload, 2);
+      await navigator.clipboard.writeText(toCopy);
+      appendSystemMessage("Payload copiado para a área de transferência.");
+    };
+
+    actions.appendChild(resendBtn);
+    actions.appendChild(copyBtn);
+
+    item.appendChild(meta);
+    item.appendChild(actions);
+    item.appendChild(detail);
 
     historyListEl.appendChild(item);
   });
 }
 
-function renderAdvanced(envelope) {
-  if (!advancedRawEl) return;
-  const headerTime = formatTime(
-    envelope &&
-      envelope.telemetry &&
-      (envelope.telemetry.timestamp || new Date().toISOString())
-  );
+function exportHistory() {
+  const blob = new Blob([JSON.stringify(historyEntries, null, 2)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
 
-  const mode = envelope.telemetry && envelope.telemetry.mode;
-  let headerLine = `// [LOG] ${headerTime}`;
-  if (mode === MODE_DIRECTOR) {
-    headerLine +=
-      " • Pipeline: [CEO] → [DIRECTOR] → [ENAVIA] → [EXECUTOR] → [NV-FIRST]";
-  } else if (mode === MODE_ENGINEER) {
-    headerLine +=
-      " • Pipeline: [CEO] → [DIRECTOR] → [ENAVIA] → [EXECUTOR] → [NV-FIRST]";
-  } else if (mode === MODE_ENAVIA) {
-    headerLine += " • Pipeline: [CEO] → [ENAVIA] → [EXECUTOR] → [NV-FIRST]";
-  } else if (mode === MODE_BRAIN) {
-    headerLine +=
-      " • Pipeline: [CEO] → [ENAVIA/BRAIN] → [EXECUTOR] → [NV-FIRST]";
-  }
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `nv-control-history-${Date.now()}.json`;
+  a.click();
 
-  advancedRawEl.textContent =
-    `${headerLine}\n` + JSON.stringify(envelope, null, 2);
+  URL.revokeObjectURL(url);
+  appendSystemMessage("Histórico exportado.");
 }
 
 // ============================================================
-// HELPERS
+// COPY BUTTONS
 // ============================================================
 
-function truncate(str, max) {
-  if (!str) return "";
-  if (str.length <= max) return str;
-  return str.slice(0, max) + "…";
-}
-
-function formatTime(iso) {
-  try {
-    return new Date(iso).toLocaleTimeString("pt-BR", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
+function bindCopyButtons() {
+  const btns = document.querySelectorAll(".copy-btn");
+  btns.forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const targetId = btn.getAttribute("data-copy-target");
+      if (!targetId) return;
+      const el = document.getElementById(targetId);
+      if (!el) return;
+      const text = el.textContent || "";
+      try {
+        await navigator.clipboard.writeText(text);
+        appendSystemMessage("Copiado para a área de transferência.");
+      } catch (err) {
+        appendSystemMessage("Falha ao copiar.");
+        console.error(err);
+      }
     });
-  } catch {
-    return iso;
-  }
+  });
 }
 
-function extractAssistantMessage(json, textFallback) {
-  if (!json && !textFallback) return "<sem conteúdo>";
+// ============================================================
+// UTIL
+// ============================================================
 
-  if (json) {
-    if (typeof json.output === "string") return json.output;
-    if (typeof json.message === "string") return json.message;
-    if (json.result) {
-      const r = json.result;
-      if (typeof r.output === "string") return r.output;
-      if (typeof r.message === "string") return r.message;
-      if (typeof r.summary === "string") return r.summary;
-      if (typeof r.plan === "string") return r.plan;
-    }
-    return JSON.stringify(json, null, 2);
-  }
-
-  return textFallback || "<sem conteúdo>";
-}
-
-async function copyToClipboard(text) {
-  if (!text) return;
+function safeStringify(obj, spaces = 2) {
   try {
-    await navigator.clipboard.writeText(text);
-    setStatus("ok", "Copiado para a área de transferência.");
-    setTimeout(() => setStatus("neutral", "Pronto"), 1500);
-  } catch (err) {
-    console.warn("Falha ao copiar:", err);
-    setStatus("error", "Não foi possível copiar.");
+    if (typeof obj === "string") return obj;
+    return JSON.stringify(obj, null, spaces);
+  } catch (e) {
+    return String(obj);
   }
+}
+
+function extractAssistantMessage(responseJson, responseText) {
+  // tenta pegar mensagens comuns da resposta do worker/executor
+  if (responseJson) {
+    if (typeof responseJson === "string") return responseJson;
+    if (responseJson.message) return String(responseJson.message);
+    if (responseJson.result && typeof responseJson.result === "string") return responseJson.result;
+    if (responseJson.result && responseJson.result.message) return String(responseJson.result.message);
+    if (responseJson.executor && responseJson.executor.message) return String(responseJson.executor.message);
+    if (responseJson.executor && responseJson.executor.result && responseJson.executor.result.message) {
+      return String(responseJson.executor.result.message);
+    }
+    // fallback: stringify curto
+    return JSON.stringify(responseJson, null, 2);
+  }
+  return responseText || "(sem resposta)";
 }
