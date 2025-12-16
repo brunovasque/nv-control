@@ -1,15 +1,15 @@
 /* ==========================================================================
    NV-Control — ENAVIA
-   script.js — FINAL DEFINITIVO (ENGINEER + ACTION)
+   script.js — FINAL ABSOLUTO
    ========================================================================== */
 
 const state = {
-  mode: "engineer",
+  mode: "director", // director | enavia | engineer | brain
   debug: true,
   env: "test",
   workerUrl: "",
-  workerIdTest: "",
-  workerIdReal: "",
+  workerIdTest: "enavia-worker-teste",
+  workerIdReal: "nv-enavia",
   executionId: null,
   lastRequest: null,
   lastResponse: null,
@@ -19,6 +19,14 @@ const state = {
 
 const qs = (id) => document.getElementById(id);
 const nowISO = () => new Date().toISOString();
+
+function logMessage(text, from = "system") {
+  const el = document.createElement("div");
+  el.className = `msg msg-${from}`;
+  el.textContent = text;
+  qs("messages").appendChild(el);
+  qs("messages").scrollTop = qs("messages").scrollHeight;
+}
 
 function setStatus(text) {
   qs("status-badge").textContent = text;
@@ -32,34 +40,30 @@ function currentWorkerId() {
 
 (function init() {
   const url = localStorage.getItem("nv_worker_url");
-  const testId = localStorage.getItem("nv_worker_test");
-  const realId = localStorage.getItem("nv_worker_real");
-
   if (url) {
     state.workerUrl = url.replace(/\/$/, "");
     qs("workerUrlInput").value = state.workerUrl;
   }
-
-  if (testId) {
-    state.workerIdTest = testId;
-    qs("workerIdTestInput").value = testId;
-  }
-
-  if (realId) {
-    state.workerIdReal = realId;
-    qs("workerIdRealInput").value = realId;
-  }
-
-  setStatus(state.workerUrl ? "Conectado" : "Sem Worker");
+  setStatus(state.workerUrl ? "Conectado" : "Defina o Worker URL");
 })();
 
-/* ============================ PAYLOAD ============================ */
+/* ============================ PAYLOAD BUILDERS ============================ */
 
-function buildPayload(action) {
+function chatPayload(message) {
+  return {
+    source: "NV-CONTROL",
+    mode: state.mode,
+    debug: state.debug,
+    timestamp: nowISO(),
+    message,
+  };
+}
+
+function engineerPayload(action) {
   return {
     source: "NV-CONTROL",
     env_mode: "supervised",
-    mode: state.mode,
+    mode: "engineer",
     debug: state.debug,
     timestamp: nowISO(),
     action: {
@@ -71,16 +75,35 @@ function buildPayload(action) {
 
 /* ============================ NETWORK ============================ */
 
-async function sendAction(action) {
-  if (!state.workerUrl) {
-    setStatus("Defina o Worker URL");
-    return;
-  }
+async function sendChat(message) {
+  if (!state.workerUrl) return setStatus("Defina o Worker URL");
 
-  const payload = buildPayload(action);
+  logMessage(message, state.mode);
+
+  const payload = chatPayload(message);
   state.lastRequest = payload;
   updateTelemetry();
-  setStatus("Enviando…");
+
+  try {
+    const res = await fetch(state.workerUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    state.lastResponse = json;
+    updateTelemetry();
+  } catch (err) {
+    showError(err);
+  }
+}
+
+async function sendEngineer(action) {
+  if (!state.workerUrl) return setStatus("Defina o Worker URL");
+
+  const payload = engineerPayload(action);
+  state.lastRequest = payload;
+  updateTelemetry();
 
   try {
     const res = await fetch(`${state.workerUrl}/engineer`, {
@@ -88,21 +111,19 @@ async function sendAction(action) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-
     const json = await res.json();
     state.lastResponse = json;
 
-    if (json?.executor?.result?.execution_id) {
-      state.executionId = json.executor.result.execution_id;
-    }
+    state.executionId =
+      json.execution_id ||
+      json?.result?.execution_id ||
+      json?.executor?.execution_id ||
+      json?.executor?.result?.execution_id ||
+      state.executionId;
 
-    setStatus("OK");
     updateTelemetry();
-    appendHistory(action.executor_action || "message");
   } catch (err) {
-    setStatus("Erro");
-    qs("telemetry-error").textContent = String(err);
-    qs("telemetry-error-card").style.display = "block";
+    showError(err);
   }
 }
 
@@ -112,24 +133,49 @@ function updateTelemetry() {
   qs("telemetry-request").textContent = state.lastRequest
     ? JSON.stringify(state.lastRequest, null, 2)
     : "";
-
   qs("telemetry-response").textContent = state.lastResponse
     ? JSON.stringify(state.lastResponse, null, 2)
     : "";
-
   qs("advanced-raw").textContent = state.lastResponse
     ? JSON.stringify(state.lastResponse, null, 2)
     : "";
 }
 
-/* ============================ HISTÓRICO ============================ */
-
-function appendHistory(action) {
-  const el = document.createElement("div");
-  el.className = "history-item";
-  el.textContent = `[ENGINEER] ${action}`;
-  qs("history-list").appendChild(el);
+function showError(err) {
+  qs("telemetry-error").textContent = String(err);
+  qs("telemetry-error-card").style.display = "block";
 }
+
+/* ============================ COPY BUTTONS ============================ */
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".copy-btn");
+  if (!btn) return;
+
+  const target = btn.dataset.copyTarget;
+  const el = qs(target);
+  if (!el) return;
+
+  navigator.clipboard.writeText(el.textContent || "");
+});
+
+/* ============================ MODES ============================ */
+
+function setMode(mode) {
+  state.mode = mode;
+  document.querySelectorAll(".btn-mode").forEach((b) =>
+    b.classList.remove("active")
+  );
+  qs(`mode${mode[0].toUpperCase()}${mode.slice(1)}Btn`).classList.add(
+    "active"
+  );
+  logMessage(`Modo alterado para ${mode.toUpperCase()}`);
+}
+
+qs("modeDirectorBtn").onclick = () => setMode("director");
+qs("modeEnaviaBtn").onclick = () => setMode("enavia");
+qs("modeEngineerBtn").onclick = () => setMode("engineer");
+qs("modeBrainBtn").onclick = () => setMode("brain");
 
 /* ============================ INPUTS ============================ */
 
@@ -139,65 +185,75 @@ qs("workerUrlInput").oninput = (e) => {
   setStatus("Conectado");
 };
 
-qs("workerIdTestInput").oninput = (e) => {
-  state.workerIdTest = e.target.value;
-  localStorage.setItem("nv_worker_test", state.workerIdTest);
-};
-
-qs("workerIdRealInput").oninput = (e) => {
-  state.workerIdReal = e.target.value;
-  localStorage.setItem("nv_worker_real", state.workerIdReal);
-};
-
 qs("envSelect").onchange = (e) => (state.env = e.target.value);
 qs("debugToggle").onchange = (e) => (state.debug = e.target.checked);
 
-/* ============================ PIPELINE CANÔNICO ============================ */
+/* ============================ SEND ============================ */
+
+qs("sendBtn").onclick = () => {
+  const text = qs("userInput").value.trim();
+  if (!text) return;
+
+  if (state.mode === "engineer") {
+    sendEngineer({ executor_action: text });
+  } else {
+    sendChat(text);
+  }
+
+  qs("userInput").value = "";
+};
+
+/* ============================ PIPELINE ============================ */
 
 qs("canonAuditBtn").onclick = () =>
-  sendAction({ executor_action: "audit" });
+  sendEngineer({ executor_action: "audit" });
 
 qs("canonProposeBtn").onclick = () =>
-  sendAction({ executor_action: "propose" });
+  sendEngineer({ executor_action: "propose" });
 
 qs("canonApplyTestBtn").onclick = () =>
-  state.executionId &&
-  sendAction({
-    executor_action: "apply_test",
-    execution_id: state.executionId,
-  });
+  state.executionId
+    ? sendEngineer({
+        executor_action: "apply_test",
+        execution_id: state.executionId,
+      })
+    : logMessage("Nenhuma execução ativa.", "system");
 
 qs("canonDeployTestBtn").onclick = () =>
-  state.executionId &&
-  sendAction({
-    executor_action: "deploy_test",
-    execution_id: state.executionId,
-  });
+  state.executionId
+    ? sendEngineer({
+        executor_action: "deploy_test",
+        execution_id: state.executionId,
+      })
+    : logMessage("Nenhuma execução ativa.", "system");
 
 qs("canonApproveBtn").onclick = () =>
-  state.executionId &&
-  sendAction({
-    executor_action: "deploy_approve",
-    execution_id: state.executionId,
-    approve: true,
-  });
+  state.executionId
+    ? sendEngineer({
+        executor_action: "deploy_approve",
+        execution_id: state.executionId,
+        approve: true,
+      })
+    : logMessage("Nenhuma execução ativa.", "system");
 
 qs("canonPromoteRealBtn").onclick = () =>
-  state.executionId &&
-  sendAction({
-    executor_action: "promote_real",
-    execution_id: state.executionId,
-  });
+  state.executionId
+    ? sendEngineer({
+        executor_action: "promote_real",
+        execution_id: state.executionId,
+      })
+    : logMessage("Nenhuma execução ativa.", "system");
 
 qs("canonCancelBtn").onclick = () =>
-  state.executionId &&
-  sendAction({
-    executor_action: "deploy_cancel",
-    execution_id: state.executionId,
-  });
+  state.executionId
+    ? sendEngineer({
+        executor_action: "deploy_cancel",
+        execution_id: state.executionId,
+      })
+    : logMessage("Nenhuma execução ativa.", "system");
 
 qs("canonRollbackBtn").onclick = () =>
-  sendAction({ executor_action: "rollback" });
+  sendEngineer({ executor_action: "rollback" });
 
 /* ============================ LIMPAR ============================ */
 
