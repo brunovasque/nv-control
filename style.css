@@ -346,9 +346,8 @@ textarea:focus {
   padding-top: 10px;
   border-top: 1px dashed rgba(148, 163, 184, 0.35);
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column; /* 🔥 chave */
+  gap: 10px;
 }
 
 .deploy-btn {
@@ -679,4 +678,5 @@ textarea:focus {
   min-width: 120px;
   text-align: center;
 }
+
 
