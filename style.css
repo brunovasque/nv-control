@@ -783,10 +783,3 @@ body {
     justify-content: space-between;
   }
 }
-
-/* ==========================
-   Added: Deploy TESTE + Cancelar
-   ========================== */
-.deploy-btn-warn { border-color: rgba(255, 200, 0, .65); }
-.deploy-btn-danger { border-color: rgba(255, 80, 80, .75); }
-.deploy-btn-warn:hover, .deploy-btn-danger:hover { filter: brightness(1.08); }
