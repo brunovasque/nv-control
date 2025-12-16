@@ -4,12 +4,18 @@
    ========================================================================== */
 
 const state = {
-  mode: "director", // director | enavia | engineer | brain
-  debug: true,
-  env: "test",
-  workerUrl: "",
-  workerIdTest: "enavia-worker-teste",
-  workerIdReal: "nv-enavia",
+  mode: localStorage.getItem("nv_mode") || "director", // director | enavia | engineer | brain
+  debug: localStorage.getItem("nv_debug") === "true" ? true : true,
+  env: localStorage.getItem("nv_env") || "test",
+
+  workerUrl: localStorage.getItem("nv_worker_url") || "",
+
+  workerIdTest:
+    localStorage.getItem("nv_worker_id_test") || "enavia-worker-teste",
+
+  workerIdReal:
+    localStorage.getItem("nv_worker_id_real") || "nv-enavia",
+
   executionId: null,
   lastRequest: null,
   lastResponse: null,
@@ -85,17 +91,6 @@ function fallbackCopy(text) {
 
   document.body.removeChild(textarea);
 }
-
-/* ============================ INIT ============================ */
-
-(function init() {
-  const url = localStorage.getItem("nv_worker_url");
-  if (url) {
-    state.workerUrl = url.replace(/\/$/, "");
-    qs("workerUrlInput").value = state.workerUrl;
-  }
-  setStatus(state.workerUrl ? "Conectado" : "Defina o Worker URL");
-})();
 
 /* ============================ PAYLOAD BUILDERS ============================ */
 
@@ -241,14 +236,49 @@ qs("modeBrainBtn").onclick = () => setMode("brain");
 
 /* ============================ INPUTS ============================ */
 
+/* ============================ CONFIG / INPUTS ============================ */
+
+// Worker URL
 qs("workerUrlInput").oninput = (e) => {
   state.workerUrl = e.target.value.replace(/\/$/, "");
   localStorage.setItem("nv_worker_url", state.workerUrl);
   setStatus("Conectado");
 };
 
-qs("envSelect").onchange = (e) => (state.env = e.target.value);
-qs("debugToggle").onchange = (e) => (state.debug = e.target.checked);
+// Worker ID TEST
+qs("workerIdTestInput").oninput = (e) => {
+  state.workerIdTest = e.target.value.trim();
+  localStorage.setItem("nv_worker_id_test", state.workerIdTest);
+};
+
+// Worker ID REAL
+qs("workerIdRealInput").oninput = (e) => {
+  state.workerIdReal = e.target.value.trim();
+  localStorage.setItem("nv_worker_id_real", state.workerIdReal);
+};
+
+// Ambiente (TEST / REAL)
+qs("envSelect").onchange = (e) => {
+  state.env = e.target.value;
+  localStorage.setItem("nv_env", state.env);
+};
+
+// Debug
+qs("debugToggle").onchange = (e) => {
+  state.debug = e.target.checked;
+  localStorage.setItem("nv_debug", String(state.debug));
+};
+
+/* ============================ RESTORE STATE ============================ */
+
+// restaura valores persistidos no carregamento
+document.addEventListener("DOMContentLoaded", () => {
+  qs("workerUrlInput").value = state.workerUrl;
+  qs("workerIdTestInput").value = state.workerIdTest;
+  qs("workerIdRealInput").value = state.workerIdReal;
+  qs("envSelect").value = state.env;
+  qs("debugToggle").checked = state.debug;
+});
 
 /* ============================ SEND ============================ */
 
@@ -412,6 +442,7 @@ qs("clearAllBtn").onclick = () => {
   qs("advanced-raw").textContent = "";
   state.executionId = null;
 };
+
 
 
 
