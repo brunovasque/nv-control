@@ -365,13 +365,13 @@ document.addEventListener("DOMContentLoaded", () => {
     sendEngineer({ executor_action: "propose" });
 
   // APPLY TEST (injeta patch fixo de teste)
-  qs("canonApplyTestBtn").onclick = () => {
-    if (!state.executionId) {
-      logMessage("Nenhuma execução ativa.", "system");
-      return;
-    }
+qs("canonApplyTestBtn").onclick = () => {
+  if (!state.executionId) {
+    logMessage("Nenhuma execução ativa.", "system");
+    return;
+  }
 
-    const testPatch = `
+  const testPatch = `
 /* ===========================
    ENAVIA TEST PATCH
    =========================== */
@@ -381,13 +381,20 @@ const __ENAVIA_BUILD__ = {
 };
 `;
 
-    sendEngineer({
-      executor_action: "apply_test",
-      execution_id: state.executionId,
-      patch: testPatch,
-      reason: "TEST PATCH — validar deploy real",
-    });
-  };
+  // 🧩 1️⃣ STAGE PATCH — salva no staging
+  sendEngineer({
+    executor_action: "stage_patch",
+    execution_id: state.executionId,
+    patch: testPatch,
+  });
+
+  // ▶️ 2️⃣ APPLY TEST — consome do staging
+  sendEngineer({
+    executor_action: "apply_test",
+    execution_id: state.executionId,
+    reason: "TEST PATCH — validar deploy real",
+  });
+};
 
   // DEPLOY TEST
   qs("canonDeployTestBtn").onclick = () =>
@@ -659,3 +666,4 @@ document.addEventListener("DOMContentLoaded", () => {
   try { setMode(state.mode || "director"); } catch (_) {}
 });
 /* ============================ FIM PATCH MODE ============================ */
+
