@@ -59,6 +59,7 @@ const canonApplyTestBtn = document.getElementById("canonApplyTestBtn");
 const canonPromoteRealBtn = document.getElementById("canonPromoteRealBtn");
 const canonRollbackBtn = document.getElementById("canonRollbackBtn");
 const canonDeployTestBtn = document.getElementById("canonDeployTestBtn");
+const canonApproveBtn = document.getElementById("canonApproveBtn");
 const canonCancelBtn = document.getElementById("canonCancelBtn");
 
 // ============================================================
@@ -80,6 +81,11 @@ window.workerIdTest = "enavia-worker-teste";
 window.workerIdReal = "enavia-worker-real";
 window.currentEnv = "test";
 window.currentWorkerId = window.workerIdTest;
+
+// Último ciclo (para APPROVE/CANCEL vinculados)
+window.lastExecutionId = null;
+window.lastDeploySessionId = null;
+window.lastAuditId = null;
 
 // ============================================================
 // INIT
@@ -257,6 +263,44 @@ function init() {
     });
   }
 
+
+  // ✅ FASE 2 — APPROVE (aplica o ciclo atual no worker ativo)
+  if (canonApproveBtn) {
+    canonApproveBtn.addEventListener("click", () => {
+      const ok = confirm(
+        "APPROVE: aplicar o ciclo atual no ambiente ATIVO?\n\n" +
+          "Isso executa o deploy/ação vinculada ao execution_id (se existir)."
+      );
+      if (!ok) return;
+
+      const execution_id =
+        window.lastExecutionId ||
+        window.lastDeploySessionId ||
+        window.lastAuditId ||
+        null;
+
+      if (!execution_id) {
+        appendSystemMessage(
+          "APPROVE bloqueado: nenhum execution_id/deploySessionId/auditId encontrado. Rode DEPLOY TESTE (ou ação que gere ciclo) antes."
+        );
+        appendRunLog("EXECUTOR", "APPROVE abortado: sem ciclo ativo (execution_id).");
+        return;
+      }
+
+      // Mantém o workerId do ambiente ativo (TESTE ou REAL)
+      handleDeployAction("deploy_approve", {
+        message: "APPROVE (aplicar ciclo atual)",
+        workerId: getActiveWorkerId(),
+        approve: true,
+        execution_id,
+        extra: {
+          userApproval: true,
+          target_env: window.currentEnv,
+        },
+      });
+    });
+  }
+
   if (canonPromoteRealBtn) {
     canonPromoteRealBtn.addEventListener("click", () => {
       // Força REAL, confirmação obrigatória
@@ -286,6 +330,9 @@ function init() {
 
       handleDeployAction("deploy_cancel", {
         message: "CANCELAR ciclo atual",
+        execution_id: window.lastExecutionId || null,
+        deploySessionId: window.lastDeploySessionId || null,
+        auditId: window.lastAuditId || null,
       });
     });
   }
@@ -498,6 +545,24 @@ async function sendToDirector(payload) {
     } catch (_) {
       responseJson = null;
     }
+
+    // ✅ Captura IDs do ciclo para APPROVE/CANCEL sem "adivinhação"
+    // (compatível com respostas: {execution_id}, {result:{...}}, {executor:{result:{...}}}, etc.)
+    try {
+      const ids = extractCycleIds(responseJson);
+      if (ids.execution_id) window.lastExecutionId = ids.execution_id;
+      if (ids.deploySessionId) window.lastDeploySessionId = ids.deploySessionId;
+      if (ids.auditId) window.lastAuditId = ids.auditId;
+
+      if (ids.execution_id || ids.deploySessionId || ids.auditId) {
+        appendRunLog(
+          "SYSTEM",
+          `Ciclo atualizado: execution_id=${ids.execution_id || "-"} | deploySessionId=${ids.deploySessionId || "-"} | auditId=${ids.auditId || "-"}`
+        );
+      }
+    } catch (e) {
+      // silêncio deliberado: captura de IDs não pode quebrar o painel
+    }
   } catch (err) {
     error = err;
   }
@@ -599,6 +664,23 @@ function buildDeployPayload(executorAction, options = {}) {
 
   if (options.message !== undefined) {
     base.message = options.message;
+  }
+
+  // ✅ Campos do pipeline que NÃO podem ficar embrulhados em "message"
+  if (options.approve !== undefined) {
+    base.approve = options.approve;
+  }
+
+  if (options.execution_id !== undefined) {
+    base.execution_id = options.execution_id;
+  }
+
+  if (options.deploySessionId !== undefined) {
+    base.deploySessionId = options.deploySessionId;
+  }
+
+  if (options.auditId !== undefined) {
+    base.auditId = options.auditId;
   }
 
   return base;
@@ -983,6 +1065,44 @@ function bindCopyButtons() {
 // ============================================================
 // UTIL
 // ============================================================
+
+function extractCycleIds(obj) {
+  const out = { execution_id: null, deploySessionId: null, auditId: null };
+  if (!obj) return out;
+
+  // procura em vários formatos conhecidos
+  const candidates = [];
+
+  // topo
+  candidates.push(obj);
+
+  // result
+  if (obj.result) candidates.push(obj.result);
+
+  // executor wrapper
+  if (obj.executor) candidates.push(obj.executor);
+  if (obj.executor && obj.executor.result) candidates.push(obj.executor.result);
+
+  // nested executor wrapper (alguns retornam { ok, executor:{...} })
+  if (obj.ok && obj.executor) candidates.push(obj.executor);
+  if (obj.ok && obj.executor && obj.executor.result) candidates.push(obj.executor.result);
+
+  for (const c of candidates) {
+    if (!c || typeof c !== "object") continue;
+    if (!out.execution_id && c.execution_id) out.execution_id = c.execution_id;
+    if (!out.execution_id && c.executionId) out.execution_id = c.executionId;
+
+    if (!out.deploySessionId && c.deploySessionId) out.deploySessionId = c.deploySessionId;
+    if (!out.deploySessionId && c.deploy_session_id) out.deploySessionId = c.deploy_session_id;
+    if (!out.deploySessionId && c.sessionId) out.deploySessionId = c.sessionId;
+
+    if (!out.auditId && c.auditId) out.auditId = c.auditId;
+    if (!out.auditId && c.audit_id) out.auditId = c.audit_id;
+  }
+
+  return out;
+}
+
 
 function safeStringify(obj, spaces = 2) {
   try {
