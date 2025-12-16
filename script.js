@@ -111,10 +111,10 @@ function engineerPayload(action) {
     mode: "engineer",
     debug: state.debug,
     timestamp: nowISO(),
-    action: {
-      workerId: currentWorkerId(),
-      ...action,
-    },
+    workerId: currentWorkerId(),
+
+    // 🔥 action FLATTENED — contrato canônico
+    ...action,
   };
 }
 
@@ -670,6 +670,7 @@ document.addEventListener("DOMContentLoaded", () => {
   try { setMode(state.mode || "director"); } catch (_) {}
 });
 /* ============================ FIM PATCH MODE ============================ */
+
 
 
 
