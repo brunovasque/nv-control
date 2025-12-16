@@ -350,6 +350,20 @@ textarea:focus {
   gap: 10px;
 }
 
+/* Linha de botões do pipeline */
+.deploy-toolbar > button {
+  min-width: 120px;
+  text-align: center;
+}
+
+/* Agrupa botões em linha estável */
+.deploy-toolbar-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
 .deploy-btn {
   background: rgba(15, 23, 42, 0.9);
   color: var(--text-muted);
@@ -678,5 +692,6 @@ textarea:focus {
   min-width: 120px;
   text-align: center;
 }
+
 
 
