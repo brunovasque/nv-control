@@ -372,7 +372,7 @@ if (json?.message) {
 }
 
 // ✅ RETORNO OBRIGATÓRIO PARA await FUNCIONAR
-return json;
+return json; } catch (err) { showError(err); throw err; } }
 
 /* ============================ PIPELINE ============================ */
 
@@ -546,7 +546,7 @@ if (json?.message) {
   logMessage("Ação executada. Veja detalhes na telemetria.", "engineer");
 } else {
   logMessage("Resposta recebida. Veja detalhes na telemetria.", "engineer");
-}
+} return json; } catch (err) { showError(err); throw err; } }
 /* Re-binda botão Enviar com lock (override canônico) */
 (function bindSendWithLock() {
   const btn = qs("sendBtn");
@@ -699,10 +699,3 @@ document.addEventListener("DOMContentLoaded", () => {
   try { setMode(state.mode || "director"); } catch (_) {}
 });
 /* ============================ FIM PATCH MODE ============================ */
-
-
-
-
-
-
-
