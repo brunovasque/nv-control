@@ -1,12 +1,10 @@
 /* ==========================================================================
    NV-Control — ENAVIA
-   script.js (FINAL • OPERACIONAL • CANÔNICO)
+   script.js — FINAL DEFINITIVO (ENGINEER + ACTION)
    ========================================================================== */
 
-/* ============================ ESTADO GLOBAL ============================ */
-
 const state = {
-  mode: "director",
+  mode: "engineer",
   debug: true,
   env: "test",
   workerUrl: "",
@@ -22,14 +20,6 @@ const state = {
 const qs = (id) => document.getElementById(id);
 const nowISO = () => new Date().toISOString();
 
-function logMessage(text) {
-  const el = document.createElement("div");
-  el.className = "msg";
-  el.textContent = text;
-  qs("messages").appendChild(el);
-  qs("messages").scrollTop = qs("messages").scrollHeight;
-}
-
 function setStatus(text) {
   qs("status-badge").textContent = text;
 }
@@ -38,7 +28,7 @@ function currentWorkerId() {
   return state.env === "test" ? state.workerIdTest : state.workerIdReal;
 }
 
-/* ============================ INIT (AUTO-CONFIG) ============================ */
+/* ============================ INIT ============================ */
 
 (function init() {
   const url = localStorage.getItem("nv_worker_url");
@@ -46,8 +36,8 @@ function currentWorkerId() {
   const realId = localStorage.getItem("nv_worker_real");
 
   if (url) {
-    state.workerUrl = url;
-    qs("workerUrlInput").value = url;
+    state.workerUrl = url.replace(/\/$/, "");
+    qs("workerUrlInput").value = state.workerUrl;
   }
 
   if (testId) {
@@ -63,34 +53,37 @@ function currentWorkerId() {
   setStatus(state.workerUrl ? "Conectado" : "Sem Worker");
 })();
 
-/* ============================ PAYLOAD BASE ============================ */
+/* ============================ PAYLOAD ============================ */
 
-function basePayload(extra = {}) {
+function buildPayload(action) {
   return {
     source: "NV-CONTROL",
     env_mode: "supervised",
     mode: state.mode,
     debug: state.debug,
     timestamp: nowISO(),
-    workerId: currentWorkerId(),
-    ...extra,
+    action: {
+      workerId: currentWorkerId(),
+      ...action,
+    },
   };
 }
 
 /* ============================ NETWORK ============================ */
 
-async function sendToWorker(payload) {
+async function sendAction(action) {
   if (!state.workerUrl) {
     setStatus("Defina o Worker URL");
     return;
   }
 
+  const payload = buildPayload(action);
   state.lastRequest = payload;
   updateTelemetry();
   setStatus("Enviando…");
 
   try {
-    const res = await fetch(state.workerUrl, {
+    const res = await fetch(`${state.workerUrl}/engineer`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -99,13 +92,13 @@ async function sendToWorker(payload) {
     const json = await res.json();
     state.lastResponse = json;
 
-    if (json.execution_id) {
-      state.executionId = json.execution_id;
+    if (json?.executor?.result?.execution_id) {
+      state.executionId = json.executor.result.execution_id;
     }
 
     setStatus("OK");
     updateTelemetry();
-    appendHistory(payload);
+    appendHistory(action.executor_action || "message");
   } catch (err) {
     setStatus("Erro");
     qs("telemetry-error").textContent = String(err);
@@ -131,122 +124,80 @@ function updateTelemetry() {
 
 /* ============================ HISTÓRICO ============================ */
 
-function appendHistory(req) {
-  const item = document.createElement("div");
-  item.className = "history-item";
-  item.textContent = `[${req.mode}] ${req.executor_action || "message"}`;
-  qs("history-list").appendChild(item);
+function appendHistory(action) {
+  const el = document.createElement("div");
+  el.className = "history-item";
+  el.textContent = `[ENGINEER] ${action}`;
+  qs("history-list").appendChild(el);
 }
-
-/* ============================ MODOS ============================ */
-
-function setMode(mode) {
-  state.mode = mode;
-  document.querySelectorAll(".btn-mode").forEach((b) =>
-    b.classList.remove("active")
-  );
-  qs(`mode${mode[0].toUpperCase()}${mode.slice(1)}Btn`).classList.add("active");
-}
-
-/* ============================ TABS ============================ */
-
-document.querySelectorAll(".tab").forEach((tab) => {
-  tab.onclick = () => {
-    document
-      .querySelectorAll(".tab, .tab-panel")
-      .forEach((el) => el.classList.remove("active"));
-    tab.classList.add("active");
-    qs(`panel-${tab.dataset.tab}`).classList.add("active");
-  };
-});
 
 /* ============================ INPUTS ============================ */
 
 qs("workerUrlInput").oninput = (e) => {
-  state.workerUrl = e.target.value.trim();
+  state.workerUrl = e.target.value.replace(/\/$/, "");
   localStorage.setItem("nv_worker_url", state.workerUrl);
-  setStatus(state.workerUrl ? "Conectado" : "Sem Worker");
+  setStatus("Conectado");
 };
 
 qs("workerIdTestInput").oninput = (e) => {
-  state.workerIdTest = e.target.value.trim();
+  state.workerIdTest = e.target.value;
   localStorage.setItem("nv_worker_test", state.workerIdTest);
 };
 
 qs("workerIdRealInput").oninput = (e) => {
-  state.workerIdReal = e.target.value.trim();
+  state.workerIdReal = e.target.value;
   localStorage.setItem("nv_worker_real", state.workerIdReal);
 };
 
 qs("envSelect").onchange = (e) => (state.env = e.target.value);
 qs("debugToggle").onchange = (e) => (state.debug = e.target.checked);
 
-/* ============================ SEND ============================ */
-
-qs("sendBtn").onclick = () => {
-  const text = qs("userInput").value.trim();
-  if (!text) return;
-
-  sendToWorker(basePayload({ message: text }));
-  qs("userInput").value = "";
-};
-
-/* ============================ PIPELINE ============================ */
+/* ============================ PIPELINE CANÔNICO ============================ */
 
 qs("canonAuditBtn").onclick = () =>
-  sendToWorker(basePayload({ executor_action: "audit" }));
+  sendAction({ executor_action: "audit" });
 
 qs("canonProposeBtn").onclick = () =>
-  sendToWorker(basePayload({ executor_action: "propose" }));
+  sendAction({ executor_action: "propose" });
 
 qs("canonApplyTestBtn").onclick = () =>
   state.executionId &&
-  sendToWorker(
-    basePayload({
-      executor_action: "apply_test",
-      execution_id: state.executionId,
-    })
-  );
+  sendAction({
+    executor_action: "apply_test",
+    execution_id: state.executionId,
+  });
 
 qs("canonDeployTestBtn").onclick = () =>
   state.executionId &&
-  sendToWorker(
-    basePayload({
-      executor_action: "deploy_test",
-      execution_id: state.executionId,
-    })
-  );
+  sendAction({
+    executor_action: "deploy_test",
+    execution_id: state.executionId,
+  });
 
 qs("canonApproveBtn").onclick = () =>
   state.executionId &&
-  sendToWorker(
-    basePayload({
-      executor_action: "deploy_approve",
-      execution_id: state.executionId,
-      approve: true,
-    })
-  );
+  sendAction({
+    executor_action: "deploy_approve",
+    execution_id: state.executionId,
+    approve: true,
+  });
 
 qs("canonPromoteRealBtn").onclick = () =>
   state.executionId &&
-  sendToWorker(
-    basePayload({
-      executor_action: "promote_real",
-      execution_id: state.executionId,
-    })
-  );
+  sendAction({
+    executor_action: "promote_real",
+    execution_id: state.executionId,
+  });
 
 qs("canonCancelBtn").onclick = () =>
   state.executionId &&
-  sendToWorker(
-    basePayload({
-      executor_action: "deploy_cancel",
-      execution_id: state.executionId,
-    })
-  );
+  sendAction({
+    executor_action: "deploy_cancel",
+    execution_id: state.executionId,
+  });
 
 qs("canonRollbackBtn").onclick = () =>
-  sendToWorker(basePayload({ executor_action: "rollback" }));
+  sendAction({ executor_action: "rollback" });
 
 /* ============================ LIMPAR ============================ */
 
