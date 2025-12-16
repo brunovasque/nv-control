@@ -8,11 +8,8 @@ const DEFAULT_WORKER_URL = "https://nv-enavia.brunovasque.workers.dev";
 // WORKER ATIVO (TESTE / PRODUÇÃO)
 // ============================================================
 
-// 🔒 WORKER IDs (TESTE/REAL) — fonte única do painel
-window.workerIdTest = "enavia-worker-teste";
-window.workerIdReal = "enavia-worker-real";
-window.currentEnv = "test";
-window.currentWorkerId = window.workerIdTest;
+// 🔒 TEMPORÁRIO PARA TESTE
+window.currentWorkerId = "enavia-worker-teste";
 
 // MODOS
 const MODE_DIRECTOR = "director";
@@ -70,17 +67,22 @@ const advancedRawEl = document.getElementById("advanced-raw");
 const runLogEl = document.getElementById("run-log");
 const clearRunLogBtn = document.getElementById("clearRunLogBtn");
 
-// Canonical pipeline controls
-const envSelectEl = document.getElementById("envSelect");
-const workerIdTestInputEl = document.getElementById("workerIdTestInput");
-const workerIdRealInputEl = document.getElementById("workerIdRealInput");
+// Deploy buttons
+const deploySimulateBtn = document.getElementById("deploySimulateBtn");
+const deployApplyUserPatchBtn = document.getElementById(
+  "deployApplyUserPatchBtn"
+);
+const deployAcceptSuggestionBtn = document.getElementById(
+  "deployAcceptSuggestionBtn"
+);
+const deployWorkerBtn = document.getElementById("deployWorkerBtn");
+const deploySafeBtn = document.getElementById("deploySafeBtn");
+const deployRollbackBtn = document.getElementById("deployRollbackBtn");
+const deploySessionCloseBtn = document.getElementById("deploySessionCloseBtn");
 
-const canonAuditBtn = document.getElementById("canonAuditBtn");
-const canonProposeBtn = document.getElementById("canonProposeBtn");
-const canonApplyTestBtn = document.getElementById("canonApplyTestBtn");
-const canonPromoteRealBtn = document.getElementById("canonPromoteRealBtn");
-const canonRollbackBtn = document.getElementById("canonRollbackBtn");
 
+const deployTestBtn = document.getElementById("deployTestBtn");
+const cancelCycleBtn = document.getElementById("cancelCycleBtn");
 // Global state
 let currentMode = MODE_DIRECTOR;
 let history = [];
@@ -183,107 +185,52 @@ function init() {
     });
   }
 
-  // Canonical pipeline buttons (AUDIT → PROPOSE → APPLY TEST → PROMOTE REAL → ROLLBACK)
-  // Sync defaults into UI
-  if (workerIdTestInputEl && !workerIdTestInputEl.value) workerIdTestInputEl.value = window.workerIdTest || "";
-  if (workerIdRealInputEl && !workerIdRealInputEl.value) workerIdRealInputEl.value = window.workerIdReal || "";
-  if (envSelectEl) envSelectEl.value = window.currentEnv || "test";
-
-  if (envSelectEl) {
-    envSelectEl.addEventListener("change", () => {
-      syncWorkerIdsFromUI();
-      appendRunLog("SYSTEM", `Ambiente ativo: ${window.currentEnv.toUpperCase()} • workerId: ${getActiveWorkerId() || "-"}`);
-    });
-  }
-
-  if (workerIdTestInputEl) workerIdTestInputEl.addEventListener("change", () => syncWorkerIdsFromUI());
-  if (workerIdRealInputEl) workerIdRealInputEl.addEventListener("change", () => syncWorkerIdsFromUI());
-
-  if (canonAuditBtn) {
-    canonAuditBtn.addEventListener("click", () => {
-      // Read-only: usa o action existente de simulação, mas sinaliza fase no extra
+  // Deploy buttons
+  if (deploySimulateBtn)
+    deploySimulateBtn.addEventListener("click", () =>
       handleDeployAction("deploy_simulate", {
-        message: "AUDIT + simulação (read-only)",
-        extra: { phase: "audit_simulate" },
-        workerId: getActiveWorkerId(),
-      });
-    });
-  }
+        message: "simular deploy",
+      })
+    );
 
-  if (canonProposeBtn) {
-    canonProposeBtn.addEventListener("click", async () => {
-      // PROPOSE não aplica nada: dispara um pedido em ENGINEER (sem executor_action)
-      const manual = (userInputEl && userInputEl.value ? userInputEl.value.trim() : "") || "";
-      const activeWorkerId = getActiveWorkerId();
+  if (deployApplyUserPatchBtn)
+    deployApplyUserPatchBtn.addEventListener("click", handleApplyUserPatch);
 
-      const proposeEnvelope = {
-        executor_action: "propose_patch",
-        workerId: activeWorkerId,
-        // Se você colar um bloco/manual aqui, ele entra como base
-        manual_block: manual ? manual : null,
-        rules: [
-          "NÃO aplicar mudanças",
-          "Gerar patchText + testPlan + impactAnalysis + riskReport",
-          "Se manual_block existir, use-o como base (validar encaixe/impacto)",
-          "Ambiente de alteração SEMPRE é TESTE (propor promoção só após TESTE OK)"
-        ],
-      };
-
-      // Envia como JSON para cair no caminho já existente do buildPayload (preserva workerId)
-      appendSystemMessage("PROPOSE: solicitando patch + plano + impactos (sem aplicar).");
-      appendRunLog("ENAVIA/ENGINEER", "PROPOSE disparado (sem apply).");
-      await sendToWorker(buildPayload(MODE_ENGINEER, JSON.stringify(proposeEnvelope)));
-    });
-  }
-
-  if (canonApplyTestBtn) {
-    canonApplyTestBtn.addEventListener("click", () => {
-      // Força TESTE, confirmação obrigatória
-      const ok = confirm("APPLY TEST: aplicar a última proposta no ambiente TESTE? (isso cria snapshot e pode exigir rollback se falhar)");
-      if (!ok) return;
-
-      setActiveEnv("test");
+  if (deployAcceptSuggestionBtn)
+    deployAcceptSuggestionBtn.addEventListener("click", () =>
       handleDeployAction("deploy_accept_suggestion", {
-        message: "APPLY TEST (somente TESTE)",
-        extra: { userApproval: true, target_env: "test", require_env: "test" },
-        workerId: window.workerIdTest || getActiveWorkerId(),
-      });
-    });
-  }
+        extra: { use_last_suggestion: true, userApproval: true },
+        message: "aprovar deploy",
+      })
+    );
 
-  if (canonPromoteRealBtn) {
-    canonPromoteRealBtn.addEventListener("click", () => {
-      // Força REAL, confirmação obrigatória
-      const ok = confirm("PROMOTE REAL: promover para REAL o patch JÁ testado? (NUNCA promove sem TESTE OK)");
-      if (!ok) return;
+  if (deployWorkerBtn)
+    deployWorkerBtn.addEventListener("click", () =>
+      handleDeployAction("deploy_worker", {
+        message: "publicar worker",
+      })
+    );
 
-      setActiveEnv("real");
+  if (deploySafeBtn)
+    deploySafeBtn.addEventListener("click", () =>
       handleDeployAction("deploy_safe", {
-        message: "PROMOTE REAL (apenas após TESTE OK)",
-        extra: {
-          userApproval: true,
-          target_env: "real",
-          promote: true,
-          require_test_success: true,
-          explain_impacts: true,
-        },
-        workerId: window.workerIdReal || getActiveWorkerId(),
-      });
-    });
-  }
+        message: "aprovar deploy",
+      })
+    );
 
-  if (canonRollbackBtn) {
-    canonRollbackBtn.addEventListener("click", () => {
-      const ok = confirm("ROLLBACK: voltar para o último estado estável do worker ativo?");
-      if (!ok) return;
-
+  if (deployRollbackBtn)
+    deployRollbackBtn.addEventListener("click", () =>
       handleDeployAction("deploy_rollback", {
-        message: "ROLLBACK (emergência)",
-        workerId: getActiveWorkerId(),
-      });
-    });
-  }
+        message: "rollback para versão anterior",
+      })
+    );
 
+  if (deploySessionCloseBtn)
+    deploySessionCloseBtn.addEventListener("click", () =>
+      handleDeployAction("deploy_session_close", {
+        message: "encerrar sessão de deploy",
+      })
+    );
 
   setMode(MODE_DIRECTOR, { silent: true });
   setStatus("neutral", "Pronto");
@@ -567,35 +514,6 @@ function getWorkerUrl() {
   return raw;
 }
 
-function normalizeWorkerId(value) {
-  const v = (value || "").trim();
-  return v || null;
-}
-
-function syncWorkerIdsFromUI() {
-  const testId = normalizeWorkerId(workerIdTestInputEl && workerIdTestInputEl.value);
-  const realId = normalizeWorkerId(workerIdRealInputEl && workerIdRealInputEl.value);
-
-  if (testId) window.workerIdTest = testId;
-  if (realId) window.workerIdReal = realId;
-
-  const env = (envSelectEl && envSelectEl.value) || window.currentEnv || "test";
-  window.currentEnv = env === "real" ? "real" : "test";
-  window.currentWorkerId = window.currentEnv === "real" ? window.workerIdReal : window.workerIdTest;
-}
-
-function setActiveEnv(env) {
-  window.currentEnv = env === "real" ? "real" : "test";
-  if (envSelectEl) envSelectEl.value = window.currentEnv;
-  window.currentWorkerId = window.currentEnv === "real" ? window.workerIdReal : window.workerIdTest;
-}
-
-function getActiveWorkerId() {
-  syncWorkerIdsFromUI();
-  return window.currentWorkerId || null;
-}
-
-
 function buildPayload(mode, content) {
   const base = {
     source: "NV-CONTROL",
@@ -616,7 +534,7 @@ function buildPayload(mode, content) {
   // ============================================================
   const resolvedWorkerId =
     (parsed && parsed.workerId) ||
-    getActiveWorkerId() ||
+    window.currentWorkerId ||
     null;
 
   if (parsed && typeof parsed === "object" && parsed.executor_action) {
@@ -826,7 +744,7 @@ function buildDeployPayload(executorAction, options = {}) {
     // 3) null (executor vai bloquear, como proteção)
     workerId:
       options.workerId ??
-      getActiveWorkerId() ??
+      window.currentWorkerId ??
       null,
 
     askSuggestions: true,
@@ -1281,3 +1199,56 @@ async function copyToClipboard(text) {
     setStatus("error", "Não foi possível copiar.");
   }
 }
+
+// ============================================================
+// ✅ DEPLOY TESTE (novo) — executa deploy REAL no ambiente TESTE
+// Regras:
+// - Sempre exige confirmação humana
+// - Sempre força target_env=test / require_env=test
+// ============================================================
+async function handleDeployTestButton() {
+  const ok = confirm(
+    "DEPLOY TESTE: executar o deploy REAL no ambiente TESTE agora?\n\n" +
+      "Isso aplica mudanças no worker de TESTE e pode exigir rollback automático se falhar."
+  );
+  if (!ok) return;
+
+  await handleDeployAction("deploy_execute_test", {
+    message: "DEPLOY TESTE (real no TESTE)",
+    extra: {
+      userApproval: true,
+      target_env: "test",
+      require_env: "test",
+    },
+  });
+}
+
+// ============================================================
+// ❌ CANCELAR CICLO (novo) — descarta staging/sugestão pendente
+// Regras:
+// - Nunca faz deploy
+// - Encerra a sessão/ciclo atual do executor
+// ============================================================
+async function handleCancelCycleButton() {
+  const ok = confirm(
+    "CANCELAR: descartar o ciclo atual (staging/sugestão pendente)?\n\n" +
+      "Isso NÃO faz deploy. Apenas encerra a sessão."
+  );
+  if (!ok) return;
+
+  await handleDeployAction("deploy_cancel", {
+    message: "CANCELAR ciclo (descartar staging)",
+    extra: {
+      userApproval: true,
+      target_env: "test",
+      require_env: "test",
+    },
+  });
+}
+
+
+// ============================================================
+// Wiring (novo): Deploy TESTE / Cancelar
+// ============================================================
+if (deployTestBtn) deployTestBtn.addEventListener("click", () => handleDeployTestButton());
+if (cancelCycleBtn) cancelCycleBtn.addEventListener("click", () => handleCancelCycleButton());
