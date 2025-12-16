@@ -20,20 +20,70 @@ const state = {
 const qs = (id) => document.getElementById(id);
 const nowISO = () => new Date().toISOString();
 
+/* ============================ CHAT MESSAGE ============================ */
+
 function logMessage(text, from = "system") {
-  const el = document.createElement("div");
-  el.className = `msg msg-${from}`;
-  el.textContent = text;
-  qs("messages").appendChild(el);
-  qs("messages").scrollTop = qs("messages").scrollHeight;
+  const wrapper = document.createElement("div");
+  wrapper.className = `msg msg-${from}`;
+
+  const content = document.createElement("div");
+  content.className = "msg-content";
+  content.textContent = text;
+
+  const copyBtn = document.createElement("button");
+  copyBtn.className = "copy-btn copy-chat-btn";
+  copyBtn.textContent = "Copiar";
+  copyBtn.dataset.copyText = text;
+
+  copyBtn.onclick = () => {
+    const copyText = copyBtn.dataset.copyText || "";
+
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(copyText).catch(() =>
+        fallbackCopy(copyText)
+      );
+    } else {
+      fallbackCopy(copyText);
+    }
+  };
+
+  wrapper.appendChild(content);
+  wrapper.appendChild(copyBtn);
+
+  const messages = qs("messages");
+  messages.appendChild(wrapper);
+  messages.scrollTop = messages.scrollHeight;
 }
+
+/* ============================ STATUS ============================ */
 
 function setStatus(text) {
   qs("status-badge").textContent = text;
 }
 
+/* ============================ WORKER ID ============================ */
+
 function currentWorkerId() {
   return state.env === "test" ? state.workerIdTest : state.workerIdReal;
+}
+
+/* ============================ COPY FALLBACK ============================ */
+
+function fallbackCopy(text) {
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+
+  try {
+    document.execCommand("copy");
+  } catch (_) {
+    alert("Não foi possível copiar o conteúdo.");
+  }
+
+  document.body.removeChild(textarea);
 }
 
 /* ============================ INIT ============================ */
@@ -290,6 +340,7 @@ qs("clearAllBtn").onclick = () => {
   qs("advanced-raw").textContent = "";
   state.executionId = null;
 };
+
 
 
 
