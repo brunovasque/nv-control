@@ -15,6 +15,7 @@ const state = {
 
   workerIdReal:
     localStorage.getItem("nv_worker_id_real") || "nv-enavia",
+   pipelineLocked: false, // 🔒 trava executionId após APPLY TEST
 
   executionId: null,
   lastRequest: null,
@@ -330,7 +331,7 @@ async function sendEngineer(action) {
     const json = await res.json();
     state.lastResponse = json;
 
-    // ============================================================
+// ============================================================
 // 🔐 CAPTURA CANÔNICA DO execution_id (STATEFUL)
 // ============================================================
 const newExecutionId =
@@ -358,6 +359,7 @@ if (!state.executionId) {
   // audit NÃO pode quebrar pipeline ativo
   // só cria novo executionId se o usuário tiver limpado/resetado antes
 }
+     pipelineLocked: false,
 
     updateTelemetry();
 
@@ -691,6 +693,7 @@ document.addEventListener("DOMContentLoaded", () => {
   try { setMode(state.mode || "director"); } catch (_) {}
 });
 /* ============================ FIM PATCH MODE ============================ */
+
 
 
 
