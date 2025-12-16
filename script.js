@@ -78,6 +78,7 @@ function engineerPayload(action) {
 async function sendChat(message) {
   if (!state.workerUrl) return setStatus("Defina o Worker URL");
 
+  // mensagem do usuário
   logMessage(message, state.mode);
 
   const payload = chatPayload(message);
@@ -90,40 +91,25 @@ async function sendChat(message) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+
     const json = await res.json();
     state.lastResponse = json;
     updateTelemetry();
+
+    // resposta no chat (humanizada)
+    if (json?.output) {
+      logMessage(json.output, state.mode);
+    } else if (json?.message) {
+      logMessage(json.message, state.mode);
+    } else {
+      logMessage(
+        "Resposta recebida. Veja detalhes na telemetria.",
+        "system"
+      );
+    }
   } catch (err) {
     showError(err);
-  }
-}
-
-async function sendEngineer(action) {
-  if (!state.workerUrl) return setStatus("Defina o Worker URL");
-
-  const payload = engineerPayload(action);
-  state.lastRequest = payload;
-  updateTelemetry();
-
-  try {
-    const res = await fetch(`${state.workerUrl}/engineer`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const json = await res.json();
-    state.lastResponse = json;
-
-    state.executionId =
-      json.execution_id ||
-      json?.result?.execution_id ||
-      json?.executor?.execution_id ||
-      json?.executor?.result?.execution_id ||
-      state.executionId;
-
-    updateTelemetry();
-  } catch (err) {
-    showError(err);
+    logMessage("Erro ao comunicar com o sistema.", "system");
   }
 }
 
@@ -265,3 +251,4 @@ qs("clearAllBtn").onclick = () => {
   qs("advanced-raw").textContent = "";
   state.executionId = null;
 };
+
