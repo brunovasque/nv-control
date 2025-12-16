@@ -346,38 +346,33 @@ const newExecutionId =
   null;
 
 /*
- Regras:
- - audit: só gera executionId se NÃO existir pipeline ativo
- - apply_test: fixa executionId
- - demais ações: nunca sobrescrevem
+ Regras finais:
+ - Antes do APPLY TEST (pipelineLocked=false):
+     → pode capturar executionId (AUDIT)
+ - Após APPLY TEST (pipelineLocked=true):
+     → executionId é IMUTÁVEL
 */
-if (!state.executionId) {
-  if (newExecutionId) {
+if (!state.pipelineLocked) {
+  if (!state.executionId && newExecutionId) {
     state.executionId = newExecutionId;
   }
-} else if (action.executor_action === "audit") {
-  // audit NÃO pode quebrar pipeline ativo
-  // só cria novo executionId se o usuário tiver limpado/resetado antes
 }
-     pipelineLocked: false,
 
-    updateTelemetry();
+updateTelemetry();
 
-    // feedback humano no chat
-    if (json?.message) {
-      logMessage(json.message, "engineer");
-    } else if (json?.result) {
-      logMessage("Ação executada. Veja detalhes na telemetria.", "engineer");
-    }
-
-     // ✅ RETORNO OBRIGATÓRIO PARA await FUNCIONAR
-    return json;
-     
-  } catch (err) {
-    showError(err);
-    logMessage("Erro ao executar ação técnica.", "system");
-  }
+// ============================================================
+// 💬 FEEDBACK HUMANO NO CHAT (MESMO BLOCO)
+// ============================================================
+if (json?.message) {
+  logMessage(json.message, "engineer");
+} else if (json?.result) {
+  logMessage("Ação executada. Veja detalhes na telemetria.", "engineer");
+} else {
+  logMessage("Resposta recebida. Veja detalhes na telemetria.", "engineer");
 }
+
+// ✅ RETORNO OBRIGATÓRIO PARA await FUNCIONAR
+return json;
 
 /* ============================ PIPELINE ============================ */
 
@@ -408,7 +403,7 @@ const __ENAVIA_BUILD__ = {
 };
 `;
 
-  // 1️⃣ STAGE PATCH — salva no staging
+// 1️⃣ STAGE PATCH — salva no staging
   await sendEngineer({
     executor_action: "stage_patch",
     execution_id: state.executionId,
@@ -421,6 +416,9 @@ const __ENAVIA_BUILD__ = {
     execution_id: state.executionId,
     reason: "TEST PATCH — validar deploy real",
   });
+
+  // 🔒 PASSO 2 — trava o pipeline SOMENTE após APPLY TEST
+  state.pipelineLocked = true;
 };
 
   // DEPLOY TEST
@@ -521,26 +519,34 @@ async function sendEngineer(action) {
     const json = await res.json();
     state.lastResponse = json;
 
-    // captura robusta do execution_id (inclui requestId)
-    const ex = extractExecutionId(json);
-    if (ex) state.executionId = ex;
+// ============================================================
+// 🔐 PASSO 3 — GOVERNANÇA FINAL DO execution_id
+// ============================================================
+const newExecutionId = extractExecutionId(json);
 
-    updateTelemetry();
-
-    // feedback humano no chat
-    if (json?.message) {
-      logMessage(json.message, "engineer");
-    } else if (json?.result) {
-      logMessage("Ação executada. Veja detalhes na telemetria.", "engineer");
-    } else {
-      logMessage("Resposta recebida. Veja detalhes na telemetria.", "engineer");
-    }
-  } catch (err) {
-    showError(err);
-    logMessage("Erro ao executar ação técnica.", "system");
+/*
+ Regras finais:
+ - Antes do APPLY TEST (pipelineLocked=false):
+     → pode capturar executionId (AUDIT)
+ - Após APPLY TEST (pipelineLocked=true):
+     → executionId é IMUTÁVEL
+*/
+if (!state.pipelineLocked) {
+  if (!state.executionId && newExecutionId) {
+    state.executionId = newExecutionId;
   }
 }
 
+updateTelemetry();
+
+// feedback humano no chat
+if (json?.message) {
+  logMessage(json.message, "engineer");
+} else if (json?.result) {
+  logMessage("Ação executada. Veja detalhes na telemetria.", "engineer");
+} else {
+  logMessage("Resposta recebida. Veja detalhes na telemetria.", "engineer");
+}
 /* Re-binda botão Enviar com lock (override canônico) */
 (function bindSendWithLock() {
   const btn = qs("sendBtn");
@@ -693,6 +699,7 @@ document.addEventListener("DOMContentLoaded", () => {
   try { setMode(state.mode || "director"); } catch (_) {}
 });
 /* ============================ FIM PATCH MODE ============================ */
+
 
 
 
