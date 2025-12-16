@@ -176,18 +176,31 @@ qs("debugToggle").onchange = (e) => (state.debug = e.target.checked);
 
 /* ============================ SEND ============================ */
 
+// Clique no botão Enviar
 qs("sendBtn").onclick = () => {
   const text = qs("userInput").value.trim();
   if (!text) return;
 
   if (state.mode === "engineer") {
+    // Engineer envia execução
     sendEngineer({ executor_action: text });
   } else {
+    // Director / Enavia / Brain usam chat consultivo
     sendChat(text);
   }
 
   qs("userInput").value = "";
 };
+
+// Teclado do chat
+// Enter envia | Ctrl + Enter quebra linha
+qs("userInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.ctrlKey) {
+    e.preventDefault();
+    qs("sendBtn").click();
+  }
+  // Ctrl + Enter: comportamento padrão do textarea (quebra linha)
+});
 
 /* ============================ PIPELINE ============================ */
 
@@ -251,4 +264,5 @@ qs("clearAllBtn").onclick = () => {
   qs("advanced-raw").textContent = "";
   state.executionId = null;
 };
+
 
