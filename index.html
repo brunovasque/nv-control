@@ -119,205 +119,125 @@
 
             <!-- BARRA CANÔNICA (TESTE → REAL) -->
             <div class="deploy-toolbar" id="canonical-toolbar">
-  <div
-    class="deploy-toolbar-row"
-    style="display:flex; flex-wrap:wrap; gap:6px; width:100%; align-items:center;"
-  >
-    <span
-      style="font-size:0.7rem; color: var(--text-muted); margin-right:6px; letter-spacing:0.08em; text-transform:uppercase;"
-    >
-      Pipeline
-    </span>
+              <div
+                class="deploy-toolbar-row"
+                style="display:flex; flex-wrap:wrap; gap:6px; width:100%; align-items:center;"
+              >
+                <span
+                  style="font-size:0.7rem; color: var(--text-muted); margin-right:6px; letter-spacing:0.08em; text-transform:uppercase;"
+                >
+                  Pipeline
+                </span>
 
-    <label
-      class="checkbox-inline"
-      title="Define qual workerId será usado para as ações."
-    >
-      <span style="opacity:0.9;">Ambiente</span>
-      <select
-        id="envSelect"
-        class="history-filter-select"
-        style="padding:4px 10px;"
-      >
-        <option value="test" selected>TESTE</option>
-        <option value="real">REAL</option>
-      </select>
-    </label>
+                <label
+                  class="checkbox-inline"
+                  title="Define qual workerId será usado para as ações."
+                >
+                  <span style="opacity:0.9;">Ambiente</span>
+                  <select
+                    id="envSelect"
+                    class="history-filter-select"
+                    style="padding:4px 10px;"
+                  >
+                    <option value="test" selected>TESTE</option>
+                    <option value="real">REAL</option>
+                  </select>
+                </label>
 
-    <label
-      class="checkbox-inline"
-      title="workerId do ambiente TESTE (onde toda mudança é aplicada primeiro)."
-    >
-      <span>workerId TEST</span>
-      <input
-        id="workerIdTestInput"
-        type="text"
-        spellcheck="false"
-        style="min-width:210px; padding:4px 10px; border-radius:999px; border:1px solid rgba(148,163,184,0.45); background: rgba(15,23,42,0.9); color: var(--text);"
-      />
-    </label>
+                <label
+                  class="checkbox-inline"
+                  title="workerId do ambiente TESTE (onde toda mudança é aplicada primeiro)."
+                >
+                  <span>workerId TEST</span>
+                  <input
+                    id="workerIdTestInput"
+                    type="text"
+                    spellcheck="false"
+                    style="min-width:210px; padding:4px 10px; border-radius:999px; border:1px solid rgba(148,163,184,0.45); background: rgba(15,23,42,0.9); color: var(--text);"
+                  />
+                </label>
 
-    <label
-      class="checkbox-inline"
-      title="workerId do ambiente REAL (só promove após TESTE OK)."
-    >
-      <span>workerId REAL</span>
-      <input
-        id="workerIdRealInput"
-        type="text"
-        spellcheck="false"
-        style="min-width:210px; padding:4px 10px; border-radius:999px; border:1px solid rgba(148,163,184,0.45); background: rgba(15,23,42,0.9); color: var(--text);"
-      />
-    </label>
-  </div>
+                <label
+                  class="checkbox-inline"
+                  title="workerId do ambiente REAL (só promove após TESTE OK)."
+                >
+                  <span>workerId REAL</span>
+                  <input
+                    id="workerIdRealInput"
+                    type="text"
+                    spellcheck="false"
+                    style="min-width:210px; padding:4px 10px; border-radius:999px; border:1px solid rgba(148,163,184,0.45); background: rgba(15,23,42,0.9); color: var(--text);"
+                  />
+                </label>
+              </div>
 
-  <!-- 🔥 NOVO: wrapper correto para os botões -->
-  <div class="deploy-toolbar-buttons">
+              <button
+                id="canonAuditBtn"
+                type="button"
+                class="btn btn-icon deploy-btn deploy-btn-simulate"
+                title="AUDIT + simulação (read-only). Não aplica mudanças."
+              >
+                AUDIT
+              </button>
 
-    <button
-      id="canonAuditBtn"
-      type="button"
-      class="btn btn-icon deploy-btn deploy-btn-simulate"
-      title="AUDIT + simulação (read-only). Não aplica mudanças."
-    >
-      AUDIT
-    </button>
+              <button
+                id="canonProposeBtn"
+                type="button"
+                class="btn btn-icon deploy-btn deploy-btn-apply"
+                title="PROPOSE: pedir patch + plano de teste + impactos (não aplica). Se houver bloco no campo, será usado como base."
+              >
+                PROPOSE
+              </button>
 
-    <button
-      id="canonProposeBtn"
-      type="button"
-      class="btn btn-icon deploy-btn deploy-btn-apply"
-      title="PROPOSE: pedir patch + plano de teste + impactos (não aplica). Se houver bloco no campo, será usado como base."
-    >
-      PROPOSE
-    </button>
+              <button
+                id="canonApplyTestBtn"
+                type="button"
+                class="btn btn-icon deploy-btn deploy-btn-safe"
+                title="APPLY TEST: aplica a última proposta/sugestão SOMENTE no TESTE (com confirmação)."
+              >
+                APPLY TEST
+              </button>
 
-    <button
-      id="canonApplyTestBtn"
-      type="button"
-      class="btn btn-icon deploy-btn deploy-btn-safe"
-      title="APPLY TEST: aplica a última proposta/sugestão SOMENTE no TESTE (com confirmação)."
-    >
-      APPLY TEST
-    </button>
+              <!-- ✅ NOVO (FASE 2): DEPLOY TESTE -->
+              <button
+                id="canonDeployTestBtn"
+                type="button"
+                class="btn btn-icon deploy-btn deploy-btn-worker"
+                title="Deploy real no ambiente TESTE. Gera prova obrigatória para liberar PRODUÇÃO."
+              >
+                DEPLOY TESTE
+              </button>
 
-    <button
-      id="canonDeployTestBtn"
-      type="button"
-      class="btn btn-icon deploy-btn deploy-btn-worker"
-      title="Deploy real no ambiente TESTE. Gera prova obrigatória para liberar PRODUÇÃO."
-    >
-      DEPLOY TESTE
-    </button>
+              <button
+                id="canonPromoteRealBtn"
+                type="button"
+                class="btn btn-icon deploy-btn deploy-btn-worker"
+                title="PROMOTE REAL: promove para REAL SOMENTE após TESTE OK (com confirmação + impacto)."
+              >
+                PROMOTE REAL
+              </button>
 
-    <button
-      id="canonApproveBtn"
-      type="button"
-      class="btn btn-icon deploy-btn deploy-btn-safe"
-      title="APPROVE: confirma e aplica o deploy no TESTE usando o execution_id ativo."
-    >
-      APPROVE
-    </button>
+              <!-- ✅ NOVO (FASE 2): CANCELAR -->
+              <button
+                id="canonCancelBtn"
+                type="button"
+                class="btn btn-icon deploy-btn deploy-btn-close"
+                title="Cancela o ciclo atual sem aplicar deploy."
+              >
+                CANCELAR
+              </button>
 
-    <button
-      id="canonPromoteRealBtn"
-      type="button"
-      class="btn btn-icon deploy-btn deploy-btn-worker"
-      title="PROMOTE REAL: promove para REAL SOMENTE após TESTE OK (com confirmação + impacto)."
-    >
-      PROMOTE REAL
-    </button>
-
-    <button
-      id="canonCancelBtn"
-      type="button"
-      class="btn btn-icon deploy-btn deploy-btn-close"
-      title="Cancela o ciclo atual sem aplicar deploy."
-    >
-      CANCELAR
-    </button>
-
-    <button
-      id="canonRollbackBtn"
-      type="button"
-      class="btn btn-icon deploy-btn deploy-btn-rollback"
-      title="ROLLBACK: volta para último estado estável (emergência)."
-    >
-      ROLLBACK
-    </button>
-
-  </div>
-</div>
-
->
-  AUDIT
-</button>
-
-<button
-  id="canonProposeBtn"
-  type="button"
-  class="btn btn-icon deploy-btn deploy-btn-apply"
-  title="PROPOSE: pedir patch + plano de teste + impactos (não aplica). Se houver bloco no campo, será usado como base."
->
-  PROPOSE
-</button>
-
-<button
-  id="canonApplyTestBtn"
-  type="button"
-  class="btn btn-icon deploy-btn deploy-btn-safe"
-  title="APPLY TEST: aplica a última proposta/sugestão SOMENTE no TESTE (com confirmação)."
->
-  APPLY TEST
-</button>
-
-<!-- ✅ NOVO (FASE 2): DEPLOY TESTE -->
-<button
-  id="canonDeployTestBtn"
-  type="button"
-  class="btn btn-icon deploy-btn deploy-btn-worker"
-  title="Deploy real no ambiente TESTE. Gera prova obrigatória para liberar PRODUÇÃO."
->
-  DEPLOY TESTE
-</button>
-
-<!-- 🔥 BOTÃO QUE FALTAVA: APPROVE -->
-<button
-  id="canonApproveBtn"
-  type="button"
-  class="btn btn-icon deploy-btn deploy-btn-safe"
-  title="APPROVE: confirma e aplica o deploy no TESTE usando o execution_id ativo."
->
-  APPROVE
-</button>
-
-<button
-  id="canonPromoteRealBtn"
-  type="button"
-  class="btn btn-icon deploy-btn deploy-btn-worker"
-  title="PROMOTE REAL: promove para REAL SOMENTE após TESTE OK (com confirmação + impacto)."
->
-  PROMOTE REAL
-</button>
-
-<!-- ✅ NOVO (FASE 2): CANCELAR -->
-<button
-  id="canonCancelBtn"
-  type="button"
-  class="btn btn-icon deploy-btn deploy-btn-close"
-  title="Cancela o ciclo atual sem aplicar deploy."
->
-  CANCELAR
-</button>
-
-<button
-  id="canonRollbackBtn"
-  type="button"
-  class="btn btn-icon deploy-btn deploy-btn-rollback"
-  title="ROLLBACK: volta para último estado estável (emergência)."
->
-  ROLLBACK
-</button>
+              <button
+                id="canonRollbackBtn"
+                type="button"
+                class="btn btn-icon deploy-btn deploy-btn-rollback"
+                title="ROLLBACK: volta para último estado estável (emergência)."
+              >
+                ROLLBACK
+              </button>
+            </div>
+          </div>
+        </section>
 
         <!-- RIGHT: TELEMETRIA / EXECUÇÃO / HISTÓRICO / AVANÇADO -->
         <section class="side-panel">
