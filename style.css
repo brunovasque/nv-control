@@ -674,3 +674,9 @@ textarea:focus {
     justify-content: space-between;
   }
 }
+
+.deploy-toolbar .deploy-btn {
+  min-width: 120px;
+  text-align: center;
+}
+
