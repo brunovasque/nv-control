@@ -219,13 +219,13 @@ qs("sendBtn").onclick = () => {
 };
 
 // Teclado do chat
-// Enter envia | Ctrl + Enter quebra linha
+// Enter envia | Shift + Enter quebra linha
 qs("userInput").addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.ctrlKey) {
+  if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
     qs("sendBtn").click();
   }
-  // Ctrl + Enter: comportamento padrão do textarea (quebra linha)
+  // Shift + Enter: comportamento padrão do textarea (quebra linha)
 });
 
 /* ============================ PIPELINE ============================ */
@@ -290,6 +290,7 @@ qs("clearAllBtn").onclick = () => {
   qs("advanced-raw").textContent = "";
   state.executionId = null;
 };
+
 
 
 
