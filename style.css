@@ -444,3 +444,19 @@ textarea#userInput {
 .msg-engineer { color: #f5c451; }
 .msg-brain { color: #3ddc97; }
 .msg-system { color: #9aa3b2; }
+
+
+/* ============================ PATCH CANÔNICO — BADGE MODES ============================ */
+.badge-mode-enavia {
+  color: var(--accent-blue);
+  border-color: rgba(77, 163, 255, 0.4);
+}
+.badge-mode-engineer {
+  color: var(--accent-yellow);
+  border-color: rgba(245, 196, 81, 0.4);
+}
+.badge-mode-brain {
+  color: var(--accent-green);
+  border-color: rgba(61, 220, 151, 0.4);
+}
+/* ============================ FIM PATCH BADGE MODES ============================ */
