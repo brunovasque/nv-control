@@ -1,7 +1,6 @@
 /* ==========================================================================
    NV-Control — ENAVIA
-   script.js (CANÔNICO)
-   Painel limpo • Zero duplicação • Payloads corretos
+   script.js (FINAL • OPERACIONAL • CANÔNICO)
    ========================================================================== */
 
 /* ============================ ESTADO GLOBAL ============================ */
@@ -9,7 +8,7 @@
 const state = {
   mode: "director",
   debug: true,
-  env: "test", // test | real
+  env: "test",
   workerUrl: "",
   workerIdTest: "",
   workerIdReal: "",
@@ -20,31 +19,49 @@ const state = {
 
 /* ============================ HELPERS ============================ */
 
-function qs(id) {
-  return document.getElementById(id);
-}
+const qs = (id) => document.getElementById(id);
+const nowISO = () => new Date().toISOString();
 
-function nowISO() {
-  return new Date().toISOString();
-}
-
-function logMessage(text, type = "info") {
+function logMessage(text) {
   const el = document.createElement("div");
-  el.className = `msg msg-${type}`;
+  el.className = "msg";
   el.textContent = text;
   qs("messages").appendChild(el);
   qs("messages").scrollTop = qs("messages").scrollHeight;
 }
 
-function setStatus(text, variant = "neutral") {
-  const badge = qs("status-badge");
-  badge.textContent = text;
-  badge.className = `badge badge-${variant}`;
+function setStatus(text) {
+  qs("status-badge").textContent = text;
 }
 
 function currentWorkerId() {
   return state.env === "test" ? state.workerIdTest : state.workerIdReal;
 }
+
+/* ============================ INIT (AUTO-CONFIG) ============================ */
+
+(function init() {
+  const url = localStorage.getItem("nv_worker_url");
+  const testId = localStorage.getItem("nv_worker_test");
+  const realId = localStorage.getItem("nv_worker_real");
+
+  if (url) {
+    state.workerUrl = url;
+    qs("workerUrlInput").value = url;
+  }
+
+  if (testId) {
+    state.workerIdTest = testId;
+    qs("workerIdTestInput").value = testId;
+  }
+
+  if (realId) {
+    state.workerIdReal = realId;
+    qs("workerIdRealInput").value = realId;
+  }
+
+  setStatus(state.workerUrl ? "Conectado" : "Sem Worker");
+})();
 
 /* ============================ PAYLOAD BASE ============================ */
 
@@ -64,13 +81,12 @@ function basePayload(extra = {}) {
 
 async function sendToWorker(payload) {
   if (!state.workerUrl) {
-    alert("Worker URL não definido.");
+    setStatus("Defina o Worker URL");
     return;
   }
 
   state.lastRequest = payload;
   updateTelemetry();
-
   setStatus("Enviando…");
 
   try {
@@ -87,15 +103,13 @@ async function sendToWorker(payload) {
       state.executionId = json.execution_id;
     }
 
-    setStatus("OK", "neutral");
-    logMessage("✔ Resposta recebida", "ok");
-
+    setStatus("OK");
     updateTelemetry();
-    appendHistory(payload, json);
+    appendHistory(payload);
   } catch (err) {
-    setStatus("Erro", "error");
-    logMessage(`✖ Erro: ${err.message}`, "error");
-    showError(err);
+    setStatus("Erro");
+    qs("telemetry-error").textContent = String(err);
+    qs("telemetry-error-card").style.display = "block";
   }
 }
 
@@ -115,15 +129,9 @@ function updateTelemetry() {
     : "";
 }
 
-function showError(err) {
-  const card = qs("telemetry-error-card");
-  qs("telemetry-error").textContent = String(err);
-  card.style.display = "block";
-}
-
 /* ============================ HISTÓRICO ============================ */
 
-function appendHistory(req, res) {
+function appendHistory(req) {
   const item = document.createElement("div");
   item.className = "history-item";
   item.textContent = `[${req.mode}] ${req.executor_action || "message"}`;
@@ -134,132 +142,83 @@ function appendHistory(req, res) {
 
 function setMode(mode) {
   state.mode = mode;
-
   document.querySelectorAll(".btn-mode").forEach((b) =>
     b.classList.remove("active")
   );
-
-  qs(`mode${mode[0].toUpperCase()}${mode.slice(1)}Btn`).classList.add(
-    "active"
-  );
-
-  logMessage(`Modo alterado para ${mode.toUpperCase()}`);
+  qs(`mode${mode[0].toUpperCase()}${mode.slice(1)}Btn`).classList.add("active");
 }
 
 /* ============================ TABS ============================ */
 
 document.querySelectorAll(".tab").forEach((tab) => {
-  tab.addEventListener("click", () => {
+  tab.onclick = () => {
     document
       .querySelectorAll(".tab, .tab-panel")
       .forEach((el) => el.classList.remove("active"));
-
     tab.classList.add("active");
     qs(`panel-${tab.dataset.tab}`).classList.add("active");
-  });
-});
-
-/* ============================ ENV ============================ */
-
-qs("envSelect").addEventListener("change", (e) => {
-  state.env = e.target.value;
-  logMessage(`Ambiente selecionado: ${state.env.toUpperCase()}`);
+  };
 });
 
 /* ============================ INPUTS ============================ */
 
-qs("workerUrlInput").addEventListener(
-  "input",
-  (e) => (state.workerUrl = e.target.value)
-);
+qs("workerUrlInput").oninput = (e) => {
+  state.workerUrl = e.target.value.trim();
+  localStorage.setItem("nv_worker_url", state.workerUrl);
+  setStatus(state.workerUrl ? "Conectado" : "Sem Worker");
+};
 
-qs("workerIdTestInput").addEventListener(
-  "input",
-  (e) => (state.workerIdTest = e.target.value)
-);
+qs("workerIdTestInput").oninput = (e) => {
+  state.workerIdTest = e.target.value.trim();
+  localStorage.setItem("nv_worker_test", state.workerIdTest);
+};
 
-qs("workerIdRealInput").addEventListener(
-  "input",
-  (e) => (state.workerIdReal = e.target.value)
-);
+qs("workerIdRealInput").oninput = (e) => {
+  state.workerIdReal = e.target.value.trim();
+  localStorage.setItem("nv_worker_real", state.workerIdReal);
+};
 
-qs("debugToggle").addEventListener(
-  "change",
-  (e) => (state.debug = e.target.checked)
-);
+qs("envSelect").onchange = (e) => (state.env = e.target.value);
+qs("debugToggle").onchange = (e) => (state.debug = e.target.checked);
 
 /* ============================ SEND ============================ */
 
-qs("sendBtn").addEventListener("click", () => {
+qs("sendBtn").onclick = () => {
   const text = qs("userInput").value.trim();
   if (!text) return;
 
-  sendToWorker(
-    basePayload({
-      message: text,
-    })
-  );
-
+  sendToWorker(basePayload({ message: text }));
   qs("userInput").value = "";
-});
+};
 
-/* ============================ PIPELINE CANÔNICO ============================ */
+/* ============================ PIPELINE ============================ */
 
-// AUDIT
-qs("canonAuditBtn").addEventListener("click", () => {
-  sendToWorker(
-    basePayload({
-      executor_action: "audit",
-    })
-  );
-});
+qs("canonAuditBtn").onclick = () =>
+  sendToWorker(basePayload({ executor_action: "audit" }));
 
-// PROPOSE
-qs("canonProposeBtn").addEventListener("click", () => {
-  sendToWorker(
-    basePayload({
-      executor_action: "propose",
-    })
-  );
-});
+qs("canonProposeBtn").onclick = () =>
+  sendToWorker(basePayload({ executor_action: "propose" }));
 
-// APPLY TEST
-qs("canonApplyTestBtn").addEventListener("click", () => {
-  if (!state.executionId) {
-    alert("Nenhum execution_id ativo.");
-    return;
-  }
-
+qs("canonApplyTestBtn").onclick = () =>
+  state.executionId &&
   sendToWorker(
     basePayload({
       executor_action: "apply_test",
       execution_id: state.executionId,
     })
   );
-});
 
-// DEPLOY TESTE
-qs("canonDeployTestBtn").addEventListener("click", () => {
-  if (!state.executionId) {
-    alert("Nenhum execution_id ativo.");
-    return;
-  }
-
+qs("canonDeployTestBtn").onclick = () =>
+  state.executionId &&
   sendToWorker(
     basePayload({
       executor_action: "deploy_test",
       execution_id: state.executionId,
     })
   );
-});
 
-// APPROVE
-qs("canonApproveBtn").addEventListener("click", () => {
-  if (!state.executionId) {
-    alert("Nenhum execution_id ativo.");
-    return;
-  }
-
+qs("canonApproveBtn").onclick = () =>
+  state.executionId &&
   sendToWorker(
     basePayload({
       executor_action: "deploy_approve",
@@ -267,66 +226,35 @@ qs("canonApproveBtn").addEventListener("click", () => {
       approve: true,
     })
   );
-});
 
-// PROMOTE REAL
-qs("canonPromoteRealBtn").addEventListener("click", () => {
-  if (!state.executionId) {
-    alert("Nenhum execution_id ativo.");
-    return;
-  }
-
-  if (!confirm("Confirmar PROMOÇÃO PARA PRODUÇÃO?")) return;
-
+qs("canonPromoteRealBtn").onclick = () =>
+  state.executionId &&
   sendToWorker(
     basePayload({
       executor_action: "promote_real",
       execution_id: state.executionId,
     })
   );
-});
 
-// CANCELAR
-qs("canonCancelBtn").addEventListener("click", () => {
-  if (!state.executionId) {
-    alert("Nenhum execution_id ativo.");
-    return;
-  }
-
+qs("canonCancelBtn").onclick = () =>
+  state.executionId &&
   sendToWorker(
     basePayload({
       executor_action: "deploy_cancel",
       execution_id: state.executionId,
     })
   );
-});
 
-// ROLLBACK
-qs("canonRollbackBtn").addEventListener("click", () => {
-  if (!confirm("Rollback emergencial?")) return;
+qs("canonRollbackBtn").onclick = () =>
+  sendToWorker(basePayload({ executor_action: "rollback" }));
 
-  sendToWorker(
-    basePayload({
-      executor_action: "rollback",
-    })
-  );
-});
+/* ============================ LIMPAR ============================ */
 
-/* ============================ LIMPEZA ============================ */
-
-qs("clearAllBtn").addEventListener("click", () => {
+qs("clearAllBtn").onclick = () => {
   qs("messages").innerHTML = "";
   qs("history-list").innerHTML = "";
   qs("telemetry-request").textContent = "";
   qs("telemetry-response").textContent = "";
   qs("advanced-raw").textContent = "";
   state.executionId = null;
-  logMessage("Console limpo");
-});
-
-/* ============================ MODES BUTTONS ============================ */
-
-qs("modeDirectorBtn").onclick = () => setMode("director");
-qs("modeEnaviaBtn").onclick = () => setMode("enavia");
-qs("modeEngineerBtn").onclick = () => setMode("engineer");
-qs("modeBrainBtn").onclick = () => setMode("brain");
+};
