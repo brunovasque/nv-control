@@ -346,6 +346,10 @@ async function sendEngineer(action) {
     } else if (json?.result) {
       logMessage("Ação executada. Veja detalhes na telemetria.", "engineer");
     }
+
+     // ✅ RETORNO OBRIGATÓRIO PARA await FUNCIONAR
+    return json;
+     
   } catch (err) {
     showError(err);
     logMessage("Erro ao executar ação técnica.", "system");
@@ -666,5 +670,6 @@ document.addEventListener("DOMContentLoaded", () => {
   try { setMode(state.mode || "director"); } catch (_) {}
 });
 /* ============================ FIM PATCH MODE ============================ */
+
 
 
