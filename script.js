@@ -324,19 +324,24 @@ async function sendEngineer(action) {
 
 /* ============================ PIPELINE ============================ */
 
-qs("canonAuditBtn").onclick = () =>
-  sendEngineer({ executor_action: "audit" });
+document.addEventListener("DOMContentLoaded", () => {
 
-qs("canonProposeBtn").onclick = () =>
-  sendEngineer({ executor_action: "propose" });
+  // AUDIT
+  qs("canonAuditBtn").onclick = () =>
+    sendEngineer({ executor_action: "audit" });
 
-qs("canonApplyTestBtn").onclick = () => {
-  if (!state.executionId) {
-    logMessage("Nenhuma execução ativa.", "system");
-    return;
-  }
+  // PROPOSE
+  qs("canonProposeBtn").onclick = () =>
+    sendEngineer({ executor_action: "propose" });
 
-  const testPatch = `
+  // APPLY TEST (injeta patch fixo de teste)
+  qs("canonApplyTestBtn").onclick = () => {
+    if (!state.executionId) {
+      logMessage("Nenhuma execução ativa.", "system");
+      return;
+    }
+
+    const testPatch = `
 /* ===========================
    ENAVIA TEST PATCH
    =========================== */
@@ -346,49 +351,56 @@ const __ENAVIA_BUILD__ = {
 };
 `;
 
-  sendEngineer({
-    executor_action: "apply_test",
-    execution_id: state.executionId,
-    patch: testPatch,
-    reason: "TEST PATCH — validar deploy real",
-  });
-};
+    sendEngineer({
+      executor_action: "apply_test",
+      execution_id: state.executionId,
+      patch: testPatch,
+      reason: "TEST PATCH — validar deploy real",
+    });
+  };
 
-qs("canonDeployTestBtn").onclick = () =>
-  state.executionId
-    ? sendEngineer({
-        executor_action: "deploy_test",
-        execution_id: state.executionId,
-      })
-    : logMessage("Nenhuma execução ativa.", "system");
+  // DEPLOY TEST
+  qs("canonDeployTestBtn").onclick = () =>
+    state.executionId
+      ? sendEngineer({
+          executor_action: "deploy_test",
+          execution_id: state.executionId,
+        })
+      : logMessage("Nenhuma execução ativa.", "system");
 
-qs("canonApproveBtn").onclick = () =>
-  state.executionId
-    ? sendEngineer({
-        executor_action: "deploy_approve",
-        execution_id: state.executionId,
-        approve: true,
-      })
-    : logMessage("Nenhuma execução ativa.", "system");
+  // APPROVE
+  qs("canonApproveBtn").onclick = () =>
+    state.executionId
+      ? sendEngineer({
+          executor_action: "deploy_approve",
+          execution_id: state.executionId,
+          approve: true,
+        })
+      : logMessage("Nenhuma execução ativa.", "system");
 
-qs("canonPromoteRealBtn").onclick = () =>
-  state.executionId
-    ? sendEngineer({
-        executor_action: "promote_real",
-        execution_id: state.executionId,
-      })
-    : logMessage("Nenhuma execução ativa.", "system");
+  // PROMOTE REAL
+  qs("canonPromoteRealBtn").onclick = () =>
+    state.executionId
+      ? sendEngineer({
+          executor_action: "promote_real",
+          execution_id: state.executionId,
+        })
+      : logMessage("Nenhuma execução ativa.", "system");
 
-qs("canonCancelBtn").onclick = () =>
-  state.executionId
-    ? sendEngineer({
-        executor_action: "deploy_cancel",
-        execution_id: state.executionId,
-      })
-    : logMessage("Nenhuma execução ativa.", "system");
+  // CANCEL
+  qs("canonCancelBtn").onclick = () =>
+    state.executionId
+      ? sendEngineer({
+          executor_action: "deploy_cancel",
+          execution_id: state.executionId,
+        })
+      : logMessage("Nenhuma execução ativa.", "system");
 
-qs("canonRollbackBtn").onclick = () =>
-  sendEngineer({ executor_action: "rollback" });
+  // ROLLBACK
+  qs("canonRollbackBtn").onclick = () =>
+    sendEngineer({ executor_action: "rollback" });
+
+});
 
 /* ============================ LIMPAR ============================ */
 
@@ -400,6 +412,7 @@ qs("clearAllBtn").onclick = () => {
   qs("advanced-raw").textContent = "";
   state.executionId = null;
 };
+
 
 
 
