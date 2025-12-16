@@ -330,13 +330,29 @@ qs("canonAuditBtn").onclick = () =>
 qs("canonProposeBtn").onclick = () =>
   sendEngineer({ executor_action: "propose" });
 
-qs("canonApplyTestBtn").onclick = () =>
-  state.executionId
-    ? sendEngineer({
-        executor_action: "apply_test",
-        execution_id: state.executionId,
-      })
-    : logMessage("Nenhuma execução ativa.", "system");
+qs("canonApplyTestBtn").onclick = () => {
+  if (!state.executionId) {
+    logMessage("Nenhuma execução ativa.", "system");
+    return;
+  }
+
+  const testPatch = `
+/* ===========================
+   ENAVIA TEST PATCH
+   =========================== */
+const __ENAVIA_BUILD__ = {
+  version: "2025.12.16-test",
+  build_note: "deploy real test via ENAVIA panel",
+};
+`;
+
+  sendEngineer({
+    executor_action: "apply_test",
+    execution_id: state.executionId,
+    patch: testPatch,
+    reason: "TEST PATCH — validar deploy real",
+  });
+};
 
 qs("canonDeployTestBtn").onclick = () =>
   state.executionId
@@ -384,6 +400,7 @@ qs("clearAllBtn").onclick = () => {
   qs("advanced-raw").textContent = "";
   state.executionId = null;
 };
+
 
 
 
