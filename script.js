@@ -365,11 +365,32 @@ updateTelemetry();
 // ============================================================
 if (json?.message) {
   logMessage(json.message, "engineer");
-} else if (json?.result) {
-  logMessage("Ação executada. Veja detalhes na telemetria.", "engineer");
 } else {
-  logMessage("Resposta recebida. Veja detalhes na telemetria.", "engineer");
+  logMessage(
+    `[${action.executor_action}] executado. Veja resposta completa na telemetria.`,
+    "engineer"
+  );
 }
+
+// 🔎 Sempre logar resumo técnico visível
+logMessage(
+  JSON.stringify(
+    {
+      execution_id:
+        json.execution_id ||
+        json?.result?.execution_id ||
+        json?.requestId ||
+        json?.result?.requestId ||
+        null,
+      mode: json.mode || json?.result?.mode || null,
+      staging: json.staging || json?.result?.staging || null,
+      risk: json.riskReport || json?.result?.riskReport || null,
+    },
+    null,
+    2
+  ),
+  "system"
+);
 
 // ✅ RETORNO OBRIGATÓRIO PARA await FUNCIONAR
 return json; } catch (err) { showError(err); throw err; } }
@@ -699,3 +720,4 @@ document.addEventListener("DOMContentLoaded", () => {
   try { setMode(state.mode || "director"); } catch (_) {}
 });
 /* ============================ FIM PATCH MODE ============================ */
+
