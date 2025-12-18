@@ -116,9 +116,15 @@ function boot() {
   bindPersistence();
 
   // cria api base
-  const api = createApiClient({
-    enaviaBaseUrl: mustGetEnaviaUrl(),
-    deployBaseUrl: mustGetDeployUrl(),
+  const enaviaBaseUrl = mustGetEnaviaUrl();
+const deployBaseUrl = mustGetDeployUrl();
+
+let api = null;
+
+if (enaviaBaseUrl && deployBaseUrl) {
+  api = createApiClient({
+    enaviaBaseUrl,
+    deployBaseUrl,
     internalToken: getTokenOrNull(),
     timeoutMs: 20000,
     debug: getDebug(),
@@ -129,9 +135,10 @@ function boot() {
 
   // liga orquestrador (botões -> fluxo -> api -> estado)
   initFlowOrchestrator(apiAdapter);
+}
 
-  // liga envio do chat “humano” (opcional, não interfere nos botões)
-  bindChatSend();
+// liga envio do chat “humano” (independente da API)
+bindChatSend();
 
   // estado inicial (execution_id / target / approved_by)
   seedRuntimeState();
@@ -506,3 +513,4 @@ function bindChatSend() {
     }
   }, true);
 }
+
