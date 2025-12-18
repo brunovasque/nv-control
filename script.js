@@ -1,723 +1,409 @@
-/* ==========================================================================
-   NV-Control — ENAVIA
-   script.js — FINAL ABSOLUTO
-   ========================================================================== */
+/* ============================================================
+   script.js — NV-Control / ENAVIA Panel (CANÔNICO)
+   Objetivo:
+   - Bootstrap do painel (liga tudo)
+   - Persistência (não perder URLs/token no F5)
+   - Adapter: monta payloads corretos (sem “mágica”)
+   - Tradução humana no chat (Director) + telemetria intacta
+============================================================ */
 
-const state = {
-  mode: localStorage.getItem("nv_mode") || "director", // director | enavia | engineer | brain
-  debug: localStorage.getItem("nv_debug") === "true" ? true : true,
-  env: localStorage.getItem("nv_env") || "test",
+import { initPanelState, getPanelState, updatePanelState } from "./panel-state.js";
+import { initButtonsController } from "./buttons-controller.js";
+import { initFlowOrchestrator } from "./flow-orchestrator.js";
+import { createApiClient } from "./api-client.js";
+import { addChatMessage } from "./chat-renderer.js";
 
-  workerUrl: localStorage.getItem("nv_worker_url") || "",
-
-  workerIdTest:
-    localStorage.getItem("nv_worker_id_test") || "enavia-worker-teste",
-
-  workerIdReal:
-    localStorage.getItem("nv_worker_id_real") || "nv-enavia",
-   pipelineLocked: false, // 🔒 trava executionId após APPLY TEST
-
-  executionId: null,
-  lastRequest: null,
-  lastResponse: null,
+/* ============================================================
+   STORAGE KEYS (não perder no F5)
+============================================================ */
+const LS = {
+  ENAVIA_URL: "nv_enavia_url",
+  DEPLOY_URL: "nv_deploy_url",
+  INTERNAL_TOKEN: "nv_internal_token",
+  DEBUG: "nv_debug",
+  ENV: "nv_env",
+  LAST_TARGET_WORKERID: "nv_target_workerid",
+  LAST_EXECUTION_ID: "nv_execution_id",
+  APPROVED_BY: "nv_approved_by",
 };
 
-/* ============================ HELPERS ============================ */
+/* ============================================================
+   DEFAULTS
+============================================================ */
+const DEFAULTS = {
+  debug: false,
+  env: "test",
+  approved_by: "VASQUES",
+};
 
-const qs = (id) => document.getElementById(id);
-const nowISO = () => new Date().toISOString();
+/* ============================================================
+   DOM HELPERS
+============================================================ */
+function qs(sel) { return document.querySelector(sel); }
+function qsa(sel) { return Array.from(document.querySelectorAll(sel)); }
 
-/* ============================ CHAT MESSAGE ============================ */
-
-function logMessage(text, from = "system") {
-  const wrapper = document.createElement("div");
-  wrapper.className = `msg msg-${from}`;
-
-  const content = document.createElement("div");
-  content.className = "msg-content";
-  content.textContent = text;
-
-  const copyBtn = document.createElement("button");
-  copyBtn.className = "copy-btn copy-chat-btn";
-  copyBtn.textContent = "Copiar";
-  copyBtn.dataset.copyText = text;
-
-  copyBtn.onclick = () => {
-    const copyText = copyBtn.dataset.copyText || "";
-
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(copyText).catch(() =>
-        fallbackCopy(copyText)
-      );
-    } else {
-      fallbackCopy(copyText);
-    }
-  };
-
-  wrapper.appendChild(content);
-  wrapper.appendChild(copyBtn);
-
-  const messages = qs("messages");
-  messages.appendChild(wrapper);
-  messages.scrollTop = messages.scrollHeight;
-}
-
-/* ============================ STATUS ============================ */
-
-function setStatus(text) {
-  qs("status-badge").textContent = text;
-}
-
-/* ============================ WORKER ID ============================ */
-
-function currentWorkerId() {
-  return state.env === "test" ? state.workerIdTest : state.workerIdReal;
-}
-
-/* ============================ COPY FALLBACK ============================ */
-
-function fallbackCopy(text) {
-  const textarea = document.createElement("textarea");
-  textarea.value = text;
-  textarea.style.position = "fixed";
-  textarea.style.opacity = "0";
-  document.body.appendChild(textarea);
-  textarea.select();
-
-  try {
-    document.execCommand("copy");
-  } catch (_) {
-    alert("Não foi possível copiar o conteúdo.");
+function valOf(...selectors) {
+  for (const s of selectors) {
+    const el = qs(s);
+    if (el && typeof el.value === "string") return el.value;
   }
-
-  document.body.removeChild(textarea);
+  return "";
 }
 
-/* ============================ PAYLOAD BUILDERS ============================ */
+function setVal(value, ...selectors) {
+  for (const s of selectors) {
+    const el = qs(s);
+    if (el) { el.value = value; return true; }
+  }
+  return false;
+}
 
-function chatPayload(message) {
+function on(el, evt, fn) {
+  if (!el) return;
+  el.addEventListener(evt, fn);
+}
+
+/* ============================================================
+   UI: onde o painel guarda inputs (tolerante a IDs)
+   (Se seu HTML tiver IDs diferentes, este arquivo NÃO quebra.)
+============================================================ */
+function ui() {
   return {
-    source: "NV-CONTROL",
-    mode: state.mode,
-    debug: state.debug,
-    timestamp: nowISO(),
-    message,
+    enaviaUrlInput: qs("#enaviaUrlInput") || qs("#workerUrlInput") || qs("[data-field='enavia-url']"),
+    deployUrlInput: qs("#deployUrlInput") || qs("#deployWorkerUrlInput") || qs("[data-field='deploy-url']"),
+    tokenInput: qs("#internalTokenInput") || qs("#tokenInput") || qs("[data-field='internal-token']"),
+    debugToggle: qs("#debugToggle") || qs("[data-field='debug']"),
+    envSelect: qs("#envSelect") || qs("[data-field='env']"),
+
+    executionIdInput: qs("#executionIdInput") || qs("#execution_id") || qs("[data-field='execution-id']"),
+    targetWorkerIdInput: qs("#targetWorkerIdInput") || qs("#workerIdInput") || qs("[data-field='target-workerid']"),
+
+    patchTextarea:
+      qs("#patchTextarea") ||
+      qs("#patchInput") ||
+      qs("textarea[data-field='patch']") ||
+      qs("textarea"),
+
+    sendBtn: qs("#sendBtn") || qs("#sendButton") || qs("[data-action='send']"),
+    chatInput:
+      qs("#chatInput") ||
+      qs("#messageInput") ||
+      qs("textarea[data-field='chat-input']"),
+
+    // opcional: área de telemetria / advanced
+    telemetryBox: qs("#telemetryBox") || qs("[data-panel='telemetry']"),
   };
 }
 
-function engineerPayload(action) {
+/* ============================================================
+   INIT BOOTSTRAP
+============================================================ */
+boot();
+
+function boot() {
+  initPanelState();
+  initButtonsController();
+
+  hydrateFromLocalStorage();
+  bindPersistence();
+
+  // cria api base
+  const api = createApiClient({
+    enaviaBaseUrl: mustGetEnaviaUrl(),
+    deployBaseUrl: mustGetDeployUrl(),
+    internalToken: getTokenOrNull(),
+    timeoutMs: 20000,
+    debug: getDebug(),
+  });
+
+  // cria adapter (payloads corretos + tradução humana)
+  const apiAdapter = buildApiAdapter(api);
+
+  // liga orquestrador (botões -> fluxo -> api -> estado)
+  initFlowOrchestrator(apiAdapter);
+
+  // liga envio do chat “humano” (opcional, não interfere nos botões)
+  bindChatSend();
+
+  // estado inicial (execution_id / target / approved_by)
+  seedRuntimeState();
+
+  addChatMessage({
+    role: "director",
+    text: "Painel carregado. Pronto para seguir a ordem canônica: Audit → Propose → Apply Test → Deploy Teste → Fix Loop → Approve → Promote Real.",
+    typing: true,
+  });
+}
+
+/* ============================================================
+   PERSISTÊNCIA (F5 não apaga nada)
+============================================================ */
+function hydrateFromLocalStorage() {
+  const u = ui();
+
+  const enaviaUrl = localStorage.getItem(LS.ENAVIA_URL) || "";
+  const deployUrl = localStorage.getItem(LS.DEPLOY_URL) || "";
+  const token = localStorage.getItem(LS.INTERNAL_TOKEN) || "";
+  const debug = (localStorage.getItem(LS.DEBUG) || String(DEFAULTS.debug)) === "true";
+  const env = localStorage.getItem(LS.ENV) || DEFAULTS.env;
+
+  const execId = localStorage.getItem(LS.LAST_EXECUTION_ID) || "";
+  const targetWorkerId = localStorage.getItem(LS.LAST_TARGET_WORKERID) || "";
+  const approvedBy = localStorage.getItem(LS.APPROVED_BY) || DEFAULTS.approved_by;
+
+  if (u.enaviaUrlInput) u.enaviaUrlInput.value = enaviaUrl;
+  if (u.deployUrlInput) u.deployUrlInput.value = deployUrl;
+  if (u.tokenInput) u.tokenInput.value = token;
+  if (u.debugToggle) u.debugToggle.checked = debug;
+  if (u.envSelect) u.envSelect.value = env;
+
+  if (u.executionIdInput) u.executionIdInput.value = execId;
+  if (u.targetWorkerIdInput) u.targetWorkerIdInput.value = targetWorkerId;
+
+  // approved_by é “interno” — não precisa estar visível, mas pode
+  updatePanelState({ approved_by: approvedBy });
+}
+
+function bindPersistence() {
+  const u = ui();
+
+  on(u.enaviaUrlInput, "input", (e) => localStorage.setItem(LS.ENAVIA_URL, (e.target.value || "").replace(/\/$/, "")));
+  on(u.deployUrlInput, "input", (e) => localStorage.setItem(LS.DEPLOY_URL, (e.target.value || "").replace(/\/$/, "")));
+  on(u.tokenInput, "input", (e) => localStorage.setItem(LS.INTERNAL_TOKEN, e.target.value || ""));
+  on(u.debugToggle, "change", (e) => localStorage.setItem(LS.DEBUG, e.target.checked ? "true" : "false"));
+  on(u.envSelect, "change", (e) => localStorage.setItem(LS.ENV, e.target.value || DEFAULTS.env));
+
+  on(u.executionIdInput, "input", (e) => localStorage.setItem(LS.LAST_EXECUTION_ID, e.target.value || ""));
+  on(u.targetWorkerIdInput, "input", (e) => localStorage.setItem(LS.LAST_TARGET_WORKERID, e.target.value || ""));
+}
+
+function getDebug() {
+  return (localStorage.getItem(LS.DEBUG) || "false") === "true";
+}
+function getTokenOrNull() {
+  const t = localStorage.getItem(LS.INTERNAL_TOKEN);
+  return typeof t === "string" && t.trim() ? t.trim() : null;
+}
+function mustGetEnaviaUrl() {
+  const v = (localStorage.getItem(LS.ENAVIA_URL) || "").trim();
+  return v.replace(/\/$/, "");
+}
+function mustGetDeployUrl() {
+  const v = (localStorage.getItem(LS.DEPLOY_URL) || "").trim();
+  return v.replace(/\/$/, "");
+}
+
+/* ============================================================
+   RUNTIME STATE SEED
+============================================================ */
+function seedRuntimeState() {
+  const u = ui();
+  const execution_id = (u.executionIdInput?.value || "").trim() || null;
+  const workerId = (u.targetWorkerIdInput?.value || "").trim() || null;
+
+  if (execution_id) updatePanelState({ execution_id });
+  if (workerId) updatePanelState({ target: { system: "TARGET_WORKER", workerId } });
+
+  const approved_by = (localStorage.getItem(LS.APPROVED_BY) || DEFAULTS.approved_by).trim();
+  updatePanelState({ approved_by });
+}
+
+/* ============================================================
+   PAYLOAD BUILDERS (sem inventar schema)
+============================================================ */
+function getExecutionIdRequired() {
+  const u = ui();
+  const execution_id = (u.executionIdInput?.value || "").trim();
+  if (!execution_id) throw new Error("execution_id obrigatório (preencha no painel).");
+  updatePanelState({ execution_id });
+  localStorage.setItem(LS.LAST_EXECUTION_ID, execution_id);
+  return execution_id;
+}
+
+function getTargetRequired() {
+  const u = ui();
+  const workerId = (u.targetWorkerIdInput?.value || "").trim();
+  if (!workerId) throw new Error("target.workerId obrigatório (preencha no painel).");
+  updatePanelState({ target: { system: "TARGET_WORKER", workerId } });
+  localStorage.setItem(LS.LAST_TARGET_WORKERID, workerId);
+  return { system: "TARGET_WORKER", workerId };
+}
+
+function getPatchRequired() {
+  const u = ui();
+  const content = String(u.patchTextarea?.value || "").trim();
+  if (!content) throw new Error("patch.content obrigatório (cole o patch no painel).");
+  return { type: "patch_text", content };
+}
+
+function getApprovedBy() {
+  const st = getPanelState();
+  const approved_by = String(st?.approved_by || localStorage.getItem(LS.APPROVED_BY) || DEFAULTS.approved_by).trim();
+  localStorage.setItem(LS.APPROVED_BY, approved_by);
+  return approved_by;
+}
+
+/* ============================================================
+   HUMAN TRANSLATION (Director)
+   - Mantém telemetria, mas também fala no chat
+============================================================ */
+function directorSay(text) {
+  addChatMessage({ role: "director", text: String(text || ""), typing: true });
+}
+
+function directorReportApi(label, result) {
+  // Mensagem humana + curta. Detalhe fica na telemetria.
+  if (!result) {
+    return directorSay(`${label}: não recebi resposta válida.`);
+  }
+  if (result.ok) {
+    return directorSay(`✅ ${label}: concluído com sucesso.`);
+  }
+  const err = result.error || "Erro desconhecido";
+  return directorSay(`⚠️ ${label}: falhou (${err}). Veja detalhes na telemetria.`);
+}
+
+/* ============================================================
+   API ADAPTER (payloads corretos + relatórios humanos)
+============================================================ */
+function buildApiAdapter(api) {
   return {
-    source: "NV-CONTROL",
-    env_mode: "supervised",
-    mode: "engineer",
-    debug: state.debug,
-    timestamp: nowISO(),
-    workerId: currentWorkerId(),
+    async audit(opts = {}) {
+      // v1.1: AUDIT (read-only) aponta para ENAVIA
+      const execution_id = getExecutionIdRequired();
+      const target = getTargetRequired();
+      const patch = getPatchRequired();
 
-    // 🔥 action FLATTENED — contrato canônico
-    ...action,
-  };
-}
+      const payload = {
+        execution_id,
+        mode: "enavia_audit",
+        source: "NV-CONTROL",
+        target,
+        patch,
+        constraints: {
+          read_only: true,
+          no_auto_apply: true,
+        },
+      };
 
-/* ============================ NETWORK ============================ */
+      // PROPOSE (opcional) via mesmo endpoint, mas sinalizamos intenção
+      if (opts.propose === true) {
+        payload.ask_suggestions = true;
+      }
 
-async function sendChat(message) {
-  if (!state.workerUrl) return setStatus("Defina o Worker URL");
+      const r = await api.audit(payload);
+      directorReportApi(opts.propose ? "PROPOSE (ENAVIA)" : "AUDIT (ENAVIA)", r);
 
-  // mensagem do usuário
-  logMessage(message, state.mode);
+      // Opcional: se veio audit.verdict, deixa no estado (não decide)
+      try {
+        const verdict = r?.data?.audit?.verdict;
+        const risk = r?.data?.audit?.risk_level;
+        if (verdict || risk) updatePanelState({ last_audit: { verdict, risk, ts: Date.now() } });
+      } catch (_) {}
 
-  const payload = chatPayload(message);
-  state.lastRequest = payload;
-  updateTelemetry();
-
-  try {
-    const res = await fetch(state.workerUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    const json = await res.json();
-    state.lastResponse = json;
-    updateTelemetry();
-
-    // resposta no chat (humanizada)
-    if (json?.output) {
-      logMessage(json.output, state.mode);
-    } else if (json?.message) {
-      logMessage(json.message, state.mode);
-    } else {
-      logMessage(
-        "Resposta recebida. Veja detalhes na telemetria.",
-        "system"
-      );
-    }
-  } catch (err) {
-    showError(err);
-    logMessage("Erro ao comunicar com o sistema.", "system");
-  }
-}
-
-/* ============================ TELEMETRIA ============================ */
-
-function updateTelemetry() {
-  qs("telemetry-request").textContent = state.lastRequest
-    ? JSON.stringify(state.lastRequest, null, 2)
-    : "";
-  qs("telemetry-response").textContent = state.lastResponse
-    ? JSON.stringify(state.lastResponse, null, 2)
-    : "";
-  qs("advanced-raw").textContent = state.lastResponse
-    ? JSON.stringify(state.lastResponse, null, 2)
-    : "";
-}
-
-function showError(err) {
-  qs("telemetry-error").textContent = String(err);
-  qs("telemetry-error-card").style.display = "block";
-}
-
-/* ============================ COPY (TELEMETRIA / AVANÇADO + FALLBACK) ============================ */
-
-document.addEventListener("click", (e) => {
-  const btn = e.target.closest(".copy-btn");
-  if (!btn) return;
-
-  const targetId = btn.dataset.copyTarget;
-  if (!targetId) return;
-
-  const targetEl = document.getElementById(targetId);
-  if (!targetEl) return;
-
-  const text = targetEl.textContent || "";
-
-  // Tentativa moderna (HTTPS / localhost)
-  if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
-  } else {
-    fallbackCopy(text);
-  }
-});
-
-function fallbackCopy(text) {
-  const textarea = document.createElement("textarea");
-  textarea.value = text;
-  textarea.style.position = "fixed";
-  textarea.style.opacity = "0";
-  document.body.appendChild(textarea);
-  textarea.select();
-
-  try {
-    document.execCommand("copy");
-  } catch (_) {
-    alert("Não foi possível copiar o conteúdo.");
-  }
-
-  document.body.removeChild(textarea);
-}
-
-/* ============================ MODES ============================ */
-
-function setMode(mode) {
-  state.mode = mode;
-  document.querySelectorAll(".btn-mode").forEach((b) =>
-    b.classList.remove("active")
-  );
-  qs(`mode${mode[0].toUpperCase()}${mode.slice(1)}Btn`).classList.add(
-    "active"
-  );
-  logMessage(`Modo alterado para ${mode.toUpperCase()}`);
-}
-
-qs("modeDirectorBtn").onclick = () => setMode("director");
-qs("modeEnaviaBtn").onclick = () => setMode("enavia");
-qs("modeEngineerBtn").onclick = () => setMode("engineer");
-qs("modeBrainBtn").onclick = () => setMode("brain");
-
-/* ============================ INPUTS ============================ */
-
-/* ============================ CONFIG / INPUTS ============================ */
-
-// Worker URL
-qs("workerUrlInput").oninput = (e) => {
-  state.workerUrl = e.target.value.replace(/\/$/, "");
-  localStorage.setItem("nv_worker_url", state.workerUrl);
-  setStatus("Conectado");
-};
-
-// Worker ID TEST
-qs("workerIdTestInput").oninput = (e) => {
-  state.workerIdTest = e.target.value.trim();
-  localStorage.setItem("nv_worker_id_test", state.workerIdTest);
-};
-
-// Worker ID REAL
-qs("workerIdRealInput").oninput = (e) => {
-  state.workerIdReal = e.target.value.trim();
-  localStorage.setItem("nv_worker_id_real", state.workerIdReal);
-};
-
-// Ambiente (TEST / REAL)
-qs("envSelect").onchange = (e) => {
-  state.env = e.target.value;
-  localStorage.setItem("nv_env", state.env);
-};
-
-// Debug
-qs("debugToggle").onchange = (e) => {
-  state.debug = e.target.checked;
-  localStorage.setItem("nv_debug", String(state.debug));
-};
-
-/* ============================ RESTORE STATE ============================ */
-
-// restaura valores persistidos no carregamento
-document.addEventListener("DOMContentLoaded", () => {
-  qs("workerUrlInput").value = state.workerUrl;
-  qs("workerIdTestInput").value = state.workerIdTest;
-  qs("workerIdRealInput").value = state.workerIdReal;
-  qs("envSelect").value = state.env;
-  qs("debugToggle").checked = state.debug;
-});
-
-/* ============================ SEND ============================ */
-
-// Clique no botão Enviar
-qs("sendBtn").onclick = () => {
-  const text = qs("userInput").value.trim();
-  if (!text) return;
-
-  if (state.mode === "engineer") {
-    // Engineer envia execução
-    sendEngineer({ executor_action: text });
-  } else {
-    // Director / Enavia / Brain usam chat consultivo
-    sendChat(text);
-  }
-
-  qs("userInput").value = "";
-};
-
-// Teclado do chat
-// Enter envia | Shift + Enter quebra linha
-qs("userInput").addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    qs("sendBtn").click();
-  }
-  // Shift + Enter: comportamento padrão do textarea (quebra linha)
-});
-
-/* ============================ SENDENGINEER ============================ */
-
-async function sendEngineer(action) {
-  if (!state.workerUrl) {
-    setStatus("Defina o Worker URL");
-    return;
-  }
-
-  const payload = engineerPayload(action);
-  state.lastRequest = payload;
-  updateTelemetry();
-
-  try {
-    const res = await fetch(`${state.workerUrl}/engineer`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    const json = await res.json();
-    state.lastResponse = json;
-
-// ============================================================
-// 🔐 CAPTURA CANÔNICA DO execution_id (STATEFUL)
-// ============================================================
-const newExecutionId =
-  json.execution_id ||
-  json?.result?.execution_id ||
-  json?.executor?.execution_id ||
-  json?.executor?.result?.execution_id ||
-  json?.requestId ||
-  json?.result?.requestId ||
-  json?.executor?.requestId ||
-  json?.executor?.result?.requestId ||
-  null;
-
-/*
- Regras finais:
- - Antes do APPLY TEST (pipelineLocked=false):
-     → pode capturar executionId (AUDIT)
- - Após APPLY TEST (pipelineLocked=true):
-     → executionId é IMUTÁVEL
-*/
-if (!state.pipelineLocked) {
-  if (!state.executionId && newExecutionId) {
-    state.executionId = newExecutionId;
-  }
-}
-
-updateTelemetry();
-
-// ============================================================
-// 💬 FEEDBACK HUMANO NO CHAT (MESMO BLOCO)
-// ============================================================
-if (json?.message) {
-  logMessage(json.message, "engineer");
-} else {
-  logMessage(
-    `[${action.executor_action}] executado. Veja resposta completa na telemetria.`,
-    "engineer"
-  );
-}
-
-// 🔎 Sempre logar resumo técnico visível
-logMessage(
-  JSON.stringify(
-    {
-      execution_id:
-        json.execution_id ||
-        json?.result?.execution_id ||
-        json?.requestId ||
-        json?.result?.requestId ||
-        null,
-      mode: json.mode || json?.result?.mode || null,
-      staging: json.staging || json?.result?.staging || null,
-      risk: json.riskReport || json?.result?.riskReport || null,
+      return r;
     },
-    null,
-    2
-  ),
-  "system"
-);
 
-// ✅ RETORNO OBRIGATÓRIO PARA await FUNCIONAR
-return json; } catch (err) { showError(err); throw err; } }
+    async applyTest() {
+      // v1.1: APPLY TEST grava STAGING, NÃO executa
+      const execution_id = getExecutionIdRequired();
+      const target = getTargetRequired();
+      const patch = getPatchRequired();
 
-/* ============================ PIPELINE ============================ */
+      const payload = {
+        execution_id,
+        approved: true,
+        approved_by: getApprovedBy(),
+        target,
+        patch: { content: patch.content }, // Deploy Worker espera patch.content
+      };
 
-document.addEventListener("DOMContentLoaded", () => {
+      const r = await api.applyTest(payload);
+      directorReportApi("APPLY TEST (STAGING)", r);
+      return r;
+    },
 
-  // AUDIT
-  qs("canonAuditBtn").onclick = () =>
-    sendEngineer({ executor_action: "audit" });
+    async deployTest() {
+      // v1.1: DEPLOY TESTE executa no TEST (gate técnico está no Deploy Worker)
+      const execution_id = getExecutionIdRequired();
+      const r = await api.deployTest({ execution_id });
+      directorReportApi("DEPLOY TESTE (TEST)", r);
+      return r;
+    },
 
-  // PROPOSE
-  qs("canonProposeBtn").onclick = () =>
-    sendEngineer({ executor_action: "propose" });
+    async promoteReal() {
+      // v1.1: PROMOTE REAL executa no PROD (somente após APPROVE humano)
+      const execution_id = getExecutionIdRequired();
+      const target = getTargetRequired();
+      const patch = getPatchRequired();
 
-  // APPLY TEST (injeta patch fixo de teste)
-qs("canonApplyTestBtn").onclick = async () => {
-  if (!state.executionId) {
-    logMessage("Nenhuma execução ativa.", "system");
-    return;
-  }
+      const payload = {
+        execution_id,
+        approved: true,
+        approved_by: getApprovedBy(),
+        target,
+        patch: { content: patch.content },
+      };
 
-  const testPatch = `
-/* ===========================
-   ENAVIA TEST PATCH
-   =========================== */
-const __ENAVIA_BUILD__ = {
-  version: "2025.12.16-test",
-  build_note: "deploy real test via ENAVIA panel",
-};
-`;
+      const r = await api.promoteReal(payload);
+      directorReportApi("PROMOTE REAL (PROD)", r);
+      return r;
+    },
 
-// 1️⃣ STAGE PATCH — salva no staging
-  await sendEngineer({
-    executor_action: "stage_patch",
-    execution_id: state.executionId,
-    patch: testPatch,
-  });
+    async rollback() {
+      const execution_id = getExecutionIdRequired();
+      const r = await api.rollback({ execution_id });
+      directorReportApi("ROLLBACK (MANUAL)", r);
+      return r;
+    },
 
-  // 2️⃣ APPLY TEST — consome do staging
-  await sendEngineer({
-    executor_action: "apply_test",
-    execution_id: state.executionId,
-    reason: "TEST PATCH — validar deploy real",
-  });
+    async cancel() {
+      const execution_id = getExecutionIdRequired();
+      const r = await api.cancel({ execution_id, cleanup: true });
+      directorReportApi("CANCELAR CICLO", r);
+      return r;
+    },
 
-  // 🔒 PASSO 2 — trava o pipeline SOMENTE após APPLY TEST
-  state.pipelineLocked = true;
-};
-
-  // DEPLOY TEST
-  qs("canonDeployTestBtn").onclick = () =>
-    state.executionId
-      ? sendEngineer({
-          executor_action: "deploy_test",
-          execution_id: state.executionId,
-        })
-      : logMessage("Nenhuma execução ativa.", "system");
-
-  // APPROVE
-  qs("canonApproveBtn").onclick = () =>
-    state.executionId
-      ? sendEngineer({
-          executor_action: "deploy_approve",
-          execution_id: state.executionId,
-          approve: true,
-        })
-      : logMessage("Nenhuma execução ativa.", "system");
-
-  // PROMOTE REAL
-  qs("canonPromoteRealBtn").onclick = () =>
-    state.executionId
-      ? sendEngineer({
-          executor_action: "promote_real",
-          execution_id: state.executionId,
-        })
-      : logMessage("Nenhuma execução ativa.", "system");
-
-  // CANCEL
-  qs("canonCancelBtn").onclick = () =>
-    state.executionId
-      ? sendEngineer({
-          executor_action: "deploy_cancel",
-          execution_id: state.executionId,
-        })
-      : logMessage("Nenhuma execução ativa.", "system");
-
-  // ROLLBACK
-  qs("canonRollbackBtn").onclick = () =>
-    sendEngineer({ executor_action: "rollback" });
-
-});
-
-/* ============================ LIMPAR ============================ */
-
-qs("clearAllBtn").onclick = () => {
-  qs("messages").innerHTML = "";
-  qs("history-list").innerHTML = "";
-  qs("telemetry-request").textContent = "";
-  qs("telemetry-response").textContent = "";
-  qs("advanced-raw").textContent = "";
-  state.executionId = null;
-};
-
-/* ============================ PATCH CANÔNICO — vNEXT (SEM REMOVER LINHAS) ============================ */
-/* Objetivos:
-   1) Capturar executionId corretamente (requestId / result.requestId etc.)
-   2) Evitar sobrescrita acidental via Enter/Enviar durante ações do pipeline
-   3) Ativar abas: Telemetria / Execução / Histórico / Avançado
-*/
-
-let pipelineLock = false;
-
-function extractExecutionId(json) {
-  return (
-    json?.execution_id ||
-    json?.requestId ||
-    json?.result?.execution_id ||
-    json?.result?.requestId ||
-    json?.executor?.execution_id ||
-    json?.executor?.requestId ||
-    json?.executor?.result?.execution_id ||
-    json?.executor?.result?.requestId ||
-    null
-  );
+    async status() {
+      const execution_id = getExecutionIdRequired();
+      const r = await api.status(execution_id);
+      directorReportApi("STATUS", r);
+      return r;
+    },
+  };
 }
 
-/* Re-declara sendEngineer (override canônico) — mantém contrato e adiciona captura robusta */
-async function sendEngineer(action) {
-  if (!state.workerUrl) {
-    setStatus("Defina o Worker URL");
-    return;
-  }
+/* ============================================================
+   CHAT SEND (opcional — não interfere nos botões)
+   - Limpa input após enviar
+   - Mantém experiência “GPT-like”
+============================================================ */
+function bindChatSend() {
+  const u = ui();
+  if (!u.sendBtn || !u.chatInput) return;
 
-  const payload = engineerPayload(action);
-  state.lastRequest = payload;
-  updateTelemetry();
-
-  try {
-    const res = await fetch(`${state.workerUrl}/engineer`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    const json = await res.json();
-    state.lastResponse = json;
-
-// ============================================================
-// 🔐 PASSO 3 — GOVERNANÇA FINAL DO execution_id
-// ============================================================
-const newExecutionId = extractExecutionId(json);
-
-/*
- Regras finais:
- - Antes do APPLY TEST (pipelineLocked=false):
-     → pode capturar executionId (AUDIT)
- - Após APPLY TEST (pipelineLocked=true):
-     → executionId é IMUTÁVEL
-*/
-if (!state.pipelineLocked) {
-  if (!state.executionId && newExecutionId) {
-    state.executionId = newExecutionId;
-  }
-}
-
-updateTelemetry();
-
-// feedback humano no chat
-if (json?.message) {
-  logMessage(json.message, "engineer");
-} else if (json?.result) {
-  logMessage("Ação executada. Veja detalhes na telemetria.", "engineer");
-} else {
-  logMessage("Resposta recebida. Veja detalhes na telemetria.", "engineer");
-} return json; } catch (err) { showError(err); throw err; } }
-/* Re-binda botão Enviar com lock (override canônico) */
-(function bindSendWithLock() {
-  const btn = qs("sendBtn");
-  if (!btn) return;
-
-  btn.onclick = () => {
-    if (pipelineLock) return;
-
-    const text = qs("userInput").value.trim();
+  const send = () => {
+    const text = String(u.chatInput.value || "").trim();
     if (!text) return;
 
-    if (state.mode === "engineer") {
-      // Engineer envia execução
-      sendEngineer({ executor_action: text });
-    } else {
-      // Director / Enavia / Brain usam chat consultivo
-      sendChat(text);
-    }
+    // mostra no chat como usuário
+    addChatMessage({ role: "user", text });
 
-    qs("userInput").value = "";
-  };
-})();
+    // limpa input (seu pedido)
+    u.chatInput.value = "";
 
-/* Tabs: Telemetria / Execução / Histórico / Avançado */
-document.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll(".tab").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const tabKey = btn.dataset.tab; // telemetry | run | history | advanced
-      if (!tabKey) return;
-
-      document.querySelectorAll(".tab").forEach((b) => b.classList.remove("active"));
-      document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
-
-      btn.classList.add("active");
-      const panel = qs(`panel-${tabKey}`);
-      if (panel) panel.classList.add("active");
-    });
-  });
-});
-
-/* Pipeline: lock curto para evitar duplicidade e garantir ação determinística */
-document.addEventListener("DOMContentLoaded", () => {
-  const lock = () => (pipelineLock = true);
-  const unlock = () => setTimeout(() => (pipelineLock = false), 250);
-
-  const safe = async (fn) => {
-    lock();
-    try { await fn(); } finally { unlock(); }
-  };
-
-  const auditBtn = qs("canonAuditBtn");
-  if (auditBtn) auditBtn.onclick = () => safe(() => sendEngineer({ executor_action: "audit" }));
-
-  const proposeBtn = qs("canonProposeBtn");
-  if (proposeBtn) proposeBtn.onclick = () => safe(() => sendEngineer({ executor_action: "propose" }));
-
-  const applyBtn = qs("canonApplyTestBtn");
-  if (applyBtn) applyBtn.onclick = () => safe(() => {
-    if (!state.executionId) {
-      logMessage("Nenhuma execução ativa.", "system");
-      return;
-    }
-
-    const testPatch = `
-/* ===========================
-   ENAVIA TEST PATCH
-   =========================== */
-const __ENAVIA_BUILD__ = {
-  version: "2025.12.16-test",
-  build_note: "deploy real test via ENAVIA panel",
-};
-`;
-
-    return sendEngineer({
-      executor_action: "apply_test",
-      execution_id: state.executionId,
-      patch: testPatch,
-      reason: "TEST PATCH — validar deploy real",
-    });
-  });
-
-  const deployTestBtn = qs("canonDeployTestBtn");
-  if (deployTestBtn) deployTestBtn.onclick = () => safe(() => {
-    return state.executionId
-      ? sendEngineer({ executor_action: "deploy_test", execution_id: state.executionId })
-      : logMessage("Nenhuma execução ativa.", "system");
-  });
-
-  const approveBtn = qs("canonApproveBtn");
-  if (approveBtn) approveBtn.onclick = () => safe(() => {
-    return state.executionId
-      ? sendEngineer({ executor_action: "deploy_approve", execution_id: state.executionId, approve: true })
-      : logMessage("Nenhuma execução ativa.", "system");
-  });
-
-  const promoteBtn = qs("canonPromoteRealBtn");
-  if (promoteBtn) promoteBtn.onclick = () => safe(() => {
-    return state.executionId
-      ? sendEngineer({ executor_action: "promote_real", execution_id: state.executionId })
-      : logMessage("Nenhuma execução ativa.", "system");
-  });
-
-  const cancelBtn = qs("canonCancelBtn");
-  if (cancelBtn) cancelBtn.onclick = () => safe(() => {
-    return state.executionId
-      ? sendEngineer({ executor_action: "deploy_cancel", execution_id: state.executionId })
-      : logMessage("Nenhuma execução ativa.", "system");
-  });
-
-  const rollbackBtn = qs("canonRollbackBtn");
-  if (rollbackBtn) rollbackBtn.onclick = () => safe(() => sendEngineer({ executor_action: "rollback" }));
-});
-
-/* ============================ FIM PATCH CANÔNICO — vNEXT ============================ */
-
-
-/* ============================ PATCH CANÔNICO — MODE BADGE + PERSISTÊNCIA ============================ */
-/* Re-declara setMode (override canônico) para:
-   - Persistir nv_mode
-   - Atualizar badge visual (#mode-badge) e classe de cor
-*/
-function setMode(mode) {
-  state.mode = mode;
-  localStorage.setItem("nv_mode", mode);
-
-  document.querySelectorAll(".btn-mode").forEach((b) =>
-    b.classList.remove("active")
-  );
-
-  const btn = qs(`mode${mode[0].toUpperCase()}${mode.slice(1)}Btn`);
-  if (btn) btn.classList.add("active");
-
-  const badge = qs("mode-badge");
-  if (badge) {
-    badge.textContent = mode.toUpperCase();
-    badge.classList.remove(
-      "badge-mode-director",
-      "badge-mode-enavia",
-      "badge-mode-engineer",
-      "badge-mode-brain"
+    // Resposta padrão do Director (sem acionar execução por comando)
+    // (Execução permanece por botões — contrato)
+    directorSay(
+      "Entendi. Se isso for uma ação do ciclo, use os botões na ordem canônica. Se quiser, me diga qual etapa você quer executar agora (Audit / Propose / Apply Test / Deploy Teste / Approve / Promote Real)."
     );
-    badge.classList.add(`badge-mode-${mode}`);
-  }
+  };
 
-  logMessage(`Modo alterado para ${mode.toUpperCase()}`);
+  on(u.sendBtn, "click", send);
+  on(u.chatInput, "keydown", (e) => {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      send();
+    }
+  });
 }
-
-/* Restaura modo no carregamento sem depender do HTML default */
-document.addEventListener("DOMContentLoaded", () => {
-  try { setMode(state.mode || "director"); } catch (_) {}
-});
-/* ============================ FIM PATCH MODE ============================ */
-
