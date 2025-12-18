@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- CSS PRINCIPAL -->
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="./style.css" />
 </head>
 
 <body>
@@ -30,19 +30,19 @@
       <nav class="sidebar-section">
         <div class="section-title">Modos</div>
 
-        <button class="sidebar-btn active">
+        <button class="sidebar-btn active" data-mode="director">
           Director
         </button>
 
-        <button class="sidebar-btn">
+        <button class="sidebar-btn" data-mode="telemetry">
           Telemetria
         </button>
 
-        <button class="sidebar-btn">
+        <button class="sidebar-btn" data-mode="history">
           Histórico
         </button>
 
-        <button class="sidebar-btn">
+        <button class="sidebar-btn" data-mode="advanced">
           Avançado
         </button>
       </nav>
@@ -51,7 +51,7 @@
       <nav class="sidebar-section">
         <div class="section-title">Ações</div>
 
-        <button class="sidebar-btn">
+        <button class="sidebar-btn" data-action="view-director-enavia-chat">
           Visualizar conversa<br>
           Director ⇄ ENAVIA
         </button>
@@ -71,12 +71,12 @@
 
         <div class="execution-info">
           <span class="label">Execution ID:</span>
-          <span class="value">—</span>
+          <span class="value" id="executionId">—</span>
         </div>
 
         <div class="status-info">
           <span class="label">Status:</span>
-          <span class="status-pill neutral">Aguardando</span>
+          <span class="status-pill neutral" id="statusPill">Aguardando</span>
         </div>
 
       </header>
@@ -93,13 +93,13 @@
 
           <div class="chat-messages" id="chatMessages">
 
-            <!-- EXEMPLO DE BOAS-VINDAS -->
+            <!-- BOAS-VINDAS -->
             <div class="chat-message role-director">
               <div class="chat-role">Director</div>
               <div class="chat-text">
                 Olá.<br><br>
                 Este é o painel de controle da ENAVIA.<br><br>
-                Descreva o que você quer fazer, ou envie um patch para começarmos
+                Descreva o que você quer fazer, ou envie um patch para iniciarmos
                 a análise com segurança.
               </div>
             </div>
@@ -114,6 +114,7 @@
               placeholder="Escreva aqui…"
               rows="1"
             ></textarea>
+            <button id="sendBtn" class="send-btn">Enviar</button>
           </div>
 
         </div>
@@ -127,37 +128,37 @@
             Fluxo de Deploy
           </div>
 
-          <button class="action-btn disabled">
+          <button class="action-btn disabled" data-action="audit">
             AUDIT
           </button>
 
-          <button class="action-btn disabled">
+          <button class="action-btn disabled" data-action="propose">
             PROPOSE
           </button>
 
-          <button class="action-btn disabled">
+          <button class="action-btn disabled" data-action="apply-test">
             APPLY TEST
           </button>
 
-          <button class="action-btn disabled">
+          <button class="action-btn disabled" data-action="deploy-test">
             DEPLOY TESTE
           </button>
 
-          <button class="action-btn disabled">
+          <button class="action-btn disabled" data-action="approve">
             APPROVE
           </button>
 
-          <button class="action-btn disabled">
+          <button class="action-btn disabled" data-action="promote-real">
             PROMOTE REAL
           </button>
 
           <div class="divider"></div>
 
-          <button class="action-btn danger disabled">
+          <button class="action-btn danger disabled" data-action="rollback">
             ROLLBACK
           </button>
 
-          <button class="action-btn secondary">
+          <button class="action-btn secondary" data-action="cancel">
             CANCELAR
           </button>
 
@@ -166,12 +167,12 @@
       </section>
 
       <!-- =========================
-           ALERTA CENTRAL (HIDDEN)
+           ALERTA CENTRAL
       ========================== -->
       <div class="center-alert hidden" id="centerAlert">
         <div class="alert-box">
           <div class="alert-title">⚠️ Ação bloqueada</div>
-          <div class="alert-text">
+          <div class="alert-text" id="centerAlertText">
             Esta ação ainda não está disponível no fluxo atual.
           </div>
         </div>
@@ -181,10 +182,7 @@
 
   </div>
 
-  <!-- =========================
-       SCRIPT PRINCIPAL (OBRIGATÓRIO)
-       NÃO MOVER, NÃO DUPLICAR
-  ========================== -->
+  <!-- ✅ SCRIPT PRINCIPAL (OBRIGATÓRIO PARA VERCEL) -->
   <script type="module" src="./script.js"></script>
 
 </body>
