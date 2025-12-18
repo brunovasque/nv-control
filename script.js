@@ -436,11 +436,8 @@ function bindChatSend() {
     // limpa input (pedido)
     el.value = "";
 
-    // Resposta padrão do Director (sem acionar execução por comando)
-    // (Execução permanece por botões — contrato)
-    directorSay(
-      "Entendi. Se isso for uma ação do ciclo, use os botões na ordem canônica. Se quiser, me diga qual etapa você quer executar agora (Audit / Propose / Apply Test / Deploy Teste / Approve / Promote Real)."
-    );
+    // Director cognitivo (sem execução automática)
+    handleDirectorMessage(text);
   };
 
   // 1) Blindagem contra submit em qualquer form que contenha o chatInput real
@@ -513,4 +510,5 @@ function bindChatSend() {
     }
   }, true);
 }
+
 
