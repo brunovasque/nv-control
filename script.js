@@ -511,4 +511,68 @@ function bindChatSend() {
   }, true);
 }
 
+/* ============================================================
+   DIRECTOR — ROTEADOR COGNITIVO (FASE 1)
+   - Conversa humana
+   - Identificação de intenção
+   - Nenhuma execução automática
+============================================================ */
+function handleDirectorMessage(text) {
+  const t = String(text || "").toLowerCase().trim();
 
+  // =========================
+  // 1) CONVERSA HUMANA
+  // =========================
+  if (
+    t === "oi" ||
+    t === "olá" ||
+    t.startsWith("oi ") ||
+    t.startsWith("olá") ||
+    t.includes("tá on") ||
+    t.includes("esta on") ||
+    t.includes("está on")
+  ) {
+    directorSay("Estou sim. O que você quer analisar ou executar agora?");
+    return;
+  }
+
+  // =========================
+  // 2) DÚVIDA / EXPLORAÇÃO
+  // =========================
+  if (
+    t.includes("o que você faz") ||
+    t.includes("como funciona") ||
+    t.includes("me ajuda") ||
+    t.includes("ajuda")
+  ) {
+    directorSay(
+      "Posso te ajudar a analisar patches, avaliar riscos e executar o ciclo com segurança. O que você quer fazer agora?"
+    );
+    return;
+  }
+
+  // =========================
+  // 3) INTENÇÃO TÉCNICA (SEM EXECUTAR)
+  // =========================
+  if (
+    t.includes("audit") ||
+    t.includes("analisar") ||
+    t.includes("analisa") ||
+    t.includes("deploy") ||
+    t.includes("patch") ||
+    t.includes("segurança") ||
+    t.includes("risco")
+  ) {
+    directorSay(
+      "Entendi sua intenção técnica. Quer que eu consulte a ENAVIA para analisar isso com segurança antes de qualquer ação?"
+    );
+    return;
+  }
+
+  // =========================
+  // 4) FALLBACK INTELIGENTE
+  // =========================
+  directorSay(
+    "Entendi. Pode detalhar um pouco melhor o que você quer fazer?"
+  );
+}
