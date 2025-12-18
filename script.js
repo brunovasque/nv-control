@@ -430,15 +430,14 @@ function bindChatSend() {
     const text = String(el.value || "").trim();
     if (!text) return;
 
-    // mostra no chat como usuário
-    addChatMessage({ role: "user", text });
+// mostra no chat como usuário
+addChatMessage({ role: "user", text });
 
-    // limpa input (pedido)
-    el.value = "";
+// limpa input (pedido)
+el.value = "";
 
-    // Director cognitivo (sem execução automática)
-    handleDirectorMessage(text);
-  };
+// Director cognitivo (sem execução automática)
+handleDirectorMessage(text);
 
   // 1) Blindagem contra submit em qualquer form que contenha o chatInput real
   const u0 = ui();
@@ -576,3 +575,4 @@ function handleDirectorMessage(text) {
     "Entendi. Pode detalhar um pouco melhor o que você quer fazer?"
   );
 }
+
