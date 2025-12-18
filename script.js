@@ -401,9 +401,10 @@ function bindChatSend() {
 
   on(u.sendBtn, "click", send);
   on(u.chatInput, "keydown", (e) => {
-    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-      e.preventDefault();
-      send();
-    }
-  });
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    send();
+  }
+});
 }
+
