@@ -101,7 +101,12 @@ chatInput:
 /* ============================================================
    INIT BOOTSTRAP
 ============================================================ */
-boot();
+// DOM-safe bootstrap (evita bind antes do HTML existir)
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", boot);
+} else {
+  boot();
+}
 
 function boot() {
   initPanelState();
@@ -382,35 +387,47 @@ function buildApiAdapter(api) {
    - Mantém experiência “GPT-like”
 ============================================================ */
 function bindChatSend() {
-  const u = ui();
+  // ✅ Fix real: garantir bind mesmo se o DOM carregar depois do script
+  // ✅ Enter envia / Shift+Enter quebra linha
+  // ✅ Botão Enviar envia (mesmo se estiver dentro de <form>)
+  // ✅ Fallback robusto por delegação (se IDs divergirem no HTML)
 
-  // ✅ Ajuste cirúrgico: Enter funciona mesmo sem botão (se existir chatInput)
-  if (!u.chatInput) return;
+  // Evita bind duplicado em hot reload / múltiplos boots
+  if (window.__NV_CHAT_SEND_BOUND__ === true) return;
+  window.__NV_CHAT_SEND_BOUND__ = true;
 
-  // ✅ Blindagem contra <form>: impede submit/reload que mata click/enter
-  const form = u.chatInput.closest("form");
-  if (form) {
-    on(form, "submit", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      return false;
-    });
-  }
+  const pickChatEl = () => {
+    const u = ui();
+    // Primeiro: o seletor canônico
+    if (u.chatInput) return u.chatInput;
 
-  // ✅ Se existir botão, garante que não é submit (sem mexer no HTML)
-  if (u.sendBtn && typeof u.sendBtn.type === "string") {
-    u.sendBtn.type = "button";
-  }
+    // Fallback: se o usuário estiver com foco num textarea “parecido com chat”, usa ele
+    const ae = document.activeElement;
+    if (ae && ae.tagName === "TEXTAREA") {
+      const id = (ae.id || "").toLowerCase();
+      const df = (ae.getAttribute("data-field") || "").toLowerCase();
+      if (id.includes("chat") || id.includes("message") || df === "chat-input") return ae;
+    }
+    return null;
+  };
+
+  const safePrevent = (e) => {
+    try { e.preventDefault(); } catch (_) {}
+    try { e.stopPropagation(); } catch (_) {}
+  };
 
   const send = () => {
-    const text = String(u.chatInput.value || "").trim();
+    const el = pickChatEl();
+    if (!el) return;
+
+    const text = String(el.value || "").trim();
     if (!text) return;
 
     // mostra no chat como usuário
     addChatMessage({ role: "user", text });
 
-    // limpa input (seu pedido)
-    u.chatInput.value = "";
+    // limpa input (pedido)
+    el.value = "";
 
     // Resposta padrão do Director (sem acionar execução por comando)
     // (Execução permanece por botões — contrato)
@@ -419,21 +436,73 @@ function bindChatSend() {
     );
   };
 
-  // ✅ Clique no botão Enviar (se existir)
-  if (u.sendBtn) {
-    on(u.sendBtn, "click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      send();
-    });
+  // 1) Blindagem contra submit em qualquer form que contenha o chatInput real
+  const u0 = ui();
+  const chat0 = u0.chatInput;
+  if (chat0) {
+    const form = chat0.closest("form");
+    if (form) {
+      form.addEventListener("submit", (e) => {
+        safePrevent(e);
+        return false;
+      });
+    }
   }
 
-  // ✅ Enter envia / Shift+Enter quebra linha
-  on(u.chatInput, "keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      e.stopPropagation();
+  // 2) Binding direto (se elementos existirem)
+  const u = ui();
+
+  if (u.sendBtn && typeof u.sendBtn.type === "string") {
+    // garante que o botão não seja submit
+    u.sendBtn.type = "button";
+  }
+
+  if (u.sendBtn) {
+    u.sendBtn.addEventListener("click", (e) => {
+      safePrevent(e);
+      send();
+    }, true);
+  }
+
+  if (u.chatInput) {
+    u.chatInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        safePrevent(e);
+        send();
+      }
+    }, true);
+  }
+
+  // 3) Delegação global (fallback) — cobre casos em que o HTML usa IDs diferentes
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter") return;
+    if (e.shiftKey) return;
+
+    const ae = document.activeElement;
+    if (!ae || ae.tagName !== "TEXTAREA") return;
+
+    // só intercepta se for o textarea do chat (heurística segura)
+    const id = (ae.id || "").toLowerCase();
+    const df = (ae.getAttribute("data-field") || "").toLowerCase();
+    if (id.includes("chat") || id.includes("message") || df === "chat-input") {
+      safePrevent(e);
       send();
     }
-  });
+  }, true);
+
+  document.addEventListener("click", (e) => {
+    const t = e.target;
+    if (!t) return;
+
+    // tenta localizar um botão “enviar” pelos seletores já usados no painel
+    const btn =
+      t.closest?.("#sendBtn") ||
+      t.closest?.("#sendButton") ||
+      t.closest?.("[data-action='send']");
+
+    if (btn) {
+      safePrevent(e);
+      send();
+    }
+  }, true);
 }
