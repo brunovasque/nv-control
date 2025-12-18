@@ -79,16 +79,19 @@ function ui() {
     targetWorkerIdInput: qs("#targetWorkerIdInput") || qs("#workerIdInput") || qs("[data-field='target-workerid']"),
 
     patchTextarea:
-      qs("#patchTextarea") ||
-      qs("#patchInput") ||
-      qs("textarea[data-field='patch']") ||
-      qs("textarea"),
+  qs("#patchTextarea") ||
+  qs("#patchInput") ||
+  qs("textarea[data-field='patch']"),
 
-    sendBtn: qs("#sendBtn") || qs("#sendButton") || qs("[data-action='send']"),
-    chatInput:
-      qs("#chatInput") ||
-      qs("#messageInput") ||
-      qs("textarea[data-field='chat-input']"),
+sendBtn:
+  qs("#sendBtn") ||
+  qs("#sendButton") ||
+  qs("[data-action='send']"),
+
+chatInput:
+  qs("#chatInput") ||
+  qs("#messageInput") ||
+  qs("textarea[data-field='chat-input']"),
 
     // opcional: área de telemetria / advanced
     telemetryBox: qs("#telemetryBox") || qs("[data-panel='telemetry']"),
@@ -407,4 +410,5 @@ function bindChatSend() {
   }
 });
 }
+
 
