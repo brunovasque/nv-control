@@ -383,7 +383,24 @@ function buildApiAdapter(api) {
 ============================================================ */
 function bindChatSend() {
   const u = ui();
-  if (!u.sendBtn || !u.chatInput) return;
+
+  // ✅ Ajuste cirúrgico: Enter funciona mesmo sem botão (se existir chatInput)
+  if (!u.chatInput) return;
+
+  // ✅ Blindagem contra <form>: impede submit/reload que mata click/enter
+  const form = u.chatInput.closest("form");
+  if (form) {
+    on(form, "submit", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    });
+  }
+
+  // ✅ Se existir botão, garante que não é submit (sem mexer no HTML)
+  if (u.sendBtn && typeof u.sendBtn.type === "string") {
+    u.sendBtn.type = "button";
+  }
 
   const send = () => {
     const text = String(u.chatInput.value || "").trim();
@@ -402,13 +419,21 @@ function bindChatSend() {
     );
   };
 
-  on(u.sendBtn, "click", send);
-  on(u.chatInput, "keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    send();
+  // ✅ Clique no botão Enviar (se existir)
+  if (u.sendBtn) {
+    on(u.sendBtn, "click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      send();
+    });
   }
-});
+
+  // ✅ Enter envia / Shift+Enter quebra linha
+  on(u.chatInput, "keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      e.stopPropagation();
+      send();
+    }
+  });
 }
-
-
