@@ -46,38 +46,38 @@ async function handleAction(action, api) {
 
     /* ---------------- AUDIT ---------------- */
     case "audit":
-      if (!canTransitionTo(PATCH_STATUSES.AUDITED)) {
-        return explainBlockedAction(action);
-      }
+  if (!canTransitionTo(PATCH_STATUSES.AUDITED)) {
+    return explainBlockedAction(action);
+  }
 
-      addChatMessage({
-        role: "director",
-        text: "Vou enviar o patch para auditoria da ENAVIA.",
-        typing: true,
-      });
+  addChatMessage({
+    role: "director",
+    text: "Vou enviar o patch para auditoria da ENAVIA.",
+    typing: true,
+  });
 
-      updatePanelState({ patch_status: PATCH_STATUSES.AUDITED });
+  await api.audit();
 
-      await api.audit();
-      break;
+  updatePanelState({ patch_status: PATCH_STATUSES.AUDITED });
+  break;
 
     /* ---------------- PROPOSE ---------------- */
     case "propose":
-      if (!canTransitionTo(PATCH_STATUSES.PROPOSED)) {
-        return explainBlockedAction(action);
-      }
+  if (!canTransitionTo(PATCH_STATUSES.PROPOSED)) {
+    return explainBlockedAction(action);
+  }
 
-      addChatMessage({
-        role: "director",
-        text:
-          "Vou pedir à ENAVIA uma sugestão de melhoria técnica, sem executar nada.",
-        typing: true,
-      });
+  addChatMessage({
+    role: "director",
+    text:
+      "Vou pedir à ENAVIA uma sugestão de melhoria técnica, sem executar nada.",
+    typing: true,
+  });
 
-      updatePanelState({ patch_status: PATCH_STATUSES.PROPOSED });
+  await api.propose();
 
-      await api.audit({ propose: true });
-      break;
+  updatePanelState({ patch_status: PATCH_STATUSES.PROPOSED });
+  break;
 
     /* ---------------- APPLY TEST ---------------- */
     case "apply_test":
