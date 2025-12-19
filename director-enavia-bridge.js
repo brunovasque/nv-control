@@ -12,11 +12,6 @@
 ============================================================ */
 
 /* ============================================================
-   DEPENDÊNCIAS
-============================================================ */
-import { api } from "./api-client.js";
-
-/* ============================================================
    ESTADO INTERNO (Cognitivo)
 ============================================================ */
 const cognitiveLog = [];
@@ -58,8 +53,11 @@ export async function askEnaviaFromDirector(directorText, context = {}) {
     context,
   };
 
-  // 3️⃣ Chamada à ENAVIA (AUDIT / modo cognitivo)
-  const response = await api.audit(payload);
+  if (!window.api) {
+  throw new Error("API ENAVIA não inicializada (window.api ausente).");
+}
+
+const response = await window.api.audit(payload);
 
   const enaviaText =
     response?.message ||
