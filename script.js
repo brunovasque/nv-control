@@ -12,6 +12,7 @@ import { initButtonsController } from "./buttons-controller.js";
 import { initFlowOrchestrator } from "./flow-orchestrator.js";
 import { createApiClient } from "./api-client.js";
 import { addChatMessage } from "./chat-renderer.js";
+import { setChatMode, CHAT_MODES } from "./chat-modes.js";
 
 /* ============================================================
    STORAGE KEYS (não perder no F5)
@@ -79,21 +80,20 @@ function ui() {
     targetWorkerIdInput: qs("#targetWorkerIdInput") || qs("#workerIdInput") || qs("[data-field='target-workerid']"),
 
     patchTextarea:
-  qs("#patchTextarea") ||
-  qs("#patchInput") ||
-  qs("textarea[data-field='patch']"),
+      qs("#patchTextarea") ||
+      qs("#patchInput") ||
+      qs("textarea[data-field='patch']"),
 
-sendBtn:
-  qs("#sendBtn") ||
-  qs("#sendButton") ||
-  qs("[data-action='send']"),
+    sendBtn:
+      qs("#sendBtn") ||
+      qs("#sendButton") ||
+      qs("[data-action='send']"),
 
-chatInput:
-  qs("#chatInput") ||
-  qs("#messageInput") ||
-  qs("textarea[data-field='chat-input']"),
+    chatInput:
+      qs("#chatInput") ||
+      qs("#messageInput") ||
+      qs("textarea[data-field='chat-input']"),
 
-    // opcional: área de telemetria / advanced
     telemetryBox: qs("#telemetryBox") || qs("[data-panel='telemetry']"),
   };
 }
@@ -101,7 +101,6 @@ chatInput:
 /* ============================================================
    INIT BOOTSTRAP
 ============================================================ */
-// DOM-safe bootstrap (evita bind antes do HTML existir)
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", boot);
 } else {
@@ -115,9 +114,6 @@ function boot() {
   hydrateFromLocalStorage();
   bindPersistence();
 
-  // =========================
-  // API / ENAVIA INIT
-  // =========================
   const enaviaBaseUrl = mustGetEnaviaUrl();
   const deployBaseUrl = mustGetDeployUrl();
 
@@ -132,19 +128,12 @@ function boot() {
       debug: getDebug(),
     });
 
-    // 🔗 expõe a ENAVIA para o Director (chat)
     window.api = api;
 
-    // cria adapter (payloads corretos + tradução humana)
     const apiAdapter = buildApiAdapter(api);
-
-    // liga orquestrador (botões -> fluxo -> api -> estado)
     initFlowOrchestrator(apiAdapter);
   }
 
-  // =========================
-  // ESTADO INICIAL
-  // =========================
   seedRuntimeState();
 
   addChatMessage({
@@ -155,10 +144,37 @@ function boot() {
     typing: true,
   });
 
-  // =========================
-  // CHAT BIND (ÚLTIMA COISA)
-  // =========================
+  bindSidebarModes();
+
   bindChatSend();
+}
+
+/* ============================================================
+   SIDEBAR MODES — LIGAÇÃO CANÔNICA (FASE 2.4)
+============================================================ */
+function bindSidebarModes() {
+  const buttons = document.querySelectorAll(".sidebar-btn[data-mode]");
+
+  buttons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const mode = btn.getAttribute("data-mode");
+
+      switch (mode) {
+        case "director":
+          setChatMode(CHAT_MODES.DIRECTOR);
+          break;
+
+        case "telemetry":
+        case "history":
+        case "advanced":
+          setChatMode(CHAT_MODES.EXECUTION);
+          break;
+
+        default:
+          console.warn("[sidebar] Modo desconhecido:", mode);
+      }
+    });
+  });
 }
 
 /* ============================================================
@@ -186,7 +202,6 @@ function hydrateFromLocalStorage() {
   if (u.executionIdInput) u.executionIdInput.value = execId;
   if (u.targetWorkerIdInput) u.targetWorkerIdInput.value = targetWorkerId;
 
-  // approved_by é “interno” — não precisa estar visível, mas pode
   updatePanelState({ approved_by: approvedBy });
 }
 
@@ -661,4 +676,5 @@ async function askEnaviaAnalysis(intentText) {
     );
   }
 }
+
 
