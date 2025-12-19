@@ -143,11 +143,6 @@ function boot() {
   }
 
   // =========================
-  // CHAT INIT (independente da API)
-  // =========================
-  bindChatSend();
-
-  // =========================
   // ESTADO INICIAL
   // =========================
   seedRuntimeState();
@@ -159,7 +154,11 @@ function boot() {
       "Audit → Propose → Apply Test → Deploy Teste → Fix Loop → Approve → Promote Real.",
     typing: true,
   });
-}
+
+  // =========================
+  // CHAT BIND (ÚLTIMA COISA)
+  // =========================
+  bindChatSend();
 
 /* ============================================================
    PERSISTÊNCIA (F5 não apaga nada)
@@ -663,5 +662,6 @@ async function askEnaviaAnalysis(intentText) {
     );
   }
 }
+
 
 
