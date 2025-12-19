@@ -159,6 +159,7 @@ function boot() {
   // CHAT BIND (ÚLTIMA COISA)
   // =========================
   bindChatSend();
+}
 
 /* ============================================================
    PERSISTÊNCIA (F5 não apaga nada)
@@ -662,6 +663,7 @@ async function askEnaviaAnalysis(intentText) {
     );
   }
 }
+
 
 
 
