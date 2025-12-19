@@ -102,18 +102,28 @@ export function resetPanelState() {
  */
 export function canTransitionTo(nextStatus) {
   const allowedTransitions = {
-    idle: ["audited"],
-    audited: ["proposed", "staged"],
-    proposed: ["staged"],
-    staged: ["tested"],
-    tested: ["approved"],
-    test_failed: ["fix_ready"],
-    fix_ready: ["staged"],
-    approved: ["applied"],
-    applied: [],
-    prod_failed: [],
-  };
+  idle: ["audited"],
 
+  // AUDIT apenas carimba — não executa
+  audited: ["proposed", "staged"],
+
+  // PROPOSE invalida auditoria e exige novo AUDIT
+  proposed: ["audited"],
+
+  // APPLY TEST só ocorre após AUDIT
+  staged: ["tested"],
+
+  tested: ["approved"],
+  test_failed: ["fix_ready"],
+
+  // após correção, precisa de novo AUDIT
+  fix_ready: ["audited"],
+
+  approved: ["applied"],
+  applied: [],
+  prod_failed: [],
+};
+   
   const current = state.patch_status;
   return allowedTransitions[current]?.includes(nextStatus) || false;
 }
