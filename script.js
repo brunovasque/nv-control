@@ -435,20 +435,18 @@ function bindChatSend() {
   };
 
   const send = () => {
-    const el = pickChatEl();
-    if (!el) return;
+  const el = pickChatEl();
+  if (!el) return;
 
-    const text = String(el.value || "").trim();
-    if (!text) return;
+  const text = String(el.value || "").trim();
+  if (!text) return;
 
-// mostra no chat como usuário
-addChatMessage({ role: "user", text });
+  addChatMessage({ role: "user", text });
+  el.value = "";
 
-// limpa input (pedido)
-el.value = "";
-
-// Director cognitivo (sem execução automática)
-handleDirectorMessage(text);
+  // Director cognitivo
+  handleDirectorMessage(text);
+}; // ← FECHA send AQUI
 
   // 1) Blindagem contra submit em qualquer form que contenha o chatInput real
   const u0 = ui();
@@ -520,8 +518,6 @@ handleDirectorMessage(text);
     }
   }, true);
 }   // ← fecha send()
-
-}   // ← fecha bindChatSend()  ✅
 
 /* ============================================================
    DIRECTOR — ROTEADOR COGNITIVO (FASE 1)
@@ -665,3 +661,4 @@ async function askEnaviaAnalysis(intentText) {
     );
   }
 }
+
