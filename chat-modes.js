@@ -1,11 +1,12 @@
 /* ============================================================
-   CHAT MODES — ENAVIA PANEL
-   Responsável APENAS por:
-   - Definir modo ativo do chat
-   - Garantir hierarquia Humano → Director → Enavia
-   - Bloquear modos proibidos
-   - Expor estado atual para outros módulos
+   CHAT MODES — ENAVIA PANEL (EXTENDIDO)
+   - Mantém 100% da funcionalidade existente
+   - Adiciona roteamento cognitivo (FASE 2.3)
+   - Nenhuma execução permitida
 ============================================================ */
+
+import { api } from "./api-client.js";
+import { askEnaviaFromDirector } from "./director-enavia-bridge.js";
 
 /*
   Modos canônicos:
@@ -13,7 +14,6 @@
   - enavia     → Director consulta Enavia (nunca humano direto)
   - execution  → Feedback de execução (somente leitura)
 */
-
 const CHAT_MODES = {
   DIRECTOR: "director",
   ENAVIA: "enavia",
@@ -23,27 +23,17 @@ const CHAT_MODES = {
 let currentMode = CHAT_MODES.DIRECTOR;
 
 /* ============================================================
-   API PÚBLICA
+   API PÚBLICA — EXISTENTE (MANTIDA)
 ============================================================ */
 
-/**
- * Inicializa modos do chat
- */
 export function initChatModes() {
   setChatMode(CHAT_MODES.DIRECTOR);
 }
 
-/**
- * Retorna modo atual
- */
 export function getChatMode() {
   return currentMode;
 }
 
-/**
- * Define modo do chat
- * @param {string} mode
- */
 export function setChatMode(mode) {
   if (!Object.values(CHAT_MODES).includes(mode)) {
     console.warn(`[chat-modes] Modo inválido: ${mode}`);
@@ -61,9 +51,6 @@ export function setChatMode(mode) {
   notifyModeChange(mode);
 }
 
-/**
- * Modos disponíveis (para UI)
- */
 export function getAvailableChatModes() {
   return [
     CHAT_MODES.DIRECTOR,
@@ -72,7 +59,66 @@ export function getAvailableChatModes() {
 }
 
 /* ============================================================
-   EVENTOS
+   🔥 NOVO — ROTEAMENTO COGNITIVO DO CHAT (FASE 2.3)
+============================================================ */
+
+/**
+ * Roteia mensagem humana conforme o modo ativo.
+ * NÃO executa ações.
+ * NÃO chama deploy.
+ */
+export async function routeChatMessage(text, context = {}) {
+  switch (currentMode) {
+    case CHAT_MODES.DIRECTOR:
+      return handleDirector(text, context);
+
+    case CHAT_MODES.ENAVIA:
+      return handleEnavia(text, context);
+
+    case CHAT_MODES.EXECUTION:
+      return {
+        role: "system",
+        text: "Modo execução é somente leitura.",
+      };
+
+    default:
+      return {
+        role: "system",
+        text: "Modo desconhecido. Retornando ao Director.",
+      };
+  }
+}
+
+/* ============================================================
+   HANDLERS INTERNOS (READ-ONLY)
+============================================================ */
+
+async function handleDirector(text, context) {
+  const response = await api.directorQuery({
+    text,
+    context,
+  });
+
+  return {
+    role: "director",
+    text:
+      response?.message ||
+      "Não consegui formular uma resposta no modo Director.",
+  };
+}
+
+async function handleEnavia(text, context) {
+  // Director consulta ENAVIA via bridge cognitivo
+  const enaviaText = await askEnaviaFromDirector(text, context);
+
+  return {
+    role: "enavia",
+    text: enaviaText,
+  };
+}
+
+/* ============================================================
+   EVENTOS — EXISTENTE (MANTIDO)
 ============================================================ */
 
 function notifyModeChange(mode) {
@@ -83,31 +129,22 @@ function notifyModeChange(mode) {
 }
 
 /* ============================================================
-   UTILITÁRIOS DE VERIFICAÇÃO
+   UTILITÁRIOS — EXISTENTE (MANTIDO)
 ============================================================ */
 
-/**
- * Verifica se o chat atual é com Director
- */
 export function isDirectorMode() {
   return currentMode === CHAT_MODES.DIRECTOR;
 }
 
-/**
- * Verifica se é modo ENAVIA (uso interno)
- */
 export function isEnaviaMode() {
   return currentMode === CHAT_MODES.ENAVIA;
 }
 
-/**
- * Verifica se é modo execução
- */
 export function isExecutionMode() {
   return currentMode === CHAT_MODES.EXECUTION;
 }
 
 /* ============================================================
-   EXPORTS CANÔNICOS
+   EXPORT CANÔNICO
 ============================================================ */
 export { CHAT_MODES };
