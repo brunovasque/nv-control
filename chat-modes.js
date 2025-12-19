@@ -5,7 +5,6 @@
    - Nenhuma execução permitida
 ============================================================ */
 
-import { api } from "./api-client.js";
 import { askEnaviaFromDirector } from "./director-enavia-bridge.js";
 
 /*
