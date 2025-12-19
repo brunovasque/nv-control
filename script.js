@@ -663,6 +663,9 @@ async function askEnaviaAnalysis(intentText) {
     );
   }
 }
+   // === DEBUG TEMP ===
+}
+
 
 
 
