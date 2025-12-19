@@ -115,37 +115,48 @@ function boot() {
   hydrateFromLocalStorage();
   bindPersistence();
 
-  // cria api base
+  // =========================
+  // API / ENAVIA INIT
+  // =========================
   const enaviaBaseUrl = mustGetEnaviaUrl();
-const deployBaseUrl = mustGetDeployUrl();
+  const deployBaseUrl = mustGetDeployUrl();
 
-let api = null;
+  let api = null;
 
-if (enaviaBaseUrl && deployBaseUrl) {
-  api = createApiClient({
-    enaviaBaseUrl,
-    deployBaseUrl,
-    internalToken: getTokenOrNull(),
-    timeoutMs: 20000,
-    debug: getDebug(),
-  });
+  if (enaviaBaseUrl && deployBaseUrl) {
+    api = createApiClient({
+      enaviaBaseUrl,
+      deployBaseUrl,
+      internalToken: getTokenOrNull(),
+      timeoutMs: 20000,
+      debug: getDebug(),
+    });
 
-  // cria adapter (payloads corretos + tradução humana)
-  const apiAdapter = buildApiAdapter(api);
+    // 🔗 expõe a ENAVIA para o Director (chat)
+    window.api = api;
 
-  // liga orquestrador (botões -> fluxo -> api -> estado)
-  initFlowOrchestrator(apiAdapter);
-}
+    // cria adapter (payloads corretos + tradução humana)
+    const apiAdapter = buildApiAdapter(api);
 
-// liga envio do chat “humano” (independente da API)
-bindChatSend();
+    // liga orquestrador (botões -> fluxo -> api -> estado)
+    initFlowOrchestrator(apiAdapter);
+  }
 
-  // estado inicial (execution_id / target / approved_by)
+  // =========================
+  // CHAT INIT (independente da API)
+  // =========================
+  bindChatSend();
+
+  // =========================
+  // ESTADO INICIAL
+  // =========================
   seedRuntimeState();
 
   addChatMessage({
     role: "director",
-    text: "Painel carregado. Pronto para seguir a ordem canônica: Audit → Propose → Apply Test → Deploy Teste → Fix Loop → Approve → Promote Real.",
+    text:
+      "Painel carregado. Pronto para seguir a ordem canônica: " +
+      "Audit → Propose → Apply Test → Deploy Teste → Fix Loop → Approve → Promote Real.",
     typing: true,
   });
 }
@@ -652,4 +663,5 @@ async function askEnaviaAnalysis(intentText) {
     );
   }
 }
+
 
