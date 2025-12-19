@@ -519,7 +519,9 @@ handleDirectorMessage(text);
       send();
     }
   }, true);
-}
+}   // ← fecha send()
+
+}   // ← fecha bindChatSend()  ✅
 
 /* ============================================================
    DIRECTOR — ROTEADOR COGNITIVO (FASE 1)
@@ -663,10 +665,3 @@ async function askEnaviaAnalysis(intentText) {
     );
   }
 }
-   // === DEBUG TEMP ===
-}
-
-
-
-
-
