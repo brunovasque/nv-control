@@ -550,23 +550,40 @@ function handleDirectorMessage(text) {
     return;
   }
 
-  // =========================
-  // 3) INTENÇÃO TÉCNICA (SEM EXECUTAR)
-  // =========================
-  if (
-    t.includes("audit") ||
-    t.includes("analisar") ||
-    t.includes("analisa") ||
-    t.includes("deploy") ||
-    t.includes("patch") ||
-    t.includes("segurança") ||
-    t.includes("risco")
-  ) {
-    directorSay(
-      "Entendi sua intenção técnica. Quer que eu consulte a ENAVIA para analisar isso com segurança antes de qualquer ação?"
-    );
-    return;
-  }
+// =========================
+// 3.1) CONFIRMAÇÃO DE CONSULTA À ENAVIA
+// =========================
+if (
+  pendingEnaviaIntent &&
+  (t === "sim" || t.includes("analisar"))
+) {
+  const intent = pendingEnaviaIntent;
+  pendingEnaviaIntent = null;
+
+  directorSay("Perfeito. Consultando a ENAVIA agora, em modo seguro (read-only).");
+  askEnaviaAnalysis(intent);
+  return;
+}
+
+// =========================
+// 3) INTENÇÃO TÉCNICA (SEM EXECUTAR)
+// =========================
+if (
+  t.includes("audit") ||
+  t.includes("analisar") ||
+  t.includes("analisa") ||
+  t.includes("deploy") ||
+  t.includes("patch") ||
+  t.includes("segurança") ||
+  t.includes("risco")
+) {
+  pendingEnaviaIntent = text;
+
+  directorSay(
+    "Entendi sua intenção técnica. Quer que eu consulte a ENAVIA para analisar isso com segurança antes de qualquer ação? (responda: sim / analisar)"
+  );
+  return;
+}
 
   // =========================
   // 4) FALLBACK INTELIGENTE
@@ -576,3 +593,54 @@ function handleDirectorMessage(text) {
   );
 }
 
+/* ============================================================
+   DIRECTOR ⇄ ENAVIA — ESTADO DA CONSULTA (READ-ONLY)
+============================================================ */
+let pendingEnaviaIntent = null; // guarda intenção aguardando confirmação
+
+/* ============================================================
+   ENAVIA — CONSULTA READ-ONLY (AUDIT)
+============================================================ */
+async function askEnaviaAnalysis(intentText) {
+  if (!window.api) {
+    directorSay(
+      "A ENAVIA ainda não está conectada. Configure as URLs para que eu possa consultar a análise técnica."
+    );
+    return;
+  }
+
+  // Log técnico (canal Director ⇄ ENAVIA)
+  addChatMessage({
+    role: "director_enavia",
+    text: "[DIRECTOR → ENAVIA] Solicitação de análise técnica (read-only).",
+  });
+
+  try {
+    const result = await window.api.audit({
+      mode: "enavia_audit",
+      source: "NV-CONTROL",
+      read_only: true,
+      text: intentText,
+    });
+
+    // Log técnico cru
+    addChatMessage({
+      role: "director_enavia",
+      text: "[ENAVIA → DIRECTOR]\n" + JSON.stringify(result, null, 2),
+    });
+
+    // Tradução humana
+    directorSay(
+      "A ENAVIA analisou sua solicitação. Encontrei pontos de atenção e possíveis riscos. Quer que eu te explique os detalhes ou seguimos para o próximo passo?"
+    );
+  } catch (err) {
+    addChatMessage({
+      role: "director_enavia",
+      text: "[ENAVIA → DIRECTOR] ERRO: " + err.message,
+    });
+
+    directorSay(
+      "Tentei consultar a ENAVIA, mas ocorreu um erro técnico. Veja os detalhes no painel de conversa técnica."
+    );
+  }
+}
