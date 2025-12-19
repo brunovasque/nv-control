@@ -32,6 +32,16 @@ const PATCH_STATUSES = {
   PROD_FAILED: "prod_failed",
 };
 
+/* ============================================================
+   UTIL — EXECUTION ID
+============================================================ */
+function generateExecutionId() {
+  return `exec-${Date.now()}`;
+}
+
+/* ============================================================
+   ESTADO INTERNO
+============================================================ */
 let state = {
   execution_id: generateExecutionId(),
   patch_status: PATCH_STATUSES.IDLE,
@@ -89,7 +99,7 @@ export function resetPanelState() {
     last_error: null,
     updated_at: Date.now(),
   };
-}
+
   notifyStateChange();
 }
 
@@ -102,28 +112,28 @@ export function resetPanelState() {
  */
 export function canTransitionTo(nextStatus) {
   const allowedTransitions = {
-  idle: ["audited"],
+    idle: ["audited"],
 
-  // AUDIT apenas carimba — não executa
-  audited: ["proposed", "staged"],
+    // AUDIT apenas carimba — não executa
+    audited: ["proposed", "staged"],
 
-  // PROPOSE invalida auditoria e exige novo AUDIT
-  proposed: ["audited"],
+    // PROPOSE invalida auditoria e exige novo AUDIT
+    proposed: ["audited"],
 
-  // APPLY TEST só ocorre após AUDIT
-  staged: ["tested"],
+    // APPLY TEST só ocorre após AUDIT
+    staged: ["tested"],
 
-  tested: ["approved"],
-  test_failed: ["fix_ready"],
+    tested: ["approved"],
+    test_failed: ["fix_ready"],
 
-  // após correção, precisa de novo AUDIT
-  fix_ready: ["audited"],
+    // após correção, precisa de novo AUDIT
+    fix_ready: ["audited"],
 
-  approved: ["applied"],
-  applied: [],
-  prod_failed: [],
-};
-   
+    approved: ["applied"],
+    applied: [],
+    prod_failed: [],
+  };
+
   const current = state.patch_status;
   return allowedTransitions[current]?.includes(nextStatus) || false;
 }
