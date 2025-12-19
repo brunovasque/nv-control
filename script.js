@@ -555,7 +555,15 @@ function handleDirectorMessage(text) {
 // =========================
 if (
   pendingEnaviaIntent &&
-  (t === "sim" || t.includes("analisar"))
+  (
+    t === "sim" ||
+    t === "ok" ||
+    t === "pode" ||
+    t === "confirmo" ||
+    t.includes("pode analisar") ||
+    t.includes("analisa") ||
+    t.includes("analisar")
+  )
 ) {
   const intent = pendingEnaviaIntent;
   pendingEnaviaIntent = null;
@@ -644,3 +652,4 @@ async function askEnaviaAnalysis(intentText) {
     );
   }
 }
+
