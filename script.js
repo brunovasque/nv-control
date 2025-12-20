@@ -292,7 +292,14 @@ function getTargetRequired() {
 ============================================================ */
 function getPatchRequired() {
   const u = ui();
-  const content = String(u.patchTextarea?.value || "").trim();
+
+  // 1️⃣ tenta campo técnico (se existir)
+  let content = String(u.patchTextarea?.value || "").trim();
+
+  // 2️⃣ fallback: usa input do chat (SEM afetar a conversa)
+  if (!content) {
+    content = String(u.chatInput?.value || "").trim();
+  }
 
   if (!content) {
     throw new Error("patch.content obrigatório (cole o patch no painel).");
@@ -728,6 +735,7 @@ async function askEnaviaAnalysis(intentText) {
     );
   }
 }
+
 
 
 
