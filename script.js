@@ -310,36 +310,45 @@ function directorReportApi(label, result) {
 function buildApiAdapter(api) {
   return {
     async audit(opts = {}) {
-      // v1.1: AUDIT (read-only) aponta para ENAVIA
+      // v1.1: AUDIT / PROPOSE (read-only) aponta para ENAVIA
       const execution_id = getExecutionIdRequired();
-      const target = getTargetRequired();
-      const patch = getPatchRequired();
+      const isPropose = opts.propose === true;
+
+      // PROPOSE pode rodar sem patch/target
+      const target = isPropose ? null : getTargetRequired();
+      const patch = isPropose ? null : getPatchRequired();
 
       const payload = {
         execution_id,
-        mode: "enavia_audit",
+        mode: isPropose ? "enavia_propose" : "enavia_audit",
         source: "NV-CONTROL",
-        target,
-        patch,
+        ...(target ? { target } : {}),
+        ...(patch ? { patch } : {}),
         constraints: {
           read_only: true,
           no_auto_apply: true,
         },
       };
 
-      // PROPOSE (opcional) via mesmo endpoint, mas sinalizamos intenção
-      if (opts.propose === true) {
+      if (isPropose) {
         payload.ask_suggestions = true;
       }
 
       const r = await api.audit(payload);
-      directorReportApi(opts.propose ? "PROPOSE (ENAVIA)" : "AUDIT (ENAVIA)", r);
+      directorReportApi(
+        isPropose ? "PROPOSE (ENAVIA)" : "AUDIT (ENAVIA)",
+        r
+      );
 
       // Opcional: se veio audit.verdict, deixa no estado (não decide)
       try {
         const verdict = r?.data?.audit?.verdict;
         const risk = r?.data?.audit?.risk_level;
-        if (verdict || risk) updatePanelState({ last_audit: { verdict, risk, ts: Date.now() } });
+        if (verdict || risk) {
+          updatePanelState({
+            last_audit: { verdict, risk, ts: Date.now() },
+          });
+        }
       } catch (_) {}
 
       return r;
@@ -676,5 +685,6 @@ async function askEnaviaAnalysis(intentText) {
     );
   }
 }
+
 
 
