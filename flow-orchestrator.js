@@ -91,7 +91,7 @@ export async function handlePanelAction(action) {
 
         const payload = {
   execution_id: state.execution_id,
-  mode: "enavia_audit",
+  mode: "audit",
   source: "nv-control",
   target: {
     workerId: "enavia-worker-teste",
