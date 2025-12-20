@@ -54,61 +54,71 @@ export function initButtonsController() {
    HABILITA / DESABILITA
 ============================================================ */
 
+/* ============================================================
+   UTIL — TOGGLE BOTÃO
+============================================================ */
+function toggle(button, enabled) {
+  if (!button) return;
+  button.classList.toggle("disabled", !enabled);
+}
+
+/* ============================================================
+   ESTADO DOS BOTÕES (UI ≠ regra de segurança)
+============================================================ */
 function updateButtonsState() {
   const status = getPatchStatus();
 
-  // AUDIT: permitido no idle e após fix
+  // AUDIT
   toggle(
     buttons.audit,
     status === PATCH_STATUSES.IDLE ||
     status === PATCH_STATUSES.FIX_READY
   );
 
-  // PROPOSE: permitido no idle ou após audit
+  // PROPOSE
   toggle(
     buttons.propose,
     status === PATCH_STATUSES.IDLE ||
     status === PATCH_STATUSES.AUDITED
   );
 
-  // APPLY TEST: permitido após audit ou propose
+  // APPLY TEST
   toggle(
     buttons.applyTest,
     status === PATCH_STATUSES.AUDITED ||
     status === PATCH_STATUSES.PROPOSED
   );
 
-  // DEPLOY TEST: permitido após staging
+  // DEPLOY TEST
   toggle(
     buttons.deployTest,
     status === PATCH_STATUSES.STAGED
   );
 
-  // APPROVE: permitido após tested
+  // APPROVE
   toggle(
     buttons.approve,
     status === PATCH_STATUSES.TESTED
   );
 
-  // PROMOTE REAL: permitido após approved
+  // PROMOTE REAL
   toggle(
     buttons.promote,
     status === PATCH_STATUSES.APPROVED
   );
 
-  // ROLLBACK: só após aplicado em produção
+  // ROLLBACK
   toggle(
     buttons.rollback,
     status === PATCH_STATUSES.APPLIED
   );
 
-  // CANCELAR: qualquer estado diferente de idle
+  // CANCELAR
   toggle(
     buttons.cancel,
     status !== PATCH_STATUSES.IDLE
   );
 }
-
 /* ============================================================
    CLIQUES → EVENTOS (INTENÇÃO)
 ============================================================ */
