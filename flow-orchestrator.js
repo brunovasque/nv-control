@@ -84,23 +84,24 @@ export async function handlePanelAction(action) {
       try {
         const state = getPanelState();
 
+         // garante patch no state (compatível com worker atual)
+      if (!state.patch && typeof state.last_message === "string") {
+      updatePanelState({ patch: state.last_message });
+      }
+
         const payload = {
-          execution_id: state.execution_id,
-          mode: "enavia_audit",
-          source: "nv-control",
-          target: {
-            system: "enavia",
-            workerId: "enavia-worker-teste",
-          },
-          patch: {
-            type: "patch_text",
-            content: "// noop patch — test handshake",
-          },
-          constraints: {
-            read_only: true,
-            no_auto_apply: true,
-          },
-        };
+  execution_id: state.execution_id,
+  mode: "enavia_audit",
+  source: "nv-control",
+  target: {
+    workerId: "enavia-worker-teste",
+  },
+  patch: state.patch || "// noop patch — test handshake",
+  constraints: {
+    read_only: true,
+    no_auto_apply: true,
+  },
+};
 
         // ✅ PROVA OBJETIVA (DevTools + Network)
         const baseUrl =
