@@ -33,6 +33,65 @@ function qs(sel) { return document.querySelector(sel); }
 function on(el, evt, fn) { if (el) el.addEventListener(evt, fn); }
 
 /* ============================================================
+   UI MAP — CANÔNICO (FALTAVA)
+============================================================ */
+function ui() {
+  return {
+    enaviaUrlInput:
+      qs("#enaviaUrlInput") ||
+      qs("#workerUrlInput") ||
+      qs("[data-field='enavia-url']"),
+
+    deployUrlInput:
+      qs("#deployUrlInput") ||
+      qs("#deployWorkerUrlInput") ||
+      qs("[data-field='deploy-url']"),
+
+    tokenInput:
+      qs("#internalTokenInput") ||
+      qs("#tokenInput") ||
+      qs("[data-field='internal-token']"),
+
+    debugToggle:
+      qs("#debugToggle") ||
+      qs("[data-field='debug']"),
+
+    envSelect:
+      qs("#envSelect") ||
+      qs("[data-field='env']"),
+
+    executionIdInput:
+      qs("#executionIdInput") ||
+      qs("#execution_id") ||
+      qs("[data-field='execution-id']"),
+
+    targetWorkerIdInput:
+      qs("#targetWorkerIdInput") ||
+      qs("#workerIdInput") ||
+      qs("[data-field='target-workerid']"),
+
+    patchTextarea:
+      qs("#patchTextarea") ||
+      qs("#patchInput") ||
+      qs("textarea[data-field='patch']"),
+
+    sendBtn:
+      qs("#sendBtn") ||
+      qs("#sendButton") ||
+      qs("[data-action='send']"),
+
+    chatInput:
+      qs("#chatInput") ||
+      qs("#messageInput") ||
+      qs("textarea[data-field='chat-input']"),
+
+    telemetryBox:
+      qs("#telemetryBox") ||
+      qs("[data-panel='telemetry']"),
+  };
+}
+
+/* ============================================================
    INIT BOOTSTRAP
 ============================================================ */
 if (document.readyState === "loading") {
@@ -61,7 +120,7 @@ function boot() {
     });
 
     const apiAdapter = buildApiAdapter(api);
-    initFlowOrchestrator(apiAdapter); // ✅ ponto canônico único
+    initFlowOrchestrator(apiAdapter);
   }
 
   seedRuntimeState();
@@ -79,7 +138,7 @@ function boot() {
 }
 
 /* ============================================================
-   SIDEBAR MODES — LIGAÇÃO CANÔNICA (FASE 2.4)
+   SIDEBAR MODES — LIGAÇÃO CANÔNICA
 ============================================================ */
 function bindSidebarModes() {
   const buttons = document.querySelectorAll(".sidebar-btn[data-mode]");
@@ -92,13 +151,11 @@ function bindSidebarModes() {
         case "director":
           setChatMode(CHAT_MODES.DIRECTOR);
           break;
-
         case "telemetry":
         case "history":
         case "advanced":
           setChatMode(CHAT_MODES.EXECUTION);
           break;
-
         default:
           console.warn("[sidebar] Modo desconhecido:", mode);
       }
@@ -107,7 +164,7 @@ function bindSidebarModes() {
 }
 
 /* ============================================================
-   PERSISTÊNCIA (F5 não apaga nada)
+   PERSISTÊNCIA
 ============================================================ */
 function hydrateFromLocalStorage() {
   const u = ui();
@@ -127,7 +184,6 @@ function hydrateFromLocalStorage() {
   if (u.tokenInput) u.tokenInput.value = token;
   if (u.debugToggle) u.debugToggle.checked = debug;
   if (u.envSelect) u.envSelect.value = env;
-
   if (u.executionIdInput) u.executionIdInput.value = execId;
   if (u.targetWorkerIdInput) u.targetWorkerIdInput.value = targetWorkerId;
 
@@ -136,13 +192,11 @@ function hydrateFromLocalStorage() {
 
 function bindPersistence() {
   const u = ui();
-
   on(u.enaviaUrlInput, "input", (e) => localStorage.setItem(LS.ENAVIA_URL, (e.target.value || "").replace(/\/$/, "")));
   on(u.deployUrlInput, "input", (e) => localStorage.setItem(LS.DEPLOY_URL, (e.target.value || "").replace(/\/$/, "")));
   on(u.tokenInput, "input", (e) => localStorage.setItem(LS.INTERNAL_TOKEN, e.target.value || ""));
   on(u.debugToggle, "change", (e) => localStorage.setItem(LS.DEBUG, e.target.checked ? "true" : "false"));
   on(u.envSelect, "change", (e) => localStorage.setItem(LS.ENV, e.target.value || DEFAULTS.env));
-
   on(u.executionIdInput, "input", (e) => localStorage.setItem(LS.LAST_EXECUTION_ID, e.target.value || ""));
   on(u.targetWorkerIdInput, "input", (e) => localStorage.setItem(LS.LAST_TARGET_WORKERID, e.target.value || ""));
 }
@@ -612,3 +666,4 @@ async function askEnaviaAnalysis(intentText) {
     );
   }
 }
+
