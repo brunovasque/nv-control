@@ -60,7 +60,7 @@ export async function handlePanelAction(action) {
       });
 
       try {
-        const res = await api.audit();
+        const res = await api.audit({ propose: false });
         if (res && res.ok === false) {
           updatePanelState({
             last_error: res.error || "Falha na auditoria.",
