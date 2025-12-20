@@ -5,6 +5,9 @@
    - Nenhuma suposição
 ============================================================ */
 
+import { getExecutionId } from "./panel-state.js";
+import { getLastUserMessage } from "./chat-state.js"; // 🔑 PATCH REAL
+
 function normalizeBaseUrl(url) {
   if (!url) return null;
   return String(url).replace(/\/$/, "");
@@ -24,12 +27,13 @@ export function createApiClient(config) {
   return {
     /* ---------------- ENAVIA ---------------- */
 
-    audit(payload) {
+    audit({ propose = false } = {}) {
+      const payload = buildAuditPayload({ propose });
       return callJson(cfg.enaviaBaseUrl, "/audit", payload, cfg);
     },
 
-    propose(payload) {
-      // PROPOSE: apenas sugestão técnica, sem executar nada
+    propose() {
+      const payload = buildAuditPayload({ propose: true });
       return callJson(cfg.enaviaBaseUrl, "/audit", payload, cfg);
     },
 
@@ -76,6 +80,28 @@ export function createApiClient(config) {
         "GET"
       );
     },
+  };
+}
+
+/* ============================================================
+   PAYLOAD BUILDERS (🔒 CANÔNICOS)
+============================================================ */
+
+function buildAuditPayload({ propose }) {
+  const patch = getLastUserMessage();
+  const execution_id = getExecutionId();
+
+  if (!patch || !patch.trim()) {
+    throw new Error("API_CLIENT_ERROR: patch vazio. Nada para auditar.");
+  }
+
+  return {
+    execution_id,
+    patch,
+    propose: propose === true,
+    source: "nv-control",
+    mode: propose ? "propose" : "audit",
+    timestamp: Date.now(),
   };
 }
 
