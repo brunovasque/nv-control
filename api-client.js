@@ -30,7 +30,7 @@ export function createApiClient(config) {
 
     propose(payload) {
       // PROPOSE: apenas sugestão técnica, sem executar nada
-      return callJson(cfg.enaviaBaseUrl, "/propose", payload, cfg);
+      return callJson(cfg.enaviaBaseUrl, "/audit", payload, cfg);
     },
 
     /* ---------------- DEPLOY WORKER ---------------- */
