@@ -241,12 +241,19 @@ function seedRuntimeState() {
 /* ============================================================
    PAYLOAD BUILDERS (sem inventar schema)
 ============================================================ */
+import { getExecutionId } from "./panel-state.js";
+
 function getExecutionIdRequired() {
-  const u = ui();
-  const execution_id = (u.executionIdInput?.value || "").trim();
-  if (!execution_id) throw new Error("execution_id obrigatório (preencha no painel).");
+  const execution_id = getExecutionId();
+
+  if (!execution_id) {
+    throw new Error("execution_id obrigatório.");
+  }
+
+  // mantém sincronização para compatibilidade legada
   updatePanelState({ execution_id });
   localStorage.setItem(LS.LAST_EXECUTION_ID, execution_id);
+
   return execution_id;
 }
 
@@ -680,3 +687,4 @@ async function askEnaviaAnalysis(intentText) {
     );
   }
 }
+
