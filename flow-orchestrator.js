@@ -378,7 +378,8 @@ export function initFlowOrchestrator(apiAdapter) {
   document.addEventListener("panel:action", async (e) => {
     const action = e.detail?.action;
     if (!action) return;
-    await handlePanelAction(action, apiAdapter); // 👈 passa o api
+
+    await handlePanelAction(action, apiAdapter); // 👈 INJEÇÃO EXPLÍCITA
   });
 
   document.addEventListener("panel:action-blocked", (e) => {
