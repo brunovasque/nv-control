@@ -14,10 +14,22 @@ import {
 import { addChatMessage } from "./chat-renderer.js";
 
 /* ============================================================
-   API INJETADO (via script.js)
+   API INJETADO (CANÔNICO — VIA initFlowOrchestrator)
 ============================================================ */
 
-let api = null; // 👈 AQUI, exatamente aqui
+let api = null; // ← única fonte de verdade
+
+function ensureApiOrBlock(action) {
+  if (api) return true;
+
+  console.error("[FlowOrchestrator] API não injetada");
+  document.dispatchEvent(
+    new CustomEvent("panel:action-blocked", {
+      detail: { action, reason: "api_not_ready" },
+    })
+  );
+  return false;
+}
 
 /* ============================================================
    BLOQUEIO CANÔNICO DE AÇÃO
@@ -34,6 +46,8 @@ function explainBlockedAction(action) {
       "A aprovação só é possível após o patch ter sido testado.",
     promote:
       "A promoção só é permitida após aprovação explícita.",
+    api_not_ready:
+      "A API ainda não está conectada. Verifique as URLs no painel.",
   };
 
   addChatMessage({
@@ -47,6 +61,8 @@ function explainBlockedAction(action) {
 ============================================================ */
 
 export async function handlePanelAction(action) {
+  if (!ensureApiOrBlock(action)) return;
+
   switch (action) {
     case "audit": {
       if (!canTransitionTo(PATCH_STATUSES.AUDITED)) {
@@ -94,7 +110,6 @@ export async function handlePanelAction(action) {
       });
 
       try {
-        // ✅ PROPOSE = AUDIT em modo sugestão
         const res = await api.audit({ propose: true });
 
         if (res && res.ok === false) {
@@ -198,21 +213,16 @@ export function initFlowOrchestrator(apiAdapter) {
     return;
   }
 
-  // expõe API internamente ao orquestrador
-  api = apiAdapter;
+  api = apiAdapter; // ✅ INJEÇÃO CANÔNICA
 
   document.addEventListener("panel:action", async (e) => {
     const action = e.detail?.action;
     if (!action) return;
-
     await handlePanelAction(action);
   });
 
   document.addEventListener("panel:action-blocked", (e) => {
-    const action = e.detail?.action;
-    if (!action) return;
-
+    const action = e.detail?.action || e.detail?.reason;
     explainBlockedAction(action);
   });
 }
-
