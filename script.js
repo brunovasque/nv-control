@@ -244,11 +244,6 @@ function seedRuntimeState() {
 }
 
 /* ============================================================
-   PAYLOAD BUILDERS (sem inventar schema)
-============================================================ */
-import { getExecutionId, getPanelState, updatePanelState } from "./panel-state.js";
-
-/* ============================================================
    EXECUTION ID (CANÔNICO)
 ============================================================ */
 function getExecutionIdRequired() {
@@ -258,7 +253,6 @@ function getExecutionIdRequired() {
     throw new Error("execution_id obrigatório.");
   }
 
-  // compatibilidade legada (sync state + storage)
   updatePanelState({ execution_id });
   localStorage.setItem(LS.LAST_EXECUTION_ID, execution_id);
 
@@ -734,6 +728,7 @@ async function askEnaviaAnalysis(intentText) {
     );
   }
 }
+
 
 
 
