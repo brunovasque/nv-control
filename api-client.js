@@ -28,6 +28,11 @@ export function createApiClient(config) {
       return callJson(cfg.enaviaBaseUrl, "/audit", payload, cfg);
     },
 
+    propose(payload) {
+      // PROPOSE: apenas sugestão técnica, sem executar nada
+      return callJson(cfg.enaviaBaseUrl, "/propose", payload, cfg);
+    },
+
     /* ---------------- DEPLOY WORKER ---------------- */
 
     applyTest(payload) {
