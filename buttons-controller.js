@@ -14,15 +14,27 @@ import {
 
 /* ============================================================
    MAPA DE BOTÕES (DOM)
+   Estratégia tolerante:
+   1) data-action
+   2) fallback por ordem (legado)
 ============================================================ */
 
+function qsAction(action, fallbackIndex = null) {
+  return (
+    document.querySelector(`.action-btn[data-action="${action}"]`) ||
+    (fallbackIndex !== null
+      ? document.querySelector(`.action-btn:nth-child(${fallbackIndex})`)
+      : null)
+  );
+}
+
 const buttons = {
-  audit: document.querySelector(".action-btn:nth-child(2)"),
-  propose: document.querySelector(".action-btn:nth-child(3)"),
-  applyTest: document.querySelector(".action-btn:nth-child(4)"),
-  deployTest: document.querySelector(".action-btn:nth-child(5)"),
-  approve: document.querySelector(".action-btn:nth-child(6)"),
-  promote: document.querySelector(".action-btn:nth-child(7)"),
+  audit: qsAction("audit", 2),
+  propose: qsAction("propose", 3),
+  applyTest: qsAction("apply_test", 4),
+  deployTest: qsAction("deploy_test", 5),
+  approve: qsAction("approve", 6),
+  promote: qsAction("promote_real", 7),
   rollback: document.querySelector(".action-btn.danger"),
   cancel: document.querySelector(".action-btn.secondary"),
 };
