@@ -2,7 +2,12 @@
    script.js — NV-Control / ENAVIA Panel (CANÔNICO)
 ============================================================ */
 
-import { initPanelState, getPanelState, updatePanelState } from "./panel-state.js";
+import {
+  initPanelState,
+  getPanelState,
+  getExecutionId,
+  updatePanelState
+} from "./panel-state.js";
 import { initButtonsController } from "./buttons-controller.js";
 import { initFlowOrchestrator } from "./flow-orchestrator.js";
 import { createApiClient } from "./api-client.js";
@@ -729,5 +734,6 @@ async function askEnaviaAnalysis(intentText) {
     );
   }
 }
+
 
 
