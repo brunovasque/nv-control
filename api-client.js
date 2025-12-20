@@ -6,7 +6,6 @@
 ============================================================ */
 
 import { getExecutionId } from "./panel-state.js";
-import { getLastUserMessage } from "./chat-state.js"; // 🔑 PATCH REAL
 
 function normalizeBaseUrl(url) {
   if (!url) return null;
@@ -27,13 +26,13 @@ export function createApiClient(config) {
   return {
     /* ---------------- ENAVIA ---------------- */
 
-    audit({ propose = false } = {}) {
-      const payload = buildAuditPayload({ propose });
+    audit({ patch, propose = false }) {
+      const payload = buildAuditPayload({ patch, propose });
       return callJson(cfg.enaviaBaseUrl, "/audit", payload, cfg);
     },
 
-    propose() {
-      const payload = buildAuditPayload({ propose: true });
+    propose({ patch }) {
+      const payload = buildAuditPayload({ patch, propose: true });
       return callJson(cfg.enaviaBaseUrl, "/audit", payload, cfg);
     },
 
@@ -84,14 +83,13 @@ export function createApiClient(config) {
 }
 
 /* ============================================================
-   PAYLOAD BUILDERS (🔒 CANÔNICOS)
+   PAYLOAD BUILDER (CANÔNICO)
 ============================================================ */
 
-function buildAuditPayload({ propose }) {
-  const patch = getLastUserMessage();
+function buildAuditPayload({ patch, propose }) {
   const execution_id = getExecutionId();
 
-  if (!patch || !patch.trim()) {
+  if (!patch || !String(patch).trim()) {
     throw new Error("API_CLIENT_ERROR: patch vazio. Nada para auditar.");
   }
 
@@ -202,7 +200,7 @@ async function callJson(baseUrl, path, body, cfg, method = "POST") {
 }
 
 /* ============================================================
-   ASSERTS (FAIL FAST — PAINEL NÃO ERRA)
+   ASSERTS
 ============================================================ */
 
 function assertExecutionId(payload) {
