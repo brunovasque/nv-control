@@ -64,6 +64,9 @@ export async function handlePanelAction(action) {
   if (!ensureApiOrBlock(action)) return;
 
   switch (action) {
+    // ============================================================
+    // AUDIT
+    // ============================================================
     case "audit": {
       if (!canTransitionTo(PATCH_STATUSES.AUDITED)) {
         return explainBlockedAction(action);
@@ -77,6 +80,7 @@ export async function handlePanelAction(action) {
 
       try {
         const res = await api.audit({ propose: false });
+
         if (res && res.ok === false) {
           updatePanelState({
             last_error: res.error || "Falha na auditoria.",
@@ -90,13 +94,15 @@ export async function handlePanelAction(action) {
         });
       } catch (err) {
         updatePanelState({
-          last_error:
-            err?.message || "Erro inesperado durante auditoria.",
+          last_error: err?.message || "Erro inesperado durante auditoria.",
         });
       }
       break;
     }
 
+    // ============================================================
+    // PROPOSE
+    // ============================================================
     case "propose": {
       if (!canTransitionTo(PATCH_STATUSES.PROPOSED)) {
         return explainBlockedAction(action);
@@ -125,13 +131,15 @@ export async function handlePanelAction(action) {
         });
       } catch (err) {
         updatePanelState({
-          last_error:
-            err?.message || "Erro inesperado durante propose.",
+          last_error: err?.message || "Erro inesperado durante propose.",
         });
       }
       break;
     }
 
+    // ============================================================
+    // APPLY TEST (gera staging)
+    // ============================================================
     case "apply_test": {
       if (!canTransitionTo(PATCH_STATUSES.STAGED)) {
         return explainBlockedAction(action);
@@ -146,6 +154,7 @@ export async function handlePanelAction(action) {
 
       try {
         const res = await api.applyTest();
+
         if (res && res.ok === false) {
           updatePanelState({
             last_error: res.error || "Falha no apply_test.",
@@ -157,13 +166,54 @@ export async function handlePanelAction(action) {
         updatePanelState({ last_error: null });
       } catch (err) {
         updatePanelState({
-          last_error:
-            err?.message || "Erro inesperado no apply_test.",
+          last_error: err?.message || "Erro inesperado no apply_test.",
         });
       }
       break;
     }
 
+    // ============================================================
+    // DEPLOY TESTE (EXECUÇÃO EM TEST)
+    // ============================================================
+    case "deploy_test": {
+      if (!canTransitionTo(PATCH_STATUSES.TESTED)) {
+        return explainBlockedAction(action);
+      }
+
+      addChatMessage({
+        role: "director",
+        text:
+          "Vou executar o deploy no ambiente de TESTE com segurança.",
+        typing: true,
+      });
+
+      try {
+        const res = await api.deployTest();
+
+        if (res && res.ok === false) {
+          updatePanelState({
+            patch_status: PATCH_STATUSES.TEST_FAILED,
+            last_error: res.error || "Falha no deploy de teste.",
+          });
+          return;
+        }
+
+        updatePanelState({
+          patch_status: PATCH_STATUSES.TESTED,
+          last_error: null,
+        });
+      } catch (err) {
+        updatePanelState({
+          patch_status: PATCH_STATUSES.TEST_FAILED,
+          last_error: err?.message || "Erro inesperado no deploy_test.",
+        });
+      }
+      break;
+    }
+
+    // ============================================================
+    // APPROVE (HUMANO)
+    // ============================================================
     case "approve": {
       if (!canTransitionTo(PATCH_STATUSES.APPROVED)) {
         return explainBlockedAction(action);
@@ -176,16 +226,26 @@ export async function handlePanelAction(action) {
       break;
     }
 
-    case "promote": {
+    // ============================================================
+    // PROMOTE REAL (PRODUÇÃO)
+    // ============================================================
+    case "promote_real": {
       if (!canTransitionTo(PATCH_STATUSES.APPLIED)) {
         return explainBlockedAction(action);
       }
 
+      addChatMessage({
+        role: "director",
+        text: "Promovendo patch para PRODUÇÃO.",
+        typing: true,
+      });
+
       try {
         const res = await api.promoteReal();
+
         if (res && res.ok === false) {
           updatePanelState({
-            last_error: res.error || "Falha ao promover.",
+            last_error: res.error || "Falha ao promover para produção.",
           });
           return;
         }
@@ -194,8 +254,71 @@ export async function handlePanelAction(action) {
         updatePanelState({ last_error: null });
       } catch (err) {
         updatePanelState({
-          last_error:
-            err?.message || "Erro inesperado no promote.",
+          last_error: err?.message || "Erro inesperado no promote_real.",
+        });
+      }
+      break;
+    }
+
+    // ============================================================
+    // ROLLBACK
+    // ============================================================
+    case "rollback": {
+      addChatMessage({
+        role: "director",
+        text: "Executando rollback do patch.",
+        typing: true,
+      });
+
+      try {
+        const res = await api.rollback();
+
+        if (res && res.ok === false) {
+          updatePanelState({
+            last_error: res.error || "Falha no rollback.",
+          });
+          return;
+        }
+
+        updatePanelState({
+          patch_status: PATCH_STATUSES.IDLE,
+          last_error: null,
+        });
+      } catch (err) {
+        updatePanelState({
+          last_error: err?.message || "Erro inesperado no rollback.",
+        });
+      }
+      break;
+    }
+
+    // ============================================================
+    // CANCELAR CICLO
+    // ============================================================
+    case "cancel": {
+      addChatMessage({
+        role: "director",
+        text: "Cancelando ciclo atual e limpando estado.",
+        typing: true,
+      });
+
+      try {
+        const res = await api.cancel();
+
+        if (res && res.ok === false) {
+          updatePanelState({
+            last_error: res.error || "Falha ao cancelar ciclo.",
+          });
+          return;
+        }
+
+        updatePanelState({
+          patch_status: PATCH_STATUSES.IDLE,
+          last_error: null,
+        });
+      } catch (err) {
+        updatePanelState({
+          last_error: err?.message || "Erro inesperado no cancel.",
         });
       }
       break;
