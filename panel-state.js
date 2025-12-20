@@ -97,25 +97,23 @@ export function resetPanelState() {
 
 export function canTransitionTo(nextStatus) {
   const allowedTransitions = {
-    // Estado inicial: Audit ou Propose são livres
     idle: ["audited", "proposed"],
 
-    // AUDIT apenas carimba — não executa
     audited: ["proposed", "staged"],
 
-    // PROPOSE invalida auditoria e exige novo AUDIT
-    proposed: ["audited"],
+    // 🔥 LIBERADO: propose pode avançar
+    proposed: ["staged"],
 
-    // APPLY TEST só ocorre após AUDIT
-    staged: ["tested"],
+    staged: ["tested", "test_failed"],
 
-    tested: ["approved"],
     test_failed: ["fix_ready"],
 
-    // após correção, precisa de novo AUDIT
     fix_ready: ["audited"],
 
+    tested: ["approved"],
+
     approved: ["applied"],
+
     applied: [],
     prod_failed: [],
   };
