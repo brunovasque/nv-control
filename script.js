@@ -630,7 +630,7 @@ let pendingEnaviaIntent = null; // guarda intenção aguardando confirmação
    ENAVIA — CONSULTA READ-ONLY (AUDIT)
 ============================================================ */
 async function askEnaviaAnalysis(intentText) {
-  if (!directorApiAdapter) {
+  if (!window.api) {
     directorSay(
       "A ENAVIA ainda não está conectada. Configure as URLs para que eu possa consultar a análise técnica."
     );
@@ -644,16 +644,30 @@ async function askEnaviaAnalysis(intentText) {
   });
 
   try {
-    const result = await directorApiAdapter.audit({ propose: true });
+    // ✅ BYPASS CANÔNICO: read-only SEM execution_id/target/patch
+    // Isso precisa bater com o /audit do worker (ask_suggestions + constraints)
+    const payload = {
+      mode: "enavia_audit",
+      source: "NV-CONTROL",
+      ask_suggestions: true,
+      constraints: {
+        read_only: true,
+        no_auto_apply: true,
+      },
+      context: {
+        director_intent: String(intentText || ""),
+      },
+    };
 
-    // Log técnico cru
+    const result = await window.api.audit(payload);
+
     addChatMessage({
       role: "director_enavia",
       text: "[ENAVIA → DIRECTOR]\n" + JSON.stringify(result, null, 2),
     });
 
     directorSay(
-      "A ENAVIA analisou sua solicitação. Quer que eu te explique os pontos técnicos ou seguimos para o próximo passo?"
+      "A ENAVIA analisou sua solicitação. Quer que eu te explique os riscos/pontos críticos ou seguimos pro próximo passo?"
     );
   } catch (err) {
     addChatMessage({
@@ -662,8 +676,7 @@ async function askEnaviaAnalysis(intentText) {
     });
 
     directorSay(
-      "Tentei consultar a ENAVIA, mas ocorreu um erro técnico."
+      "Tentei consultar a ENAVIA, mas ocorreu um erro técnico. Veja os detalhes no painel de conversa técnica."
     );
   }
 }
-
