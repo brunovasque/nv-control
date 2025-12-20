@@ -189,14 +189,30 @@ export async function handlePanelAction(action) {
 }
 
 /* ============================================================
-   INIT — CONTRATO COM script.js (ES MODULE)
+   BIND DE EVENTOS DO PAINEL (CANÔNICO)
 ============================================================ */
 
 export function initFlowOrchestrator(apiAdapter) {
+  if (!apiAdapter) {
+    console.warn("[FlowOrchestrator] apiAdapter ausente");
+    return;
+  }
+
+  // expõe API internamente ao orquestrador
   api = apiAdapter;
 
-  document.addEventListener("panel:action", (e) => {
-    if (!e?.detail?.action) return;
-    handlePanelAction(e.detail.action);
+  document.addEventListener("panel:action", async (e) => {
+    const action = e.detail?.action;
+    if (!action) return;
+
+    await handlePanelAction(action);
+  });
+
+  document.addEventListener("panel:action-blocked", (e) => {
+    const action = e.detail?.action;
+    if (!action) return;
+
+    explainBlockedAction(action);
   });
 }
+
