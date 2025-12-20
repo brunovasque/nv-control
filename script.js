@@ -310,52 +310,52 @@ function directorReportApi(label, result) {
 function buildApiAdapter(api) {
   return {
     async audit(opts = {}) {
-      // v1.1: AUDIT / PROPOSE (read-only) aponta para ENAVIA
       const execution_id = getExecutionIdRequired();
       const isPropose = opts.propose === true;
 
-      // PROPOSE pode rodar sem patch/target
-      const target = isPropose ? null : getTargetRequired();
-      const patch = isPropose ? null : getPatchRequired();
-
       const payload = {
         execution_id,
-        mode: isPropose ? "enavia_propose" : "enavia_audit",
         source: "NV-CONTROL",
-        ...(target ? { target } : {}),
-        ...(patch ? { patch } : {}),
         constraints: {
           read_only: true,
           no_auto_apply: true,
         },
       };
 
+      let r;
+
       if (isPropose) {
-        payload.ask_suggestions = true;
+        // PROPOSE: não exige patch nem target
+        r = await api.propose({
+          ...payload,
+          ask_suggestions: true,
+        });
+
+        directorReportApi("PROPOSE (ENAVIA)", r);
+      } else {
+        // AUDIT: exige patch e target
+        payload.target = getTargetRequired();
+        payload.patch = getPatchRequired();
+
+        r = await api.audit(payload);
+        directorReportApi("AUDIT (ENAVIA)", r);
+
+        // Opcional: registrar resultado de auditoria
+        try {
+          const verdict = r?.data?.audit?.verdict;
+          const risk = r?.data?.audit?.risk_level;
+          if (verdict || risk) {
+            updatePanelState({
+              last_audit: { verdict, risk, ts: Date.now() },
+            });
+          }
+        } catch (_) {}
       }
-
-      const r = await api.audit(payload);
-      directorReportApi(
-        isPropose ? "PROPOSE (ENAVIA)" : "AUDIT (ENAVIA)",
-        r
-      );
-
-      // Opcional: se veio audit.verdict, deixa no estado (não decide)
-      try {
-        const verdict = r?.data?.audit?.verdict;
-        const risk = r?.data?.audit?.risk_level;
-        if (verdict || risk) {
-          updatePanelState({
-            last_audit: { verdict, risk, ts: Date.now() },
-          });
-        }
-      } catch (_) {}
 
       return r;
     },
 
     async applyTest() {
-      // v1.1: APPLY TEST grava STAGING, NÃO executa
       const execution_id = getExecutionIdRequired();
       const target = getTargetRequired();
       const patch = getPatchRequired();
@@ -365,7 +365,7 @@ function buildApiAdapter(api) {
         approved: true,
         approved_by: getApprovedBy(),
         target,
-        patch: { content: patch.content }, // Deploy Worker espera patch.content
+        patch: { content: patch.content },
       };
 
       const r = await api.applyTest(payload);
@@ -374,7 +374,6 @@ function buildApiAdapter(api) {
     },
 
     async deployTest() {
-      // v1.1: DEPLOY TESTE executa no TEST (gate técnico está no Deploy Worker)
       const execution_id = getExecutionIdRequired();
       const r = await api.deployTest({ execution_id });
       directorReportApi("DEPLOY TESTE (TEST)", r);
@@ -382,7 +381,6 @@ function buildApiAdapter(api) {
     },
 
     async promoteReal() {
-      // v1.1: PROMOTE REAL executa no PROD (somente após APPROVE humano)
       const execution_id = getExecutionIdRequired();
       const target = getTargetRequired();
       const patch = getPatchRequired();
@@ -685,6 +683,7 @@ async function askEnaviaAnalysis(intentText) {
     );
   }
 }
+
 
 
 
