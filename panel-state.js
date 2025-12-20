@@ -39,6 +39,14 @@ function generateExecutionId() {
   return `exec-${Date.now()}`;
 }
 
+export function ensureExecutionId() {
+  if (!state.execution_id) {
+    state.execution_id = generateExecutionId();
+    notifyStateChange();
+  }
+  return state.execution_id;
+}
+
 /* ============================================================
    ESTADO INTERNO
 ============================================================ */
@@ -147,7 +155,7 @@ export function getPatchStatus() {
 }
 
 export function getExecutionId() {
-  return state.execution_id;
+  return ensureExecutionId();
 }
 
 export function hasExecution() {
