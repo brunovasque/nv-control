@@ -169,3 +169,16 @@ function notifyStateChange() {
    EXPORTS CANÔNICOS
 ============================================================ */
 export { PATCH_STATUSES };
+
+// ============================================================
+// 🔍 DEBUG TEMPORÁRIO — OBSERVAR TRANSIÇÕES DE ESTADO
+// (REMOVER DEPOIS QUE FUNCIONAR)
+// ============================================================
+document.addEventListener("panel:state-changed", (e) => {
+  console.log(
+    "[PANEL STATE CHANGED]",
+    "status:", e.detail.patch_status,
+    "execution_id:", e.detail.execution_id
+  );
+});
+
