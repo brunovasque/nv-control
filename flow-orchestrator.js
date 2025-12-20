@@ -60,7 +60,12 @@ function explainBlockedAction(action) {
    ORQUESTRADOR PRINCIPAL
 ============================================================ */
 
-export async function handlePanelAction(action) {
+export async function handlePanelAction(action, api) {
+  if (!api) {
+    console.error("[handlePanelAction] API não injetada");
+    return;
+  }
+
   if (!ensureApiOrBlock(action)) return;
 
   switch (action) {
@@ -81,27 +86,29 @@ export async function handlePanelAction(action) {
       try {
         const state = getPanelState();
 
-const res = await api.audit({
-  execution_id: state.execution_id,
-  mode: "enavia_audit",
-  source: "nv-control",
-  target: {
-    system: "enavia",
-    workerId: "enavia-worker-teste",
-  },
-  patch: {
-    type: "patch_text",
-    content: "// noop patch — test handshake",
-  },
-  constraints: {
-    read_only: true,
-    no_auto_apply: true,
-  },
-});
+        const res = await api.audit({
+          execution_id: state.execution_id,
+          mode: "enavia_audit",
+          source: "nv-control",
+          target: {
+            system: "enavia",
+            workerId: "enavia-worker-teste",
+          },
+          patch: {
+            type: "patch_text",
+            content: "// noop patch — test handshake",
+          },
+          constraints: {
+            read_only: true,
+            no_auto_apply: true,
+          },
+        });
 
-        if (res && res.ok === false) {
+        console.log("[ENAVIA AUDIT RESPONSE]", res);
+
+        if (!res || res.ok === false) {
           updatePanelState({
-            last_error: res.error || "Falha na auditoria.",
+            last_error: res?.error || "Falha na auditoria.",
           });
           return;
         }
@@ -110,13 +117,27 @@ const res = await api.audit({
           patch_status: PATCH_STATUSES.AUDITED,
           last_error: null,
         });
+
+        addChatMessage({
+          role: "enavia",
+          text: "Auditoria recebida. Análise em andamento.",
+        });
       } catch (err) {
+        console.error("[AUDIT ERROR]", err);
         updatePanelState({
           last_error: err?.message || "Erro inesperado durante auditoria.",
         });
       }
       break;
     }
+
+    // ============================================================
+    // DEFAULT
+    // ============================================================
+    default:
+      console.warn("[handlePanelAction] Ação desconhecida:", action);
+  }
+}
 
     // ============================================================
     // PROPOSE
@@ -354,16 +375,14 @@ export function initFlowOrchestrator(apiAdapter) {
     return;
   }
 
-  api = apiAdapter; // ✅ INJEÇÃO CANÔNICA
-
   document.addEventListener("panel:action", async (e) => {
     const action = e.detail?.action;
     if (!action) return;
-    await handlePanelAction(action);
+    await handlePanelAction(action, apiAdapter); // 👈 passa o api
   });
 
   document.addEventListener("panel:action-blocked", (e) => {
-    const action = e.detail?.action || e.detail?.reason;
+    const action = e.detail?.action;
     explainBlockedAction(action);
   });
 }
