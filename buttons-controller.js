@@ -57,20 +57,56 @@ export function initButtonsController() {
 function updateButtonsState() {
   const status = getPatchStatus();
 
-  toggle(buttons.audit, canTransitionTo(PATCH_STATUSES.AUDITED));
-  toggle(buttons.propose, canTransitionTo(PATCH_STATUSES.PROPOSED));
-  toggle(buttons.applyTest, canTransitionTo(PATCH_STATUSES.STAGED));
-  toggle(buttons.deployTest, canTransitionTo(PATCH_STATUSES.TESTED));
-  toggle(buttons.approve, canTransitionTo(PATCH_STATUSES.APPROVED));
-  toggle(buttons.promote, canTransitionTo(PATCH_STATUSES.APPLIED));
+  // AUDIT: permitido no idle e após fix
+  toggle(
+    buttons.audit,
+    status === PATCH_STATUSES.IDLE ||
+    status === PATCH_STATUSES.FIX_READY
+  );
 
-  toggle(buttons.rollback, status === PATCH_STATUSES.APPLIED);
-  toggle(buttons.cancel, status !== PATCH_STATUSES.IDLE);
-}
+  // PROPOSE: permitido no idle ou após audit
+  toggle(
+    buttons.propose,
+    status === PATCH_STATUSES.IDLE ||
+    status === PATCH_STATUSES.AUDITED
+  );
 
-function toggle(button, enabled) {
-  if (!button) return;
-  button.classList.toggle("disabled", !enabled);
+  // APPLY TEST: permitido após audit ou propose
+  toggle(
+    buttons.applyTest,
+    status === PATCH_STATUSES.AUDITED ||
+    status === PATCH_STATUSES.PROPOSED
+  );
+
+  // DEPLOY TEST: permitido após staging
+  toggle(
+    buttons.deployTest,
+    status === PATCH_STATUSES.STAGED
+  );
+
+  // APPROVE: permitido após tested
+  toggle(
+    buttons.approve,
+    status === PATCH_STATUSES.TESTED
+  );
+
+  // PROMOTE REAL: permitido após approved
+  toggle(
+    buttons.promote,
+    status === PATCH_STATUSES.APPROVED
+  );
+
+  // ROLLBACK: só após aplicado em produção
+  toggle(
+    buttons.rollback,
+    status === PATCH_STATUSES.APPLIED
+  );
+
+  // CANCELAR: qualquer estado diferente de idle
+  toggle(
+    buttons.cancel,
+    status !== PATCH_STATUSES.IDLE
+  );
 }
 
 /* ============================================================
