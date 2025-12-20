@@ -79,7 +79,25 @@ export async function handlePanelAction(action) {
       });
 
       try {
-        const res = await api.audit({ propose: false });
+        const state = getPanelState();
+
+const res = await api.audit({
+  execution_id: state.execution_id,
+  mode: "enavia_audit",
+  source: "nv-control",
+  target: {
+    system: "enavia",
+    workerId: "enavia-worker-teste",
+  },
+  patch: {
+    type: "patch_text",
+    content: "// noop patch — test handshake",
+  },
+  constraints: {
+    read_only: true,
+    no_auto_apply: true,
+  },
+});
 
         if (res && res.ok === false) {
           updatePanelState({
