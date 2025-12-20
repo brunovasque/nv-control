@@ -55,23 +55,14 @@ let state = {
    API PÚBLICA
 ============================================================ */
 
-/**
- * Inicializa estado do painel
- */
 export function initPanelState() {
   resetPanelState();
 }
 
-/**
- * Retorna snapshot imutável do estado
- */
 export function getPanelState() {
   return Object.freeze({ ...state });
 }
 
-/**
- * Atualiza estado do painel (via fluxo autorizado)
- */
 export function updatePanelState(patch) {
   if (typeof patch !== "object") {
     console.warn("[panel-state] Patch inválido.");
@@ -87,9 +78,6 @@ export function updatePanelState(patch) {
   notifyStateChange();
 }
 
-/**
- * Reset completo (ex: CANCELAR)
- */
 export function resetPanelState() {
   state = {
     execution_id: generateExecutionId(),
@@ -104,15 +92,13 @@ export function resetPanelState() {
 }
 
 /* ============================================================
-   VALIDADORES DE FLUXO
+   VALIDADORES DE FLUXO (CONTRATO v1.0)
 ============================================================ */
 
-/**
- * Verifica se uma transição é permitida
- */
 export function canTransitionTo(nextStatus) {
   const allowedTransitions = {
-    idle: ["audited"],
+    // Estado inicial: Audit ou Propose são livres
+    idle: ["audited", "proposed"],
 
     // AUDIT apenas carimba — não executa
     audited: ["proposed", "staged"],
@@ -138,9 +124,6 @@ export function canTransitionTo(nextStatus) {
   return allowedTransitions[current]?.includes(nextStatus) || false;
 }
 
-/**
- * Atualiza PATCH_STATUS com validação
- */
 export function setPatchStatus(nextStatus) {
   if (!canTransitionTo(nextStatus)) {
     console.warn(
