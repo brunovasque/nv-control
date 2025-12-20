@@ -85,6 +85,17 @@ export async function handlePanelAction(action) {
       break;
     }
 
+// ============================================================
+// INIT (compatibilidade com script.js legado)
+// ============================================================
+
+export function initFlowOrchestrator() {
+  document.addEventListener("panel:action", (e) => {
+    if (!e?.detail?.action) return;
+    handlePanelAction(e.detail.action);
+  });
+}
+    
     /* =========================
        PROPOSE
     ========================== */
