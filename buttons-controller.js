@@ -1,11 +1,3 @@
-/* ============================================================
-   BUTTONS CONTROLLER — ENAVIA PANEL
-   Responsável APENAS por:
-   - Habilitar/desabilitar botões
-   - Explicar bloqueios
-   - Emitir eventos de intenção
-============================================================ */
-
 import {
   getPatchStatus,
   canTransitionTo,
@@ -14,113 +6,59 @@ import {
 
 /* ============================================================
    MAPA DE BOTÕES (DOM)
-   Estratégia tolerante:
-   1) data-action
-   2) fallback por ordem (legado)
 ============================================================ */
 
-function qsAction(action, fallbackIndex = null) {
-  return (
-    document.querySelector(`.action-btn[data-action="${action}"]`) ||
-    (fallbackIndex !== null
-      ? document.querySelector(`.action-btn:nth-child(${fallbackIndex})`)
-      : null)
-  );
+function qsAction(action) {
+  return document.querySelector(`.action-btn[data-action="${action}"]`);
 }
 
 const buttons = {
-  audit: qsAction("audit", 2),
-  propose: qsAction("propose", 3),
-  applyTest: qsAction("apply_test", 4),
-  deployTest: qsAction("deploy_test", 5),
-  approve: qsAction("approve", 6),
-  promote: qsAction("promote_real", 7),
-  rollback: document.querySelector(".action-btn.danger"),
-  cancel: document.querySelector(".action-btn.secondary"),
+  audit: qsAction("audit"),
+  propose: qsAction("propose"),
+  applyTest: qsAction("apply_test"),
+  deployTest: qsAction("deploy_test"),
+  approve: qsAction("approve"),
+  promote: qsAction("promote_real"),
+  rollback: qsAction("rollback"),
+  cancel: qsAction("cancel"),
 };
 
 /* ============================================================
-   API PÚBLICA
+   INIT
 ============================================================ */
 
 export function initButtonsController() {
   bindButtonEvents();
   updateButtonsState();
-
   document.addEventListener("panel:state-changed", updateButtonsState);
 }
 
 /* ============================================================
-   HABILITA / DESABILITA
+   ENABLE / DISABLE
 ============================================================ */
 
-/* ============================================================
-   UTIL — TOGGLE BOTÃO
-============================================================ */
+function updateButtonsState() {
+  const status = getPatchStatus();
+
+  toggle(buttons.audit, canTransitionTo(PATCH_STATUSES.AUDITED));
+  toggle(buttons.propose, canTransitionTo(PATCH_STATUSES.PROPOSED));
+  toggle(buttons.applyTest, canTransitionTo(PATCH_STATUSES.STAGED));
+  toggle(buttons.deployTest, canTransitionTo(PATCH_STATUSES.TESTED));
+  toggle(buttons.approve, canTransitionTo(PATCH_STATUSES.APPROVED));
+  toggle(buttons.promote, canTransitionTo(PATCH_STATUSES.APPLIED));
+
+  toggle(buttons.rollback, status === PATCH_STATUSES.APPLIED);
+  toggle(buttons.cancel, status !== PATCH_STATUSES.IDLE);
+}
+
 function toggle(button, enabled) {
   if (!button) return;
+  button.disabled = !enabled;
   button.classList.toggle("disabled", !enabled);
 }
 
 /* ============================================================
-   ESTADO DOS BOTÕES (UI ≠ regra de segurança)
-============================================================ */
-function updateButtonsState() {
-  const status = getPatchStatus();
-
-  // AUDIT
-  toggle(
-    buttons.audit,
-    status === PATCH_STATUSES.IDLE ||
-    status === PATCH_STATUSES.FIX_READY
-  );
-
-  // PROPOSE
-  toggle(
-    buttons.propose,
-    status === PATCH_STATUSES.IDLE ||
-    status === PATCH_STATUSES.AUDITED
-  );
-
-  // APPLY TEST
-  toggle(
-    buttons.applyTest,
-    status === PATCH_STATUSES.AUDITED ||
-    status === PATCH_STATUSES.PROPOSED
-  );
-
-  // DEPLOY TEST
-  toggle(
-    buttons.deployTest,
-    status === PATCH_STATUSES.STAGED
-  );
-
-  // APPROVE
-  toggle(
-    buttons.approve,
-    status === PATCH_STATUSES.TESTED
-  );
-
-  // PROMOTE REAL
-  toggle(
-    buttons.promote,
-    status === PATCH_STATUSES.APPROVED
-  );
-
-  // ROLLBACK
-  toggle(
-    buttons.rollback,
-    status === PATCH_STATUSES.APPLIED
-  );
-
-  // CANCELAR
-  toggle(
-    buttons.cancel,
-    status !== PATCH_STATUSES.IDLE
-  );
-}
-/* ============================================================
-   CLIQUES → EVENTOS (INTENÇÃO)
+   EVENTS
 ============================================================ */
 
 function bindButtonEvents() {
@@ -138,29 +76,12 @@ function bind(button, action) {
   if (!button) return;
 
   button.addEventListener("click", () => {
-    if (button.classList.contains("disabled")) {
-      notifyBlocked(action);
-      return;
-    }
+    if (button.disabled) return;
 
-    emitAction(action);
+    document.dispatchEvent(
+      new CustomEvent("panel:action", {
+        detail: { action },
+      })
+    );
   });
-}
-
-/* ============================================================
-   EVENTOS
-============================================================ */
-
-function emitAction(action) {
-  const event = new CustomEvent("panel:action", {
-    detail: { action },
-  });
-  document.dispatchEvent(event);
-}
-
-function notifyBlocked(action) {
-  const event = new CustomEvent("panel:action-blocked", {
-    detail: { action },
-  });
-  document.dispatchEvent(event);
 }
