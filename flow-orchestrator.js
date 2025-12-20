@@ -11,8 +11,13 @@ import {
   PATCH_STATUSES,
 } from "./panel-state.js";
 
-import * as api from "./api-client.js";
 import { addChatMessage } from "./chat-renderer.js";
+
+/* ============================================================
+   API INJETADO (via script.js)
+============================================================ */
+
+let api = null; // 👈 AQUI, exatamente aqui
 
 /* ============================================================
    BLOQUEIO CANÔNICO DE AÇÃO
@@ -187,7 +192,9 @@ export async function handlePanelAction(action) {
    INIT — CONTRATO COM script.js (ES MODULE)
 ============================================================ */
 
-export function initFlowOrchestrator() {
+export function initFlowOrchestrator(apiAdapter) {
+  api = apiAdapter;
+
   document.addEventListener("panel:action", (e) => {
     if (!e?.detail?.action) return;
     handlePanelAction(e.detail.action);
