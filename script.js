@@ -1,10 +1,5 @@
 /* ============================================================
    script.js — NV-Control / ENAVIA Panel (CANÔNICO)
-   Objetivo:
-   - Bootstrap do painel (liga tudo)
-   - Persistência (não perder URLs/token no F5)
-   - Adapter: monta payloads corretos (sem “mágica”)
-   - Tradução humana no chat (Director) + telemetria intacta
 ============================================================ */
 
 import { initPanelState, getPanelState, updatePanelState } from "./panel-state.js";
@@ -15,7 +10,7 @@ import { addChatMessage } from "./chat-renderer.js";
 import { setChatMode, CHAT_MODES } from "./chat-modes.js";
 
 /* ============================================================
-   STORAGE KEYS (não perder no F5)
+   STORAGE KEYS
 ============================================================ */
 const LS = {
   ENAVIA_URL: "nv_enavia_url",
@@ -28,75 +23,14 @@ const LS = {
   APPROVED_BY: "nv_approved_by",
 };
 
-/* ============================================================
-   DEFAULTS
-============================================================ */
 const DEFAULTS = {
   debug: false,
   env: "test",
   approved_by: "VASQUES",
 };
 
-/* ============================================================
-   DOM HELPERS
-============================================================ */
 function qs(sel) { return document.querySelector(sel); }
-function qsa(sel) { return Array.from(document.querySelectorAll(sel)); }
-
-function valOf(...selectors) {
-  for (const s of selectors) {
-    const el = qs(s);
-    if (el && typeof el.value === "string") return el.value;
-  }
-  return "";
-}
-
-function setVal(value, ...selectors) {
-  for (const s of selectors) {
-    const el = qs(s);
-    if (el) { el.value = value; return true; }
-  }
-  return false;
-}
-
-function on(el, evt, fn) {
-  if (!el) return;
-  el.addEventListener(evt, fn);
-}
-
-/* ============================================================
-   UI: onde o painel guarda inputs (tolerante a IDs)
-   (Se seu HTML tiver IDs diferentes, este arquivo NÃO quebra.)
-============================================================ */
-function ui() {
-  return {
-    enaviaUrlInput: qs("#enaviaUrlInput") || qs("#workerUrlInput") || qs("[data-field='enavia-url']"),
-    deployUrlInput: qs("#deployUrlInput") || qs("#deployWorkerUrlInput") || qs("[data-field='deploy-url']"),
-    tokenInput: qs("#internalTokenInput") || qs("#tokenInput") || qs("[data-field='internal-token']"),
-    debugToggle: qs("#debugToggle") || qs("[data-field='debug']"),
-    envSelect: qs("#envSelect") || qs("[data-field='env']"),
-
-    executionIdInput: qs("#executionIdInput") || qs("#execution_id") || qs("[data-field='execution-id']"),
-    targetWorkerIdInput: qs("#targetWorkerIdInput") || qs("#workerIdInput") || qs("[data-field='target-workerid']"),
-
-    patchTextarea:
-      qs("#patchTextarea") ||
-      qs("#patchInput") ||
-      qs("textarea[data-field='patch']"),
-
-    sendBtn:
-      qs("#sendBtn") ||
-      qs("#sendButton") ||
-      qs("[data-action='send']"),
-
-    chatInput:
-      qs("#chatInput") ||
-      qs("#messageInput") ||
-      qs("textarea[data-field='chat-input']"),
-
-    telemetryBox: qs("#telemetryBox") || qs("[data-panel='telemetry']"),
-  };
-}
+function on(el, evt, fn) { if (el) el.addEventListener(evt, fn); }
 
 /* ============================================================
    INIT BOOTSTRAP
@@ -117,10 +51,8 @@ function boot() {
   const enaviaBaseUrl = mustGetEnaviaUrl();
   const deployBaseUrl = mustGetDeployUrl();
 
-  let api = null;
-
   if (enaviaBaseUrl && deployBaseUrl) {
-    api = createApiClient({
+    const api = createApiClient({
       enaviaBaseUrl,
       deployBaseUrl,
       internalToken: getTokenOrNull(),
@@ -128,10 +60,8 @@ function boot() {
       debug: getDebug(),
     });
 
-    window.api = api;
-
     const apiAdapter = buildApiAdapter(api);
-    initFlowOrchestrator(apiAdapter);
+    initFlowOrchestrator(apiAdapter); // ✅ ponto canônico único
   }
 
   seedRuntimeState();
@@ -145,7 +75,6 @@ function boot() {
   });
 
   bindSidebarModes();
-
   bindChatSend();
 }
 
@@ -683,7 +612,3 @@ async function askEnaviaAnalysis(intentText) {
     );
   }
 }
-
-
-
-
