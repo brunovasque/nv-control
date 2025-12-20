@@ -241,8 +241,11 @@ function seedRuntimeState() {
 /* ============================================================
    PAYLOAD BUILDERS (sem inventar schema)
 ============================================================ */
-import { getExecutionId } from "./panel-state.js";
+import { getExecutionId, getPanelState, updatePanelState } from "./panel-state.js";
 
+/* ============================================================
+   EXECUTION ID (CANÔNICO)
+============================================================ */
 function getExecutionIdRequired() {
   const execution_id = getExecutionId();
 
@@ -250,33 +253,72 @@ function getExecutionIdRequired() {
     throw new Error("execution_id obrigatório.");
   }
 
-  // mantém sincronização para compatibilidade legada
+  // compatibilidade legada (sync state + storage)
   updatePanelState({ execution_id });
   localStorage.setItem(LS.LAST_EXECUTION_ID, execution_id);
 
   return execution_id;
 }
 
+/* ============================================================
+   TARGET WORKER (CANÔNICO)
+============================================================ */
 function getTargetRequired() {
-  const u = ui();
-  const workerId = (u.targetWorkerIdInput?.value || "").trim();
-  if (!workerId) throw new Error("target.workerId obrigatório (preencha no painel).");
-  updatePanelState({ target: { system: "TARGET_WORKER", workerId } });
+  const st = getPanelState();
+
+  const workerId =
+    st?.target?.workerId ||
+    localStorage.getItem("nv_worker_test") ||
+    localStorage.getItem("nv_worker_real") ||
+    localStorage.getItem(LS.LAST_TARGET_WORKERID);
+
+  if (!workerId) {
+    throw new Error("target.workerId obrigatório.");
+  }
+
+  const target = {
+    system: "TARGET_WORKER",
+    workerId,
+  };
+
+  // mantém compatibilidade legada
+  updatePanelState({ target });
   localStorage.setItem(LS.LAST_TARGET_WORKERID, workerId);
-  return { system: "TARGET_WORKER", workerId };
+
+  return target;
 }
 
+/* ============================================================
+   PATCH (OBRIGATÓRIO — INPUT HUMANO)
+============================================================ */
 function getPatchRequired() {
   const u = ui();
   const content = String(u.patchTextarea?.value || "").trim();
-  if (!content) throw new Error("patch.content obrigatório (cole o patch no painel).");
-  return { type: "patch_text", content };
+
+  if (!content) {
+    throw new Error("patch.content obrigatório (cole o patch no painel).");
+  }
+
+  return {
+    type: "patch_text",
+    content,
+  };
 }
 
+/* ============================================================
+   APROVAÇÃO (PRODUÇÃO)
+============================================================ */
 function getApprovedBy() {
   const st = getPanelState();
-  const approved_by = String(st?.approved_by || localStorage.getItem(LS.APPROVED_BY) || DEFAULTS.approved_by).trim();
+
+  const approved_by = String(
+    st?.approved_by ||
+      localStorage.getItem(LS.APPROVED_BY) ||
+      DEFAULTS.approved_by
+  ).trim();
+
   localStorage.setItem(LS.APPROVED_BY, approved_by);
+
   return approved_by;
 }
 
@@ -687,4 +729,5 @@ async function askEnaviaAnalysis(intentText) {
     );
   }
 }
+
 
