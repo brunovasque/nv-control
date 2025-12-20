@@ -17,7 +17,11 @@ import { addChatMessage } from "./chat-renderer.js";
    API INJETADO (CANÔNICO — VIA initFlowOrchestrator)
 ============================================================ */
 
-let api = null; // ← única fonte de verdade
+let api = null; // ← única fonte de verdade (injeção real no init)
+
+/* ============================================================
+   GUARDA — API
+============================================================ */
 
 function ensureApiOrBlock(action) {
   if (api) return true;
@@ -40,14 +44,13 @@ function explainBlockedAction(action) {
     audit: "Não é possível auditar neste estado.",
     propose:
       "Você pode pedir sugestões agora, mas para Apply Test o patch precisa estar AUDITADO.",
-    apply_test:
-      "Para aplicar em teste, o patch precisa estar AUDITADO.",
-    approve:
-      "A aprovação só é possível após o patch ter sido testado.",
-    promote:
-      "A promoção só é permitida após aprovação explícita.",
-    api_not_ready:
-      "A API ainda não está conectada. Verifique as URLs no painel.",
+    apply_test: "Para aplicar em teste, o patch precisa estar AUDITADO.",
+    deploy_test: "Para executar em teste, o patch precisa estar STAGED/TESTÁVEL.",
+    approve: "A aprovação só é possível após o patch ter sido testado.",
+    promote_real: "A promoção só é permitida após aprovação explícita.",
+    rollback: "Rollback indisponível no estado atual.",
+    cancel: "Cancelamento indisponível no estado atual.",
+    api_not_ready: "A API ainda não está conectada. Verifique as URLs no painel.",
   };
 
   addChatMessage({
@@ -60,12 +63,7 @@ function explainBlockedAction(action) {
    ORQUESTRADOR PRINCIPAL
 ============================================================ */
 
-export async function handlePanelAction(action, api) {
-  if (!api) {
-    console.error("[handlePanelAction] API não injetada");
-    return;
-  }
-
+export async function handlePanelAction(action) {
   if (!ensureApiOrBlock(action)) return;
 
   switch (action) {
@@ -86,7 +84,7 @@ export async function handlePanelAction(action, api) {
       try {
         const state = getPanelState();
 
-        const res = await api.audit({
+        const payload = {
           execution_id: state.execution_id,
           mode: "enavia_audit",
           source: "nv-control",
@@ -102,7 +100,21 @@ export async function handlePanelAction(action, api) {
             read_only: true,
             no_auto_apply: true,
           },
-        });
+        };
+
+        // ✅ PROVA OBJETIVA (DevTools + Network)
+        const baseUrl =
+          api?.enaviaBaseUrl ||
+          api?.baseUrl ||
+          api?.config?.baseUrl ||
+          api?.cfg?.baseUrl ||
+          null;
+
+        console.log("[CALLING ENAVIA AUDIT]", payload);
+        console.log("[API BASE URL]", baseUrl);
+        console.log("[API ADAPTER]", api);
+
+        const res = await api.audit(payload);
 
         console.log("[ENAVIA AUDIT RESPONSE]", res);
 
@@ -132,14 +144,6 @@ export async function handlePanelAction(action, api) {
     }
 
     // ============================================================
-    // DEFAULT
-    // ============================================================
-    default:
-      console.warn("[handlePanelAction] Ação desconhecida:", action);
-  }
-}
-
-    // ============================================================
     // PROPOSE
     // ============================================================
     case "propose": {
@@ -155,6 +159,7 @@ export async function handlePanelAction(action, api) {
       });
 
       try {
+        // Mantido como estava, mas agora dentro do switch e com API real
         const res = await api.audit({ propose: true });
 
         if (res && res.ok === false) {
@@ -221,8 +226,7 @@ export async function handlePanelAction(action, api) {
 
       addChatMessage({
         role: "director",
-        text:
-          "Vou executar o deploy no ambiente de TESTE com segurança.",
+        text: "Vou executar o deploy no ambiente de TESTE com segurança.",
         typing: true,
       });
 
@@ -362,6 +366,14 @@ export async function handlePanelAction(action, api) {
       }
       break;
     }
+
+    // ============================================================
+    // DEFAULT
+    // ============================================================
+    default: {
+      console.warn("[handlePanelAction] Ação desconhecida:", action);
+      break;
+    }
   }
 }
 
@@ -375,11 +387,19 @@ export function initFlowOrchestrator(apiAdapter) {
     return;
   }
 
+  // ✅ INJEÇÃO CANÔNICA REAL (corrige a causa raiz)
+  api = apiAdapter;
+
+  // ✅ Ajuda DevTools (opcional e seguro): evidencia se a API existe
+  if (typeof window !== "undefined") {
+    window.api = apiAdapter;
+  }
+
   document.addEventListener("panel:action", async (e) => {
     const action = e.detail?.action;
     if (!action) return;
 
-    await handlePanelAction(action, apiAdapter); // 👈 INJEÇÃO EXPLÍCITA
+    await handlePanelAction(action);
   });
 
   document.addEventListener("panel:action-blocked", (e) => {
