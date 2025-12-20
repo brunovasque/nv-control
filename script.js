@@ -10,6 +10,11 @@ import { addChatMessage } from "./chat-renderer.js";
 import { setChatMode, CHAT_MODES } from "./chat-modes.js";
 
 /* ============================================================
+   DIRECTOR ⇄ ENAVIA (API CANÔNICA — READ ONLY)
+============================================================ */
+let directorApiAdapter = null;
+
+/* ============================================================
    STORAGE KEYS
 ============================================================ */
 const LS = {
@@ -120,6 +125,7 @@ function boot() {
     });
 
     const apiAdapter = buildApiAdapter(api);
+    directorApiAdapter = apiAdapter; // 👈 ponte canônica para o Director
     initFlowOrchestrator(apiAdapter);
   }
 
@@ -624,7 +630,7 @@ let pendingEnaviaIntent = null; // guarda intenção aguardando confirmação
    ENAVIA — CONSULTA READ-ONLY (AUDIT)
 ============================================================ */
 async function askEnaviaAnalysis(intentText) {
-  if (!window.api) {
+  if (!directorApiAdapter) {
     directorSay(
       "A ENAVIA ainda não está conectada. Configure as URLs para que eu possa consultar a análise técnica."
     );
@@ -638,12 +644,7 @@ async function askEnaviaAnalysis(intentText) {
   });
 
   try {
-    const result = await window.api.audit({
-      mode: "enavia_audit",
-      source: "NV-CONTROL",
-      read_only: true,
-      text: intentText,
-    });
+    const result = await directorApiAdapter.audit({ propose: true });
 
     // Log técnico cru
     addChatMessage({
@@ -651,9 +652,8 @@ async function askEnaviaAnalysis(intentText) {
       text: "[ENAVIA → DIRECTOR]\n" + JSON.stringify(result, null, 2),
     });
 
-    // Tradução humana
     directorSay(
-      "A ENAVIA analisou sua solicitação. Encontrei pontos de atenção e possíveis riscos. Quer que eu te explique os detalhes ou seguimos para o próximo passo?"
+      "A ENAVIA analisou sua solicitação. Quer que eu te explique os pontos técnicos ou seguimos para o próximo passo?"
     );
   } catch (err) {
     addChatMessage({
@@ -662,8 +662,7 @@ async function askEnaviaAnalysis(intentText) {
     });
 
     directorSay(
-      "Tentei consultar a ENAVIA, mas ocorreu um erro técnico. Veja os detalhes no painel de conversa técnica."
+      "Tentei consultar a ENAVIA, mas ocorreu um erro técnico."
     );
   }
 }
-
