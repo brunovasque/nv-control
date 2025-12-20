@@ -299,8 +299,8 @@ function directorReportApi(label, result) {
 function buildApiAdapter(api) {
   return {
     async audit(opts = {}) {
-      const execution_id = getExecutionIdRequired();
       const isPropose = opts.propose === true;
+      const execution_id = isPropose ? (`preview-${Date.now()}`) : getExecutionIdRequired();
 
       const payload = {
         execution_id,
@@ -666,3 +666,4 @@ async function askEnaviaAnalysis(intentText) {
     );
   }
 }
+
