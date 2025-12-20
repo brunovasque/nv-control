@@ -89,7 +89,9 @@ export async function handlePanelAction(action) {
       });
 
       try {
-        const res = await api.propose();
+        // ✅ PROPOSE = AUDIT em modo sugestão
+        const res = await api.audit({ propose: true });
+
         if (res && res.ok === false) {
           updatePanelState({
             last_error: res.error || "Falha no propose.",
