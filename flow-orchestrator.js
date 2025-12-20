@@ -42,12 +42,7 @@ function explainBlockedAction(action) {
 ============================================================ */
 
 export async function handlePanelAction(action) {
-  const state = getPanelState();
-
   switch (action) {
-    /* =========================
-       AUDIT
-    ========================== */
     case "audit": {
       if (!canTransitionTo(PATCH_STATUSES.AUDITED)) {
         return explainBlockedAction(action);
@@ -61,10 +56,9 @@ export async function handlePanelAction(action) {
 
       try {
         const res = await api.audit();
-
         if (res && res.ok === false) {
           updatePanelState({
-            last_error: res.error || "Falha na auditoria (audit).",
+            last_error: res.error || "Falha na auditoria.",
           });
           return;
         }
@@ -76,29 +70,12 @@ export async function handlePanelAction(action) {
       } catch (err) {
         updatePanelState({
           last_error:
-            err && err.message
-              ? err.message
-              : "Erro inesperado durante a auditoria.",
+            err?.message || "Erro inesperado durante auditoria.",
         });
       }
-
       break;
     }
 
-// ============================================================
-// INIT (compatibilidade com script.js legado — SEM ESM)
-// ============================================================
-
-window.initFlowOrchestrator = function () {
-  document.addEventListener("panel:action", (e) => {
-    if (!e?.detail?.action) return;
-    handlePanelAction(e.detail.action);
-  });
-};
-    
-    /* =========================
-       PROPOSE
-    ========================== */
     case "propose": {
       if (!canTransitionTo(PATCH_STATUSES.PROPOSED)) {
         return explainBlockedAction(action);
@@ -113,11 +90,9 @@ window.initFlowOrchestrator = function () {
 
       try {
         const res = await api.propose();
-
         if (res && res.ok === false) {
           updatePanelState({
-            last_error:
-              res.error || "Falha ao solicitar proposta técnica (propose).",
+            last_error: res.error || "Falha no propose.",
           });
           return;
         }
@@ -129,18 +104,12 @@ window.initFlowOrchestrator = function () {
       } catch (err) {
         updatePanelState({
           last_error:
-            err && err.message
-              ? err.message
-              : "Erro inesperado durante o propose.",
+            err?.message || "Erro inesperado durante propose.",
         });
       }
-
       break;
     }
 
-    /* =========================
-       APPLY TEST (STAGING)
-    ========================== */
     case "apply_test": {
       if (!canTransitionTo(PATCH_STATUSES.STAGED)) {
         return explainBlockedAction(action);
@@ -155,11 +124,9 @@ window.initFlowOrchestrator = function () {
 
       try {
         const res = await api.applyTest();
-
         if (res && res.ok === false) {
           updatePanelState({
-            last_error:
-              res.error || "Falha ao aplicar patch em staging (apply_test).",
+            last_error: res.error || "Falha no apply_test.",
           });
           return;
         }
@@ -169,58 +136,34 @@ window.initFlowOrchestrator = function () {
       } catch (err) {
         updatePanelState({
           last_error:
-            err && err.message
-              ? err.message
-              : "Erro inesperado durante apply_test.",
+            err?.message || "Erro inesperado no apply_test.",
         });
       }
-
       break;
     }
 
-    /* =========================
-       APPROVE
-    ========================== */
     case "approve": {
       if (!canTransitionTo(PATCH_STATUSES.APPROVED)) {
         return explainBlockedAction(action);
       }
 
-      addChatMessage({
-        role: "director",
-        text: "Aprovando patch para produção.",
-        typing: true,
-      });
-
       updatePanelState({
         patch_status: PATCH_STATUSES.APPROVED,
         last_error: null,
       });
-
       break;
     }
 
-    /* =========================
-       PROMOTE REAL
-    ========================== */
     case "promote": {
       if (!canTransitionTo(PATCH_STATUSES.APPLIED)) {
         return explainBlockedAction(action);
       }
 
-      addChatMessage({
-        role: "director",
-        text: "Promovendo patch para produção real.",
-        typing: true,
-      });
-
       try {
         const res = await api.promoteReal();
-
         if (res && res.ok === false) {
           updatePanelState({
-            last_error:
-              res.error || "Falha ao promover patch para produção.",
+            last_error: res.error || "Falha ao promover.",
           });
           return;
         }
@@ -230,19 +173,21 @@ window.initFlowOrchestrator = function () {
       } catch (err) {
         updatePanelState({
           last_error:
-            err && err.message
-              ? err.message
-              : "Erro inesperado durante promote.",
+            err?.message || "Erro inesperado no promote.",
         });
       }
-
       break;
     }
-
-    /* =========================
-       FALLBACK
-    ========================== */
-    default:
-      console.warn("Ação desconhecida:", action);
   }
+}
+
+/* ============================================================
+   INIT — CONTRATO COM script.js (ES MODULE)
+============================================================ */
+
+export function initFlowOrchestrator() {
+  document.addEventListener("panel:action", (e) => {
+    if (!e?.detail?.action) return;
+    handlePanelAction(e.detail.action);
+  });
 }
