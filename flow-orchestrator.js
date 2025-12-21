@@ -78,55 +78,104 @@ export async function handlePanelAction(action) {
     // AUDIT
     // ============================================================
     case "audit": {
-      if (!canTransitionTo(PATCH_STATUSES.AUDITED)) {
-        return explainBlockedAction(action);
-      }
+  if (!canTransitionTo(PATCH_STATUSES.AUDITED)) {
+    return explainBlockedAction(action);
+  }
 
+  addChatMessage({
+    role: "director",
+    text: "Vou enviar o patch para auditoria da ENAVIA.",
+    typing: true,
+  });
+
+  try {
+    const state = getPanelState();
+
+    // 🔒 Garante patch como STRING (flow NÃO encapsula)
+    const patchText =
+      typeof state.patch === "string"
+        ? state.patch
+        : typeof state.last_message === "string"
+        ? state.last_message
+        : "// noop patch — test handshake";
+
+    const res = await api.audit({ patch: patchText });
+
+    console.log("[ENAVIA AUDIT RESPONSE]", res);
+
+    if (!res || res.ok === false) {
+      updatePanelState({
+        last_error: res?.error || "Falha na auditoria.",
+      });
+      return;
+    }
+
+    // ============================================================
+    // 🧠 INTERPRETAÇÃO REAL DO AUDIT (FEED DO DIRECTOR)
+    // ============================================================
+    const audit = res?.data?.audit;
+
+    if (!audit) {
       addChatMessage({
         role: "director",
-        text: "Vou enviar o patch para auditoria da ENAVIA.",
-        typing: true,
+        text:
+          "A auditoria retornou sem um veredito válido. " +
+          "Não é possível avançar com segurança.",
       });
-
-      try {
-        const state = getPanelState();
-
-        // 🔒 Garante patch como STRING (flow NÃO encapsula)
-        const patchText =
-          typeof state.patch === "string"
-            ? state.patch
-            : typeof state.last_message === "string"
-            ? state.last_message
-            : "// noop patch — test handshake";
-
-        const res = await api.audit({ patch: patchText });
-
-        console.log("[ENAVIA AUDIT RESPONSE]", res);
-
-        if (!res || res.ok === false) {
-          updatePanelState({
-            last_error: res?.error || "Falha na auditoria.",
-          });
-          return;
-        }
-
-        updatePanelState({
-          patch_status: PATCH_STATUSES.AUDITED,
-          last_error: null,
-        });
-
-        addChatMessage({
-          role: "enavia",
-          text: "Auditoria recebida. Análise em andamento.",
-        });
-      } catch (err) {
-        console.error("[AUDIT ERROR]", err);
-        updatePanelState({
-          last_error: err?.message || "Erro inesperado durante auditoria.",
-        });
-      }
-      break;
+      return;
     }
+
+    const hasBlockers =
+      Array.isArray(audit.blockers) && audit.blockers.length > 0;
+
+    const hasRecommendations =
+      Array.isArray(audit.recommended_changes) &&
+      audit.recommended_changes.length > 0;
+
+    if (
+      audit.verdict === "approve" &&
+      audit.risk_level === "low" &&
+      !hasBlockers
+    ) {
+      addChatMessage({
+        role: "director",
+        text:
+          "A ENAVIA analisou o patch, não encontrou bloqueadores e " +
+          "classificou o risco como baixo. Você já pode seguir para o Apply Test.",
+      });
+    } else if (audit.verdict === "approve") {
+      addChatMessage({
+        role: "director",
+        text:
+          "O patch é funcional, mas a ENAVIA identificou pontos de melhoria técnica. " +
+          "Recomendo utilizar o Propose antes de avançar para testes.",
+      });
+    } else {
+      addChatMessage({
+        role: "director",
+        text:
+          "A ENAVIA identificou bloqueadores técnicos no patch. " +
+          "Não é seguro avançar para testes neste estado.",
+      });
+    }
+
+    updatePanelState({
+      patch_status: PATCH_STATUSES.AUDITED,
+      last_error: null,
+    });
+
+    addChatMessage({
+      role: "enavia",
+      text: "Auditoria recebida. Análise em andamento.",
+    });
+  } catch (err) {
+    console.error("[AUDIT ERROR]", err);
+    updatePanelState({
+      last_error: err?.message || "Erro inesperado durante auditoria.",
+    });
+  }
+  break;
+}
 
     // ============================================================
     // PROPOSE
