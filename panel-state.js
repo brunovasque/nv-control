@@ -52,6 +52,7 @@ export function ensureExecutionId() {
 ============================================================ */
 let state = {
   execution_id: generateExecutionId(),
+  patch: null,
   patch_status: PATCH_STATUSES.IDLE,
   current_step: null,
   target: null,
@@ -88,13 +89,14 @@ export function updatePanelState(patch) {
 
 export function resetPanelState() {
   state = {
-    execution_id: generateExecutionId(),
-    patch_status: PATCH_STATUSES.IDLE,
-    current_step: null,
-    target: null,
-    last_error: null,
-    updated_at: Date.now(),
-  };
+  execution_id: generateExecutionId(),
+  patch: null,
+  patch_status: PATCH_STATUSES.IDLE,
+  current_step: null,
+  target: null,
+  last_error: null,
+  updated_at: Date.now(),
+};
 
   notifyStateChange();
 }
