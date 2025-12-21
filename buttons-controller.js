@@ -1,5 +1,6 @@
 import {
   getPatchStatus,
+  getPanelState,
   canTransitionTo,
   PATCH_STATUSES,
 } from "./panel-state.js";
@@ -38,11 +39,26 @@ export function initButtonsController() {
 ============================================================ */
 
 function updateButtonsState() {
-  const status = getPatchStatus();
+  const state = getPanelState();
+  const status = state.patch_status;
+  const audit = state.audit;
 
   toggle(buttons.audit, canTransitionTo(PATCH_STATUSES.AUDITED));
   toggle(buttons.propose, canTransitionTo(PATCH_STATUSES.PROPOSED));
-  toggle(buttons.applyTest, canTransitionTo(PATCH_STATUSES.STAGED));
+
+  // ============================================================
+  // 🧠 APPLY TEST — REGRA CANÔNICA BASEADA NO AUDIT
+  // ============================================================
+  const canApplyTest =
+    status === PATCH_STATUSES.AUDITED &&
+    audit &&
+    audit.verdict === "approve" &&
+    audit.risk_level === "low" &&
+    Array.isArray(audit.blockers) &&
+    audit.blockers.length === 0;
+
+  toggle(buttons.applyTest, canApplyTest);
+
   toggle(buttons.deployTest, canTransitionTo(PATCH_STATUSES.TESTED));
   toggle(buttons.approve, canTransitionTo(PATCH_STATUSES.APPROVED));
   toggle(buttons.promote, canTransitionTo(PATCH_STATUSES.APPLIED));
