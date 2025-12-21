@@ -26,8 +26,8 @@ export function createApiClient(config) {
   return {
     /* ---------------- ENAVIA ---------------- */
 
-    audit({ patch, propose = false }) {
-      const payload = buildAuditPayload({ patch, propose });
+    audit({ patch }) {
+      const payload = buildAuditPayload({ patch });
       return callJson(cfg.enaviaBaseUrl, "/audit", payload, cfg);
     },
 
@@ -83,10 +83,10 @@ export function createApiClient(config) {
 }
 
 /* ============================================================
-   PAYLOAD BUILDER (CANÔNICO)
+   PAYLOAD BUILDER (CANÔNICO — CONTRATO 4.1)
 ============================================================ */
 
-function buildAuditPayload({ patch, propose }) {
+function buildAuditPayload({ patch, propose = false }) {
   const execution_id = getExecutionId();
 
   if (!patch) {
@@ -105,12 +105,30 @@ function buildAuditPayload({ patch, propose }) {
   return {
     execution_id,
     source: "nv-control",
-    mode: propose ? "propose" : "audit",
+
+    // 🔑 CONTRATO 4.1
+    mode: "enavia_audit",
+
+    target: {
+      system: "enavia",
+      workerId: "enavia-worker-teste",
+    },
+
     patch: {
       type: "patch_text",
       content: patchContent,
     },
+
+    constraints: {
+      read_only: true,
+      no_auto_apply: true,
+    },
+
+    // opcional, mas permitido
     timestamp: Date.now(),
+
+    // usado apenas semanticamente pelo painel
+    propose: propose === true,
   };
 }
 
