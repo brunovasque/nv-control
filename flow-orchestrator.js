@@ -186,9 +186,10 @@ export async function handlePanelAction(action) {
     }
 
     updatePanelState({
-      patch_status: PATCH_STATUSES.AUDITED,
-      last_error: null,
-    });
+  patch_status: PATCH_STATUSES.AUDITED,
+  audit: audit, // 👈 🔥 ESSA É A LINHA QUE FALTAVA
+  last_error: null,
+});
   } catch (err) {
     console.error("[AUDIT ERROR]", err);
     updatePanelState({
