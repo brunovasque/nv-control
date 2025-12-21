@@ -54,6 +54,10 @@ let state = {
   execution_id: generateExecutionId(),
   patch: null,
   patch_status: PATCH_STATUSES.IDLE,
+
+  // 🧠 SNAPSHOT DO AUDIT (READ-ONLY / UX DECISION)
+  audit: null,
+
   current_step: null,
   target: null,
   last_error: null,
@@ -89,14 +93,18 @@ export function updatePanelState(patch) {
 
 export function resetPanelState() {
   state = {
-  execution_id: generateExecutionId(),
-  patch: null,
-  patch_status: PATCH_STATUSES.IDLE,
-  current_step: null,
-  target: null,
-  last_error: null,
-  updated_at: Date.now(),
-};
+    execution_id: generateExecutionId(),
+    patch: null,
+    patch_status: PATCH_STATUSES.IDLE,
+
+    // 🧠 RESET DO AUDIT
+    audit: null,
+
+    current_step: null,
+    target: null,
+    last_error: null,
+    updated_at: Date.now(),
+  };
 
   notifyStateChange();
 }
@@ -191,4 +199,3 @@ document.addEventListener("panel:state-changed", (e) => {
     "execution_id:", e.detail.execution_id
   );
 });
-
