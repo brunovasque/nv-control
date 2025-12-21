@@ -110,9 +110,6 @@ export async function handlePanelAction(action) {
       return;
     }
 
-    // ============================================================
-    // 🧠 INTERPRETAÇÃO REAL DO AUDIT (FEED DO DIRECTOR)
-    // ============================================================
     const audit = res?.data?.audit;
 
     if (!audit) {
@@ -128,10 +125,9 @@ export async function handlePanelAction(action) {
     const hasBlockers =
       Array.isArray(audit.blockers) && audit.blockers.length > 0;
 
-    const hasRecommendations =
-      Array.isArray(audit.recommended_changes) &&
-      audit.recommended_changes.length > 0;
-
+    // ============================================================
+    // 🧠 DIRECTOR — ORIENTAÇÃO HUMANA (DECISÃO)
+    // ============================================================
     if (
       audit.verdict === "approve" &&
       audit.risk_level === "low" &&
@@ -159,14 +155,39 @@ export async function handlePanelAction(action) {
       });
     }
 
+    // ============================================================
+    // 🤖 ENAVIA — RESPOSTA CONTEXTUAL (ASSÍNCRONA)
+    // ============================================================
+    if (
+      audit.verdict === "approve" &&
+      audit.risk_level === "low" &&
+      !hasBlockers
+    ) {
+      addChatMessage({
+        role: "enavia",
+        text:
+          "Auditoria concluída. Patch aprovado com risco baixo. " +
+          "Pronto para Apply Test quando você decidir.",
+      });
+    } else if (audit.verdict === "approve") {
+      addChatMessage({
+        role: "enavia",
+        text:
+          "Auditoria concluída. O patch é válido, mas recomenda-se refinamento " +
+          "antes da execução em teste.",
+      });
+    } else {
+      addChatMessage({
+        role: "enavia",
+        text:
+          "Auditoria concluída com bloqueadores técnicos. " +
+          "É necessário ajustar o patch antes de qualquer teste.",
+      });
+    }
+
     updatePanelState({
       patch_status: PATCH_STATUSES.AUDITED,
       last_error: null,
-    });
-
-    addChatMessage({
-      role: "enavia",
-      text: "Auditoria recebida. Análise em andamento.",
     });
   } catch (err) {
     console.error("[AUDIT ERROR]", err);
