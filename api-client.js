@@ -106,10 +106,7 @@ function buildAuditPayload({ patch, propose }) {
     execution_id,
     source: "nv-control",
     mode: propose ? "propose" : "audit",
-    patch: {
-      type: "patch_text",
-      content: patchContent,
-    },
+    patch = diffText; // string pura
     timestamp: Date.now(),
   };
 }
