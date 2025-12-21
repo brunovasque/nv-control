@@ -94,13 +94,16 @@ function buildAuditPayload({ patch, propose }) {
   }
 
   return {
-    execution_id,
-    patch,
-    propose: propose === true,
-    source: "nv-control",
-    mode: propose ? "propose" : "audit",
-    timestamp: Date.now(),
-  };
+  execution_id,
+  source: "nv-control",
+  mode: propose ? "propose" : "audit",
+  propose: propose === true,
+  patch: {
+    type: "patch_text",
+    content: String(patch),
+  },
+  timestamp: Date.now(),
+};
 }
 
 /* ============================================================
