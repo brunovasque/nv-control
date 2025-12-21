@@ -172,58 +172,65 @@ export async function handlePanelAction(action) {
     // 🤖 ENAVIA — RESPOSTA CONTEXTUAL (ASSÍNCRONA)
     // ============================================================
     if (
-  audit.verdict === "approve" &&
-  normalizedRisk === "low" &&
-  !hasFindings &&
-  !hasRecommendations
-) {
-  addChatMessage({
-    role: "enavia",
-    text: "Analisando resultado da auditoria…",
-    typing: true,
-  });
+      audit.verdict === "approve" &&
+      normalizedRisk === "low" &&
+      !hasFindings &&
+      !hasRecommendations
+    ) {
+      addChatMessage({
+        role: "enavia",
+        text: "Analisando resultado da auditoria…",
+        typing: true,
+      });
 
-  setTimeout(() => {
-    addChatMessage({
-      role: "enavia",
-      text:
-        "Auditoria concluída. Patch aprovado com risco baixo. " +
-        "Pronto para Apply Test quando você decidir.",
+      setTimeout(() => {
+        addChatMessage({
+          role: "enavia",
+          text:
+            "Auditoria concluída. Patch aprovado com risco baixo. " +
+            "Pronto para Apply Test quando você decidir.",
+        });
+      }, 1500);
+    } else if (audit.verdict === "approve") {
+      addChatMessage({
+        role: "enavia",
+        text: "Avaliando recomendações técnicas…",
+        typing: true,
+      });
+
+      setTimeout(() => {
+        addChatMessage({
+          role: "enavia",
+          text:
+            "Auditoria concluída. O patch é válido, mas recomenda-se refinamento " +
+            "antes da execução em teste.",
+        });
+      }, 1500);
+    } else {
+      addChatMessage({
+        role: "enavia",
+        text: "Identificando bloqueadores técnicos…",
+        typing: true,
+      });
+
+      setTimeout(() => {
+        addChatMessage({
+          role: "enavia",
+          text:
+            "Auditoria concluída com bloqueadores técnicos. " +
+            "É necessário ajustar o patch antes de qualquer teste.",
+        });
+      }, 1500);
+    }
+  } catch (err) {
+    console.error("[AUDIT FLOW ERROR]", err);
+
+    updatePanelState({
+      last_error: err?.message || "Erro inesperado durante auditoria.",
     });
-  }, 1500);
-} else if (audit.verdict === "approve") {
-  addChatMessage({
-    role: "enavia",
-    text: "Avaliando recomendações técnicas…",
-    typing: true,
-  });
+  }
 
-  setTimeout(() => {
-    addChatMessage({
-      role: "enavia",
-      text:
-        "Auditoria concluída. O patch é válido, mas recomenda-se refinamento " +
-        "antes da execução em teste.",
-    });
-  }, 1500);
-} else {
-  addChatMessage({
-    role: "enavia",
-    text: "Identificando bloqueadores técnicos…",
-    typing: true,
-  });
-
-  setTimeout(() => {
-    addChatMessage({
-      role: "enavia",
-      text:
-        "Auditoria concluída com bloqueadores técnicos. " +
-        "É necessário ajustar o patch antes de qualquer teste.",
-    });
-  }, 1500);
-}
-
-     break;
+  break;
 }
 
     // ============================================================
