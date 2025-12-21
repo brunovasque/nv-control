@@ -89,8 +89,17 @@ export function createApiClient(config) {
 function buildAuditPayload({ patch, propose }) {
   const execution_id = getExecutionId();
 
-  if (!patch || !String(patch).trim()) {
-    throw new Error("API_CLIENT_ERROR: patch vazio. Nada para auditar.");
+  if (!patch) {
+    throw new Error("API_CLIENT_ERROR: patch ausente. Nada para auditar.");
+  }
+
+  const patchContent =
+    typeof patch === "string"
+      ? patch
+      : JSON.stringify(patch, null, 2);
+
+  if (!patchContent.trim()) {
+    throw new Error("API_CLIENT_ERROR: patch vazio após normalização.");
   }
 
   return {
@@ -99,7 +108,7 @@ function buildAuditPayload({ patch, propose }) {
     mode: propose ? "propose" : "audit",
     patch: {
       type: "patch_text",
-      content: String(patch),
+      content: patchContent,
     },
     timestamp: Date.now(),
   };
