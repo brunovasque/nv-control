@@ -177,63 +177,51 @@ export async function handlePanelAction(action) {
   !hasFindings &&
   !hasRecommendations
 ) {
-  // 🤖 ENAVIA — início com typing (pensando)
   addChatMessage({
     role: "enavia",
     text: "Analisando resultado da auditoria…",
     typing: true,
   });
 
-  await new Promise((r) => setTimeout(r, 1500));
-
-  // 🤖 ENAVIA — resposta final
-  addChatMessage({
-    role: "enavia",
-    text:
-      "Auditoria concluída. Patch aprovado com risco baixo. " +
-      "Pronto para Apply Test quando você decidir.",
-  });
+  setTimeout(() => {
+    addChatMessage({
+      role: "enavia",
+      text:
+        "Auditoria concluída. Patch aprovado com risco baixo. " +
+        "Pronto para Apply Test quando você decidir.",
+    });
+  }, 1500);
 } else if (audit.verdict === "approve") {
-  // 🤖 ENAVIA — início com typing
   addChatMessage({
     role: "enavia",
     text: "Avaliando recomendações técnicas…",
     typing: true,
   });
 
-  await new Promise((r) => setTimeout(r, 1500));
-
-  // 🤖 ENAVIA — resposta final
-  addChatMessage({
-    role: "enavia",
-    text:
-      "Auditoria concluída. O patch é válido, mas recomenda-se refinamento " +
-      "antes da execução em teste.",
-  });
+  setTimeout(() => {
+    addChatMessage({
+      role: "enavia",
+      text:
+        "Auditoria concluída. O patch é válido, mas recomenda-se refinamento " +
+        "antes da execução em teste.",
+    });
+  }, 1500);
 } else {
-  // 🤖 ENAVIA — início com typing
   addChatMessage({
     role: "enavia",
     text: "Identificando bloqueadores técnicos…",
     typing: true,
   });
 
-  await new Promise((r) => setTimeout(r, 1500));
-
-  // 🤖 ENAVIA — resposta final
-  addChatMessage({
-    role: "enavia",
-    text:
-      "Auditoria concluída com bloqueadores técnicos. " +
-      "É necessário ajustar o patch antes de qualquer teste.",
-  });
+  setTimeout(() => {
+    addChatMessage({
+      role: "enavia",
+      text:
+        "Auditoria concluída com bloqueadores técnicos. " +
+        "É necessário ajustar o patch antes de qualquer teste.",
+    });
+  }, 1500);
 }
-
-updatePanelState({
-  patch_status: PATCH_STATUSES.AUDITED,
-  audit: audit,
-  last_error: null,
-});
 
     // ============================================================
     // PROPOSE
