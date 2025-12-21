@@ -96,7 +96,10 @@ export async function handlePanelAction(action) {
   target: {
     workerId: "enavia-worker-teste",
   },
-  patch: state.patch || "// noop patch — test handshake",
+  patch: {
+    type: "patch_text",
+    content: state.patch || "// noop patch — test handshake",
+  },
   constraints: {
     read_only: true,
     no_auto_apply: true,
