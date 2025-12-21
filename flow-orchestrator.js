@@ -63,89 +63,57 @@ function explainBlockedAction(action) {
    ORQUESTRADOR PRINCIPAL
 ============================================================ */
 
-export async function handlePanelAction(action) {
-  if (!ensureApiOrBlock(action)) return;
+case "audit": {
+  if (!canTransitionTo(PATCH_STATUSES.AUDITED)) {
+    return explainBlockedAction(action);
+  }
 
-  switch (action) {
-    // ============================================================
-    // AUDIT
-    // ============================================================
-    case "audit": {
-      if (!canTransitionTo(PATCH_STATUSES.AUDITED)) {
-        return explainBlockedAction(action);
-      }
+  addChatMessage({
+    role: "director",
+    text: "Vou enviar o patch para auditoria da ENAVIA.",
+    typing: true,
+  });
 
-      addChatMessage({
-        role: "director",
-        text: "Vou enviar o patch para auditoria da ENAVIA.",
-        typing: true,
+  try {
+    const state = getPanelState();
+
+    // 🔒 Garante que existe patch em forma de STRING
+    const patchText =
+      typeof state.patch === "string"
+        ? state.patch
+        : typeof state.last_message === "string"
+        ? state.last_message
+        : "// noop patch — test handshake";
+
+    // 🔑 CHAMADA CANÔNICA (flow NÃO monta payload)
+    const res = await api.audit({ patch: patchText });
+
+    console.log("[ENAVIA AUDIT RESPONSE]", res);
+
+    if (!res || res.ok === false) {
+      updatePanelState({
+        last_error: res?.error || "Falha na auditoria.",
       });
-
-      try {
-        const state = getPanelState();
-
-         // garante patch no state (compatível com worker atual)
-      if (!state.patch && typeof state.last_message === "string") {
-      updatePanelState({ patch: state.last_message });
-      }
-
-        const payload = {
-  execution_id: state.execution_id,
-  mode: "audit",
-  source: "nv-control",
-  target: {
-    workerId: "enavia-worker-teste",
-  },
-  patch: {
-    type: "patch_text",
-    content: state.patch || "// noop patch — test handshake",
-  },
-  constraints: {
-    read_only: true,
-    no_auto_apply: true,
-  },
-};
-
-        // ✅ PROVA OBJETIVA (DevTools + Network)
-        const baseUrl =
-          api?.enaviaBaseUrl ||
-          api?.baseUrl ||
-          api?.config?.baseUrl ||
-          api?.cfg?.baseUrl ||
-          null;
-
-        console.log("[CALLING ENAVIA AUDIT]", payload);
-        console.log("[API BASE URL]", baseUrl);
-        console.log("[API ADAPTER]", api);
-
-        const res = await api.audit(payload);
-
-        console.log("[ENAVIA AUDIT RESPONSE]", res);
-
-        if (!res || res.ok === false) {
-          updatePanelState({
-            last_error: res?.error || "Falha na auditoria.",
-          });
-          return;
-        }
-
-        updatePanelState({
-          patch_status: PATCH_STATUSES.AUDITED,
-          last_error: null,
-        });
-
-        addChatMessage({
-          role: "enavia",
-          text: "Auditoria recebida. Análise em andamento.",
-        });
-      } catch (err) {
-        console.error("[AUDIT ERROR]", err);
-        updatePanelState({
-          last_error: err?.message || "Erro inesperado durante auditoria.",
-        });
-      }
-      break;
+      return;
     }
+
+    updatePanelState({
+      patch_status: PATCH_STATUSES.AUDITED,
+      last_error: null,
+    });
+
+    addChatMessage({
+      role: "enavia",
+      text: "Auditoria recebida. Análise em andamento.",
+    });
+  } catch (err) {
+    console.error("[AUDIT ERROR]", err);
+    updatePanelState({
+      last_error: err?.message || "Erro inesperado durante auditoria.",
+    });
+  }
+  break;
+}
 
     // ============================================================
     // PROPOSE
