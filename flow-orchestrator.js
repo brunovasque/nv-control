@@ -74,7 +74,6 @@ export async function handlePanelAction(action) {
   try {
     const state = getPanelState();
 
-    // 🔒 Patch como string pura (fonte única)
     const patchText =
       typeof state.patch === "string"
         ? state.patch
@@ -89,45 +88,43 @@ export async function handlePanelAction(action) {
       return;
     }
 
-    // 🔑 Chamada REAL de AUDIT (worker)
-    const res = await api.audit({ patch: patchText });
-
-    if (!res || res.ok === false) {
-      updatePanelState({
-        last_error: res?.error || "Falha na auditoria.",
-      });
-      return;
-    }
-
-    const audit = res?.data?.audit;
-
-    if (!audit || !audit.verdict) {
-      updatePanelState({
-        last_error: "Resposta de auditoria inválida ou incompleta.",
-      });
-      return;
-    }
-
-    // ✅ Estado técnico: auditado
-    updatePanelState({
-      patch_status: PATCH_STATUSES.AUDITED,
-      last_error: null,
-      can_apply_test: audit.verdict === "approve",
+    addChatMessage({
+      role: "director",
+      text: "Enviei o patch para auditoria da ENAVIA. Analisando riscos e integridade.",
     });
 
-    // 🧠 DIRETOR — reação baseada EXCLUSIVAMENTE no audit real
+    const res = await api.audit({ patch: patchText });
+
+    if (!res || res.ok === false || !res.data?.audit) {
+      updatePanelState({
+        last_error: res?.error || "Falha ao obter retorno da auditoria.",
+      });
+      return;
+    }
+
+    const audit = res.data.audit;
+
+    // 🔐 Atualiza estado SOMENTE após resposta real
+    updatePanelState({
+      patch_status: PATCH_STATUSES.AUDITED,
+      can_apply_test: audit.verdict === "approve",
+      last_error: null,
+    });
+
+    // 🧠 Fala humana, baseada em dados reais
     if (audit.verdict === "approve") {
       addChatMessage({
         role: "director",
-        text: `A ENAVIA analisou o patch e não encontrou bloqueadores.
-O risco foi classificado como ${audit.risk_level}.
-Você pode seguir direto para o Apply Test.`,
+        text: `A ENAVIA concluiu a auditoria.
+O patch não apresenta bloqueadores e o risco foi classificado como ${audit.risk_level}.
+Se quiser, você já pode seguir para o Apply Test.`,
       });
     } else {
       addChatMessage({
         role: "director",
-        text: `A ENAVIA reprovou esse patch na auditoria.
-Foram identificados pontos críticos que impedem a aplicação segura neste momento.`,
+        text: `A ENAVIA analisou o patch e encontrou pontos críticos.
+Esse bloco não é seguro para aplicar agora.
+Podemos revisar ou pedir sugestões pelo Propose.`,
       });
     }
   } catch (err) {
