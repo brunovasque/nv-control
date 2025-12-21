@@ -71,55 +71,81 @@ export async function handlePanelAction(action) {
     // AUDIT
     // ============================================================
     case "audit": {
-      if (!canTransitionTo(PATCH_STATUSES.AUDITED)) {
-        return explainBlockedAction(action);
-      }
+  if (!canTransitionTo(PATCH_STATUSES.AUDITED)) {
+    return explainBlockedAction(action);
+  }
 
+  try {
+    const state = getPanelState();
+
+    // 🔒 Patch como string pura
+    const patchText =
+      typeof state.patch === "string"
+        ? state.patch
+        : typeof state.last_message === "string"
+        ? state.last_message
+        : null;
+
+    if (!patchText) {
+      updatePanelState({
+        last_error: "Nenhum patch disponível para auditoria.",
+      });
+      return;
+    }
+
+    // 🔑 Chamada real de AUDIT
+    const res = await api.audit({ patch: patchText });
+
+    if (!res || res.ok === false) {
+      updatePanelState({
+        last_error: res?.error || "Falha na auditoria.",
+      });
+      return;
+    }
+
+    const audit = res?.data?.audit;
+
+    if (!audit) {
+      updatePanelState({
+        last_error: "Resposta de auditoria sem conteúdo válido.",
+      });
+      return;
+    }
+
+    // ✅ Estado técnico: auditado
+    updatePanelState({
+      patch_status: PATCH_STATUSES.AUDITED,
+      last_error: null,
+    });
+
+    // 🧠 FALA DO DIRETOR — SOMENTE COM BASE NO AUDIT REAL
+    if (audit.verdict === "approve") {
       addChatMessage({
         role: "director",
-        text: "Vou enviar o patch para auditoria da ENAVIA.",
-        typing: true,
+        text: `A ENAVIA analisou o patch e não encontrou bloqueadores.
+O risco foi classificado como ${audit.risk_level}.
+Você pode seguir direto para o Apply Test.`,
       });
-
-      try {
-        const state = getPanelState();
-
-        // 🔒 Garante patch como STRING (flow NÃO encapsula)
-        const patchText =
-          typeof state.patch === "string"
-            ? state.patch
-            : typeof state.last_message === "string"
-            ? state.last_message
-            : "// noop patch — test handshake";
-
-        const res = await api.audit({ patch: patchText });
-
-        console.log("[ENAVIA AUDIT RESPONSE]", res);
-
-        if (!res || res.ok === false) {
-          updatePanelState({
-            last_error: res?.error || "Falha na auditoria.",
-          });
-          return;
-        }
-
-        updatePanelState({
-          patch_status: PATCH_STATUSES.AUDITED,
-          last_error: null,
-        });
-
-        addChatMessage({
-          role: "enavia",
-          text: "Auditoria recebida. Análise em andamento.",
-        });
-      } catch (err) {
-        console.error("[AUDIT ERROR]", err);
-        updatePanelState({
-          last_error: err?.message || "Erro inesperado durante auditoria.",
-        });
-      }
-      break;
+    } else {
+      addChatMessage({
+        role: "director",
+        text: `A ENAVIA reprovou esse patch na auditoria.
+Foram identificados pontos críticos que impedem a aplicação segura agora.`,
+      });
     }
+
+    // 🔐 Gate real do fluxo (sem mudar estados)
+    updatePanelState({
+      can_apply_test: audit.verdict === "approve",
+    });
+  } catch (err) {
+    console.error("[AUDIT ERROR]", err);
+    updatePanelState({
+      last_error: err?.message || "Erro inesperado durante auditoria.",
+    });
+  }
+  break;
+}
 
     // ============================================================
     // PROPOSE
