@@ -84,7 +84,7 @@ export async function handlePanelAction(action) {
       try {
         const state = getPanelState();
 
-        // 🔒 Garante patch como STRING
+        // 🔒 Garante patch como STRING (flow NÃO encapsula)
         const patchText =
           typeof state.patch === "string"
             ? state.patch
@@ -92,7 +92,6 @@ export async function handlePanelAction(action) {
             ? state.last_message
             : "// noop patch — test handshake";
 
-        // 🔑 Flow NÃO monta payload
         const res = await api.audit({ patch: patchText });
 
         console.log("[ENAVIA AUDIT RESPONSE]", res);
@@ -158,16 +157,6 @@ export async function handlePanelAction(action) {
       }
       break;
     }
-
-    // ============================================================
-    // DEFAULT
-    // ============================================================
-    default: {
-      console.warn("[handlePanelAction] Ação desconhecida:", action);
-      break;
-    }
-  }
-}
 
     // ============================================================
     // APPLY TEST (gera staging)
@@ -375,10 +364,10 @@ export function initFlowOrchestrator(apiAdapter) {
     return;
   }
 
-  // ✅ INJEÇÃO CANÔNICA REAL (corrige a causa raiz)
+  // ✅ INJEÇÃO CANÔNICA REAL
   api = apiAdapter;
 
-  // ✅ Ajuda DevTools (opcional e seguro): evidencia se a API existe
+  // ✅ Ajuda DevTools (opcional e seguro)
   if (typeof window !== "undefined") {
     window.api = apiAdapter;
   }
