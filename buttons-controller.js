@@ -16,10 +16,10 @@ function qsAction(action) {
 const buttons = {
   audit: qsAction("audit"),
   propose: qsAction("propose"),
-  applyTest: qsAction("apply_test"),
-  deployTest: qsAction("deploy_test"),
+  applyTest: qsAction("apply-test"),
+  deployTest: qsAction("deploy-test"),
   approve: qsAction("approve"),
-  promote: qsAction("promote_real"),
+  promote: qsAction("promote-real"),
   rollback: qsAction("rollback"),
   cancel: qsAction("cancel"),
 };
