@@ -66,8 +66,13 @@ const hasRecommendations =
   Array.isArray(audit?.recommended_changes) &&
   audit.recommended_changes.length > 0;
 
+const normalizedStatus =
+  typeof status === "string"
+    ? status.toLowerCase()
+    : null;
+
 const canApplyTest =
-  status === PATCH_STATUSES.AUDITED &&
+  normalizedStatus === PATCH_STATUSES.AUDITED.toLowerCase() &&
   audit &&
   audit.verdict === "approve" &&
   normalizedRisk === "low" &&
