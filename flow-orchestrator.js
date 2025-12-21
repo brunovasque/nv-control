@@ -122,16 +122,26 @@ export async function handlePanelAction(action) {
       return;
     }
 
-    const hasBlockers =
-      Array.isArray(audit.blockers) && audit.blockers.length > 0;
+    const normalizedRisk =
+      typeof audit.risk_level === "string"
+        ? audit.risk_level.toLowerCase()
+        : null;
+
+    const hasFindings =
+      Array.isArray(audit.findings) && audit.findings.length > 0;
+
+    const hasRecommendations =
+      Array.isArray(audit.recommended_changes) &&
+      audit.recommended_changes.length > 0;
 
     // ============================================================
     // 🧠 DIRECTOR — ORIENTAÇÃO HUMANA (DECISÃO)
     // ============================================================
     if (
       audit.verdict === "approve" &&
-      audit.risk_level === "low" &&
-      !hasBlockers
+      normalizedRisk === "low" &&
+      !hasFindings &&
+      !hasRecommendations
     ) {
       addChatMessage({
         role: "director",
@@ -155,13 +165,17 @@ export async function handlePanelAction(action) {
       });
     }
 
+    // ⏳ pausa humana de leitura
+    await new Promise((r) => setTimeout(r, 1200));
+
     // ============================================================
     // 🤖 ENAVIA — RESPOSTA CONTEXTUAL (ASSÍNCRONA)
     // ============================================================
     if (
       audit.verdict === "approve" &&
-      audit.risk_level === "low" &&
-      !hasBlockers
+      normalizedRisk === "low" &&
+      !hasFindings &&
+      !hasRecommendations
     ) {
       addChatMessage({
         role: "enavia",
@@ -186,10 +200,10 @@ export async function handlePanelAction(action) {
     }
 
     updatePanelState({
-  patch_status: PATCH_STATUSES.AUDITED,
-  audit: audit, // 👈 🔥 ESSA É A LINHA QUE FALTAVA
-  last_error: null,
-});
+      patch_status: PATCH_STATUSES.AUDITED,
+      audit: audit,
+      last_error: null,
+    });
   } catch (err) {
     console.error("[AUDIT ERROR]", err);
     updatePanelState({
