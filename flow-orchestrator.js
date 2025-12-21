@@ -71,14 +71,10 @@ export async function handlePanelAction(action) {
     // AUDIT
     // ============================================================
     case "audit": {
-  if (!canTransitionTo(PATCH_STATUSES.AUDITED)) {
-    return explainBlockedAction(action);
-  }
-
   try {
     const state = getPanelState();
 
-    // 🔒 Patch como string pura
+    // 🔒 Patch como string pura (fonte única)
     const patchText =
       typeof state.patch === "string"
         ? state.patch
@@ -93,7 +89,7 @@ export async function handlePanelAction(action) {
       return;
     }
 
-    // 🔑 Chamada real de AUDIT
+    // 🔑 Chamada REAL de AUDIT (worker)
     const res = await api.audit({ patch: patchText });
 
     if (!res || res.ok === false) {
@@ -105,9 +101,9 @@ export async function handlePanelAction(action) {
 
     const audit = res?.data?.audit;
 
-    if (!audit) {
+    if (!audit || !audit.verdict) {
       updatePanelState({
-        last_error: "Resposta de auditoria sem conteúdo válido.",
+        last_error: "Resposta de auditoria inválida ou incompleta.",
       });
       return;
     }
@@ -116,9 +112,10 @@ export async function handlePanelAction(action) {
     updatePanelState({
       patch_status: PATCH_STATUSES.AUDITED,
       last_error: null,
+      can_apply_test: audit.verdict === "approve",
     });
 
-    // 🧠 FALA DO DIRETOR — SOMENTE COM BASE NO AUDIT REAL
+    // 🧠 DIRETOR — reação baseada EXCLUSIVAMENTE no audit real
     if (audit.verdict === "approve") {
       addChatMessage({
         role: "director",
@@ -130,14 +127,9 @@ Você pode seguir direto para o Apply Test.`,
       addChatMessage({
         role: "director",
         text: `A ENAVIA reprovou esse patch na auditoria.
-Foram identificados pontos críticos que impedem a aplicação segura agora.`,
+Foram identificados pontos críticos que impedem a aplicação segura neste momento.`,
       });
     }
-
-    // 🔐 Gate real do fluxo (sem mudar estados)
-    updatePanelState({
-      can_apply_test: audit.verdict === "approve",
-    });
   } catch (err) {
     console.error("[AUDIT ERROR]", err);
     updatePanelState({
