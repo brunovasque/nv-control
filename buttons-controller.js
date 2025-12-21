@@ -54,13 +54,25 @@ function updateButtonsState() {
   toggle(buttons.propose, canTransitionTo(PATCH_STATUSES.PROPOSED));
 
   // 🧠 APPLY TEST — REGRA CANÔNICA
-  const canApplyTest =
-    status === PATCH_STATUSES.AUDITED &&
-    audit &&
-    audit.verdict === "approve" &&
-    audit.risk_level === "low" &&
-    Array.isArray(audit.blockers) &&
-    audit.blockers.length === 0;
+  const normalizedRisk =
+  typeof audit?.risk_level === "string"
+    ? audit.risk_level.toLowerCase()
+    : null;
+
+const hasFindings =
+  Array.isArray(audit?.findings) && audit.findings.length > 0;
+
+const hasRecommendations =
+  Array.isArray(audit?.recommended_changes) &&
+  audit.recommended_changes.length > 0;
+
+const canApplyTest =
+  status === PATCH_STATUSES.AUDITED &&
+  audit &&
+  audit.verdict === "approve" &&
+  normalizedRisk === "low" &&
+  !hasFindings &&
+  !hasRecommendations;
 
   toggle(buttons.applyTest, canApplyTest);
 
