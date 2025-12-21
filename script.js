@@ -508,11 +508,15 @@ function bindChatSend() {
   if (!text) return;
 
   addChatMessage({ role: "user", text });
+
+  // 🔑 LINHA CRÍTICA — PATCH ENTRA NO STATE CANÔNICO
+  updatePanelState({ patch: text });
+
   el.value = "";
 
   // Director cognitivo
   handleDirectorMessage(text);
-}; // ← FECHA send AQUI
+};
 
   // 1) Blindagem contra submit em qualquer form que contenha o chatInput real
   const u0 = ui();
@@ -735,6 +739,7 @@ async function askEnaviaAnalysis(intentText) {
     );
   }
 }
+
 
 
 
