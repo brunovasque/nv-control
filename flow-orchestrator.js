@@ -170,44 +170,6 @@ export async function handlePanelAction(action) {
 }
 
     // ============================================================
-    // PROPOSE
-    // ============================================================
-    case "propose": {
-      if (!canTransitionTo(PATCH_STATUSES.PROPOSED)) {
-        return explainBlockedAction(action);
-      }
-
-      addChatMessage({
-        role: "director",
-        text:
-          "Vou pedir à ENAVIA uma sugestão de melhoria técnica, sem executar nada.",
-        typing: true,
-      });
-
-      try {
-        // Mantido como estava, mas agora dentro do switch e com API real
-        const res = await api.audit({ propose: true });
-
-        if (res && res.ok === false) {
-          updatePanelState({
-            last_error: res.error || "Falha no propose.",
-          });
-          return;
-        }
-
-        updatePanelState({
-          patch_status: PATCH_STATUSES.PROPOSED,
-          last_error: null,
-        });
-      } catch (err) {
-        updatePanelState({
-          last_error: err?.message || "Erro inesperado durante propose.",
-        });
-      }
-      break;
-    }
-
-    // ============================================================
     // APPLY TEST (gera staging)
     // ============================================================
     case "apply_test": {
