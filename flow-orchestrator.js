@@ -64,6 +64,13 @@ function explainBlockedAction(action) {
 ============================================================ */
 
 export async function handlePanelAction(action) {
+  // 🔎 DIAGNÓSTICO REAL (antes de qualquer guarda/switch)
+  console.log("[handlePanelAction] called:", {
+    action,
+    hasApi: !!api,
+    patch_status: getPanelState?.()?.patch_status,
+  });
+
   if (!ensureApiOrBlock(action)) return;
 
   switch (action) {
@@ -71,70 +78,55 @@ export async function handlePanelAction(action) {
     // AUDIT
     // ============================================================
     case "audit": {
-  try {
-    const state = getPanelState();
+      if (!canTransitionTo(PATCH_STATUSES.AUDITED)) {
+        return explainBlockedAction(action);
+      }
 
-    const patchText =
-      typeof state.patch === "string"
-        ? state.patch
-        : typeof state.last_message === "string"
-        ? state.last_message
-        : null;
-
-    if (!patchText) {
-      updatePanelState({
-        last_error: "Nenhum patch disponível para auditoria.",
-      });
-      return;
-    }
-
-    addChatMessage({
-      role: "director",
-      text: "Enviei o patch para auditoria da ENAVIA. Analisando riscos e integridade.",
-    });
-
-    const res = await api.audit({ patch: patchText });
-
-    if (!res || res.ok === false || !res.data?.audit) {
-      updatePanelState({
-        last_error: res?.error || "Falha ao obter retorno da auditoria.",
-      });
-      return;
-    }
-
-    const audit = res.data.audit;
-
-    // 🔐 Atualiza estado SOMENTE após resposta real
-    updatePanelState({
-      patch_status: PATCH_STATUSES.AUDITED,
-      can_apply_test: audit.verdict === "approve",
-      last_error: null,
-    });
-
-    // 🧠 Fala humana, baseada em dados reais
-    if (audit.verdict === "approve") {
       addChatMessage({
         role: "director",
-        text: `A ENAVIA concluiu a auditoria.
-O patch não apresenta bloqueadores e o risco foi classificado como ${audit.risk_level}.
-Se quiser, você já pode seguir para o Apply Test.`,
+        text: "Vou enviar o patch para auditoria da ENAVIA.",
+        typing: true,
       });
-    } else {
-      addChatMessage({
-        role: "director",
-        text: `A ENAVIA analisou o patch e encontrou pontos críticos.
-Esse bloco não é seguro para aplicar agora.
-Podemos revisar ou pedir sugestões pelo Propose.`,
-      });
+
+      try {
+        const state = getPanelState();
+
+        // 🔒 Garante patch como STRING (flow NÃO encapsula)
+        const patchText =
+          typeof state.patch === "string"
+            ? state.patch
+            : typeof state.last_message === "string"
+            ? state.last_message
+            : "// noop patch — test handshake";
+
+        const res = await api.audit({ patch: patchText });
+
+        console.log("[ENAVIA AUDIT RESPONSE]", res);
+
+        if (!res || res.ok === false) {
+          updatePanelState({
+            last_error: res?.error || "Falha na auditoria.",
+          });
+          return;
+        }
+
+        updatePanelState({
+          patch_status: PATCH_STATUSES.AUDITED,
+          last_error: null,
+        });
+
+        addChatMessage({
+          role: "enavia",
+          text: "Auditoria recebida. Análise em andamento.",
+        });
+      } catch (err) {
+        console.error("[AUDIT ERROR]", err);
+        updatePanelState({
+          last_error: err?.message || "Erro inesperado durante auditoria.",
+        });
+      }
+      break;
     }
-  } catch (err) {
-    console.error("[AUDIT ERROR]", err);
-    updatePanelState({
-      last_error: err?.message || "Erro inesperado durante auditoria.",
-    });
-  }
-  break;
-}
 
     // ============================================================
     // PROPOSE
@@ -374,27 +366,40 @@ Podemos revisar ou pedir sugestões pelo Propose.`,
 ============================================================ */
 
 export function initFlowOrchestrator(apiAdapter) {
-  if (!apiAdapter) {
-    console.warn("[FlowOrchestrator] apiAdapter ausente");
+  // ✅ bind único (evita duplicar listeners)
+  if (typeof window !== "undefined" && window.__NV_FLOW_BOUND__ === true) {
+    console.log("[FlowOrchestrator] init ignorado (já bound)");
+    // mesmo assim atualiza a injeção, se vier nova
+    api = apiAdapter || api;
     return;
   }
 
-  // ✅ INJEÇÃO CANÔNICA REAL
-  api = apiAdapter;
+  if (!apiAdapter) {
+    // ⚠️ NÃO retorna: precisamos bindar para enxergar o bloqueio
+    console.warn("[FlowOrchestrator] apiAdapter ausente (bind será feito mesmo assim)");
+  }
+
+  // ✅ INJEÇÃO CANÔNICA REAL (se vier null, api fica null e a guarda bloqueia)
+  api = apiAdapter || null;
 
   // ✅ Ajuda DevTools (opcional e seguro)
   if (typeof window !== "undefined") {
     window.api = apiAdapter;
+    window.__NV_FLOW_BOUND__ = true;
   }
+
+  console.log("[FlowOrchestrator] bound. hasApi:", !!api);
 
   document.addEventListener("panel:action", async (e) => {
     const action = e.detail?.action;
+    console.log("[FlowOrchestrator] event panel:action:", e?.detail);
     if (!action) return;
 
     await handlePanelAction(action);
   });
 
   document.addEventListener("panel:action-blocked", (e) => {
+    console.log("[FlowOrchestrator] event panel:action-blocked:", e?.detail);
     const action = e.detail?.action;
     explainBlockedAction(action);
   });
