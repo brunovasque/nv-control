@@ -40,15 +40,20 @@ export function initButtonsController() {
 
 function updateButtonsState() {
   const state = getPanelState();
+
+  console.log(
+    "[BUTTONS STATE CHECK]",
+    "status:", state.patch_status,
+    "audit:", state.audit
+  );
+
   const status = state.patch_status;
   const audit = state.audit;
 
   toggle(buttons.audit, canTransitionTo(PATCH_STATUSES.AUDITED));
   toggle(buttons.propose, canTransitionTo(PATCH_STATUSES.PROPOSED));
 
-  // ============================================================
-  // 🧠 APPLY TEST — REGRA CANÔNICA BASEADA NO AUDIT
-  // ============================================================
+  // 🧠 APPLY TEST — REGRA CANÔNICA
   const canApplyTest =
     status === PATCH_STATUSES.AUDITED &&
     audit &&
