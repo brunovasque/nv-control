@@ -122,6 +122,13 @@ export async function handlePanelAction(action) {
       return;
     }
 
+    // ✅🔥 ESTE É O PONTO CRÍTICO (RESTAURADO)
+    updatePanelState({
+      patch_status: PATCH_STATUSES.AUDITED,
+      audit: audit,
+      last_error: null,
+    });
+
     const normalizedRisk =
       typeof audit.risk_level === "string"
         ? audit.risk_level.toLowerCase()
