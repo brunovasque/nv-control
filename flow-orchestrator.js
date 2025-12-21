@@ -63,56 +63,110 @@ function explainBlockedAction(action) {
    ORQUESTRADOR PRINCIPAL
 ============================================================ */
 
-case "audit": {
-  if (!canTransitionTo(PATCH_STATUSES.AUDITED)) {
-    return explainBlockedAction(action);
-  }
+export async function handlePanelAction(action) {
+  if (!ensureApiOrBlock(action)) return;
 
-  addChatMessage({
-    role: "director",
-    text: "Vou enviar o patch para auditoria da ENAVIA.",
-    typing: true,
-  });
+  switch (action) {
+    // ============================================================
+    // AUDIT
+    // ============================================================
+    case "audit": {
+      if (!canTransitionTo(PATCH_STATUSES.AUDITED)) {
+        return explainBlockedAction(action);
+      }
 
-  try {
-    const state = getPanelState();
-
-    // 🔒 Garante que existe patch em forma de STRING
-    const patchText =
-      typeof state.patch === "string"
-        ? state.patch
-        : typeof state.last_message === "string"
-        ? state.last_message
-        : "// noop patch — test handshake";
-
-    // 🔑 CHAMADA CANÔNICA (flow NÃO monta payload)
-    const res = await api.audit({ patch: patchText });
-
-    console.log("[ENAVIA AUDIT RESPONSE]", res);
-
-    if (!res || res.ok === false) {
-      updatePanelState({
-        last_error: res?.error || "Falha na auditoria.",
+      addChatMessage({
+        role: "director",
+        text: "Vou enviar o patch para auditoria da ENAVIA.",
+        typing: true,
       });
-      return;
+
+      try {
+        const state = getPanelState();
+
+        // 🔒 Garante patch como STRING
+        const patchText =
+          typeof state.patch === "string"
+            ? state.patch
+            : typeof state.last_message === "string"
+            ? state.last_message
+            : "// noop patch — test handshake";
+
+        // 🔑 Flow NÃO monta payload
+        const res = await api.audit({ patch: patchText });
+
+        console.log("[ENAVIA AUDIT RESPONSE]", res);
+
+        if (!res || res.ok === false) {
+          updatePanelState({
+            last_error: res?.error || "Falha na auditoria.",
+          });
+          return;
+        }
+
+        updatePanelState({
+          patch_status: PATCH_STATUSES.AUDITED,
+          last_error: null,
+        });
+
+        addChatMessage({
+          role: "enavia",
+          text: "Auditoria recebida. Análise em andamento.",
+        });
+      } catch (err) {
+        console.error("[AUDIT ERROR]", err);
+        updatePanelState({
+          last_error: err?.message || "Erro inesperado durante auditoria.",
+        });
+      }
+      break;
     }
 
-    updatePanelState({
-      patch_status: PATCH_STATUSES.AUDITED,
-      last_error: null,
-    });
+    // ============================================================
+    // PROPOSE
+    // ============================================================
+    case "propose": {
+      if (!canTransitionTo(PATCH_STATUSES.PROPOSED)) {
+        return explainBlockedAction(action);
+      }
 
-    addChatMessage({
-      role: "enavia",
-      text: "Auditoria recebida. Análise em andamento.",
-    });
-  } catch (err) {
-    console.error("[AUDIT ERROR]", err);
-    updatePanelState({
-      last_error: err?.message || "Erro inesperado durante auditoria.",
-    });
+      addChatMessage({
+        role: "director",
+        text:
+          "Vou pedir à ENAVIA uma sugestão de melhoria técnica, sem executar nada.",
+        typing: true,
+      });
+
+      try {
+        const res = await api.audit({ propose: true });
+
+        if (res && res.ok === false) {
+          updatePanelState({
+            last_error: res.error || "Falha no propose.",
+          });
+          return;
+        }
+
+        updatePanelState({
+          patch_status: PATCH_STATUSES.PROPOSED,
+          last_error: null,
+        });
+      } catch (err) {
+        updatePanelState({
+          last_error: err?.message || "Erro inesperado durante propose.",
+        });
+      }
+      break;
+    }
+
+    // ============================================================
+    // DEFAULT
+    // ============================================================
+    default: {
+      console.warn("[handlePanelAction] Ação desconhecida:", action);
+      break;
+    }
   }
-  break;
 }
 
     // ============================================================
