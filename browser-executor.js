@@ -3,6 +3,8 @@
  * Frontend-only (NV-CONTROL)
  */
 
+console.log("BROWSER EXECUTOR CARREGADO");
+
 window.callBrowserExecutor = async function (payload) {
   const EXECUTOR_URL = window.EXECUTOR_URL;
 
