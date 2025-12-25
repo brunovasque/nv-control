@@ -752,7 +752,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!liveBtn) return;
 
   liveBtn.addEventListener("click", () => {
-    const liveUrl = "/novnc/vnc_lite.html";
+    const liveUrl = "https://browser.nv-imoveis.com/novnc/vnc_lite.html";
 
     window.open(
       liveUrl,
@@ -797,3 +797,4 @@ document.addEventListener("DOMContentLoaded", () => {
   setInterval(checkBrowserStatus, POLL_INTERVAL);
 })();
 */
+
