@@ -12,12 +12,40 @@ import {
 } from "./panel-state.js";
 
 import { addChatMessage } from "./chat-renderer.js";
+import { buildPlanFromDirectorChat } from "./directorPlanBuilder.js";
 
 /* ============================================================
    API INJETADO (CANÔNICO — VIA initFlowOrchestrator)
 ============================================================ */
 
 let api = null; // ← única fonte de verdade (injeção real no init)
+
+/* ============================================================
+   EXECUTION LOCK — BROWSER (CANÔNICO / GLOBAL)
+   - NÃO interfere no fluxo Cloudflare
+   - execução única por vez
+============================================================ */
+
+let activeBrowserExecutionId = null;
+
+function isBrowserExecutionLocked() {
+  return typeof activeBrowserExecutionId === "string" && activeBrowserExecutionId.length > 0;
+}
+
+function tryLockBrowserExecution(executionId) {
+  if (isBrowserExecutionLocked()) return false;
+  activeBrowserExecutionId = executionId || "unknown_execution";
+  return true;
+}
+
+function unlockBrowserExecution(executionId) {
+  // libera somente se for o mesmo ID (protege contra race)
+  if (!isBrowserExecutionLocked()) return;
+
+  if (!executionId || activeBrowserExecutionId === executionId) {
+    activeBrowserExecutionId = null;
+  }
+}
 
 /* ============================================================
    GUARDA — API
@@ -78,167 +106,167 @@ export async function handlePanelAction(action) {
     // AUDIT
     // ============================================================
     case "audit": {
-  if (!canTransitionTo(PATCH_STATUSES.AUDITED)) {
-    return explainBlockedAction(action);
-  }
+      if (!canTransitionTo(PATCH_STATUSES.AUDITED)) {
+        return explainBlockedAction(action);
+      }
 
-  addChatMessage({
-    role: "director",
-    text: "Vou enviar o patch para auditoria da ENAVIA.",
-    typing: true,
-  });
-
-  try {
-    const state = getPanelState();
-
-    // 🔒 Garante patch como STRING (flow NÃO encapsula)
-    const patchText =
-      typeof state.patch === "string"
-        ? state.patch
-        : typeof state.last_message === "string"
-        ? state.last_message
-        : "// noop patch — test handshake";
-
-    const res = await api.audit({ patch: patchText });
-
-    console.log("[ENAVIA AUDIT RESPONSE]", res);
-
-    if (!res || res.ok === false) {
-      updatePanelState({
-        last_error: res?.error || "Falha na auditoria.",
-      });
-      return;
-    }
-
-    const audit = res?.data?.audit;
-
-    if (!audit) {
       addChatMessage({
         role: "director",
-        text:
-          "A auditoria retornou sem um veredito válido. " +
-          "Não é possível avançar com segurança.",
-      });
-      return;
-    }
-
-    // ✅🔥 ESTE É O PONTO CRÍTICO (RESTAURADO)
-    updatePanelState({
-      patch_status: PATCH_STATUSES.AUDITED,
-      audit: audit,
-      last_error: null,
-    });
-
-    const normalizedRisk =
-      typeof audit.risk_level === "string"
-        ? audit.risk_level.toLowerCase()
-        : null;
-
-    const hasFindings =
-      Array.isArray(audit.findings) && audit.findings.length > 0;
-
-    const hasRecommendations =
-      Array.isArray(audit.recommended_changes) &&
-      audit.recommended_changes.length > 0;
-
-    // ============================================================
-    // 🧠 DIRECTOR — ORIENTAÇÃO HUMANA (DECISÃO)
-    // ============================================================
-    if (
-      audit.verdict === "approve" &&
-      normalizedRisk === "low" &&
-      !hasFindings &&
-      !hasRecommendations
-    ) {
-      addChatMessage({
-        role: "director",
-        text:
-          "A ENAVIA analisou o patch, não encontrou bloqueadores e " +
-          "classificou o risco como baixo. Você já pode seguir para o Apply Test.",
-      });
-    } else if (audit.verdict === "approve") {
-      addChatMessage({
-        role: "director",
-        text:
-          "O patch é funcional, mas a ENAVIA identificou pontos de melhoria técnica. " +
-          "Recomendo utilizar o Propose antes de avançar para testes.",
-      });
-    } else {
-      addChatMessage({
-        role: "director",
-        text:
-          "A ENAVIA identificou bloqueadores técnicos no patch. " +
-          "Não é seguro avançar para testes neste estado.",
-      });
-    }
-
-    // ⏳ pausa humana de leitura
-    await new Promise((r) => setTimeout(r, 1200));
-
-    // ============================================================
-    // 🤖 ENAVIA — RESPOSTA CONTEXTUAL (ASSÍNCRONA)
-    // ============================================================
-    if (
-      audit.verdict === "approve" &&
-      normalizedRisk === "low" &&
-      !hasFindings &&
-      !hasRecommendations
-    ) {
-      addChatMessage({
-        role: "enavia",
-        text: "Analisando resultado da auditoria…",
+        text: "Vou enviar o patch para auditoria da ENAVIA.",
         typing: true,
       });
 
-      setTimeout(() => {
-        addChatMessage({
-          role: "enavia",
-          text:
-            "Auditoria concluída. Patch aprovado com risco baixo. " +
-            "Pronto para Apply Test quando você decidir.",
-        });
-      }, 1500);
-    } else if (audit.verdict === "approve") {
-      addChatMessage({
-        role: "enavia",
-        text: "Avaliando recomendações técnicas…",
-        typing: true,
-      });
+      try {
+        const state = getPanelState();
 
-      setTimeout(() => {
-        addChatMessage({
-          role: "enavia",
-          text:
-            "Auditoria concluída. O patch é válido, mas recomenda-se refinamento " +
-            "antes da execução em teste.",
-        });
-      }, 1500);
-    } else {
-      addChatMessage({
-        role: "enavia",
-        text: "Identificando bloqueadores técnicos…",
-        typing: true,
-      });
+        // 🔒 Garante patch como STRING (flow NÃO encapsula)
+        const patchText =
+          typeof state.patch === "string"
+            ? state.patch
+            : typeof state.last_message === "string"
+            ? state.last_message
+            : "// noop patch — test handshake";
 
-      setTimeout(() => {
-        addChatMessage({
-          role: "enavia",
-          text:
-            "Auditoria concluída com bloqueadores técnicos. " +
-            "É necessário ajustar o patch antes de qualquer teste.",
+        const res = await api.audit({ patch: patchText });
+
+        console.log("[ENAVIA AUDIT RESPONSE]", res);
+
+        if (!res || res.ok === false) {
+          updatePanelState({
+            last_error: res?.error || "Falha na auditoria.",
+          });
+          return;
+        }
+
+        const audit = res?.data?.audit;
+
+        if (!audit) {
+          addChatMessage({
+            role: "director",
+            text:
+              "A auditoria retornou sem um veredito válido. " +
+              "Não é possível avançar com segurança.",
+          });
+          return;
+        }
+
+        // ✅🔥 ESTE É O PONTO CRÍTICO (RESTAURADO)
+        updatePanelState({
+          patch_status: PATCH_STATUSES.AUDITED,
+          audit: audit,
+          last_error: null,
         });
-      }, 1500);
+
+        const normalizedRisk =
+          typeof audit.risk_level === "string"
+            ? audit.risk_level.toLowerCase()
+            : null;
+
+        const hasFindings =
+          Array.isArray(audit.findings) && audit.findings.length > 0;
+
+        const hasRecommendations =
+          Array.isArray(audit.recommended_changes) &&
+          audit.recommended_changes.length > 0;
+
+        // ============================================================
+        // 🧠 DIRECTOR — ORIENTAÇÃO HUMANA (DECISÃO)
+        // ============================================================
+        if (
+          audit.verdict === "approve" &&
+          normalizedRisk === "low" &&
+          !hasFindings &&
+          !hasRecommendations
+        ) {
+          addChatMessage({
+            role: "director",
+            text:
+              "A ENAVIA analisou o patch, não encontrou bloqueadores e " +
+              "classificou o risco como baixo. Você já pode seguir para o Apply Test.",
+          });
+        } else if (audit.verdict === "approve") {
+          addChatMessage({
+            role: "director",
+            text:
+              "O patch é funcional, mas a ENAVIA identificou pontos de melhoria técnica. " +
+              "Recomendo utilizar o Propose antes de avançar para testes.",
+          });
+        } else {
+          addChatMessage({
+            role: "director",
+            text:
+              "A ENAVIA identificou bloqueadores técnicos no patch. " +
+              "Não é seguro avançar para testes neste estado.",
+          });
+        }
+
+        // ⏳ pausa humana de leitura
+        await new Promise((r) => setTimeout(r, 1200));
+
+        // ============================================================
+        // 🤖 ENAVIA — RESPOSTA CONTEXTUAL (ASSÍNCRONA)
+        // ============================================================
+        if (
+          audit.verdict === "approve" &&
+          normalizedRisk === "low" &&
+          !hasFindings &&
+          !hasRecommendations
+        ) {
+          addChatMessage({
+            role: "enavia",
+            text: "Analisando resultado da auditoria…",
+            typing: true,
+          });
+
+          setTimeout(() => {
+            addChatMessage({
+              role: "enavia",
+              text:
+                "Auditoria concluída. Patch aprovado com risco baixo. " +
+                "Pronto para Apply Test quando você decidir.",
+            });
+          }, 1500);
+        } else if (audit.verdict === "approve") {
+          addChatMessage({
+            role: "enavia",
+            text: "Avaliando recomendações técnicas…",
+            typing: true,
+          });
+
+          setTimeout(() => {
+            addChatMessage({
+              role: "enavia",
+              text:
+                "Auditoria concluída. O patch é válido, mas recomenda-se refinamento " +
+                "antes da execução em teste.",
+            });
+          }, 1500);
+        } else {
+          addChatMessage({
+            role: "enavia",
+            text: "Identificando bloqueadores técnicos…",
+            typing: true,
+          });
+
+          setTimeout(() => {
+            addChatMessage({
+              role: "enavia",
+              text:
+                "Auditoria concluída com bloqueadores técnicos. " +
+                "É necessário ajustar o patch antes de qualquer teste.",
+            });
+          }, 1500);
+        }
+      } catch (err) {
+        console.error("[AUDIT FLOW ERROR]", err);
+
+        updatePanelState({
+          last_error: err?.message || "Erro inesperado durante auditoria.",
+        });
+      }
+
+      break;
     }
-  } catch (err) {
-    console.error("[AUDIT FLOW ERROR]", err);
-
-    updatePanelState({
-      last_error: err?.message || "Erro inesperado durante auditoria.",
-    });
-  }
-
-  break;
-}
 
     // ============================================================
     // PROPOSE
@@ -481,6 +509,18 @@ export async function handlePanelAction(action) {
 ============================================================ */
 
 async function executeBrowserPlan(plan) {
+  const execId = plan?.execution_id || "unknown_execution";
+
+  // 🔒 trava global (execução única)
+  if (!tryLockBrowserExecution(execId)) {
+    addChatMessage({
+      role: "director",
+      text:
+        "Existe uma execução em andamento. Aguarde finalizar antes de iniciar outra.",
+    });
+    return;
+  }
+
   try {
     addChatMessage({
       role: "director",
@@ -504,7 +544,7 @@ async function executeBrowserPlan(plan) {
     if (typeof window.reportToDirector === "function") {
       await window.reportToDirector({
         type: "browser_execution_result",
-        execution_id: plan.execution_id,
+        execution_id: execId,
         result,
       });
     }
@@ -521,10 +561,66 @@ async function executeBrowserPlan(plan) {
     if (typeof window.reportToDirector === "function") {
       await window.reportToDirector({
         type: "browser_execution_error",
+        execution_id: execId,
         error: err?.message || String(err),
       });
     }
+  } finally {
+    // ✅ garante liberação do lock sempre
+    unlockBrowserExecution(execId);
   }
+}
+
+/* ============================================================
+   CHAT → PLAN → DISPATCH (CANÔNICO / SIMPLES)
+   - O chat do Diretor é a autoridade
+   - Só dispara se tiver "executar"
+============================================================ */
+
+function dispatchBrowserExecute(plan) {
+  document.dispatchEvent(
+    new CustomEvent("browser:execute", { detail: { plan } })
+  );
+}
+
+// Exposto no window para o chat do painel chamar (ou via DevTools).
+// Exemplo de teste manual:
+//   window.__NV_DIRECTOR_CHAT_EXECUTE__("executar abrir https://example.com");
+function bindDirectorChatExecuteHook() {
+  if (typeof window === "undefined") return;
+
+  // evita rebind
+  if (window.__NV_DIRECTOR_CHAT_EXECUTE_BOUND__ === true) return;
+  window.__NV_DIRECTOR_CHAT_EXECUTE_BOUND__ = true;
+
+  window.__NV_DIRECTOR_CHAT_EXECUTE__ = async function (messageText) {
+    // trava: execução única global
+    if (isBrowserExecutionLocked()) {
+      addChatMessage({
+        role: "director",
+        text:
+          "Existe uma execução em andamento. Aguarde finalizar antes de pedir outra.",
+      });
+      return { ok: false, reason: "execution_locked" };
+    }
+
+    const built = buildPlanFromDirectorChat(messageText);
+
+    if (!built?.ok) {
+      addChatMessage({
+        role: "director",
+        text: built?.error || "Não foi possível montar o plano.",
+      });
+      return built;
+    }
+
+    // ✅ dispatch canônico
+    dispatchBrowserExecute(built.plan);
+    return { ok: true, dispatched: true, execution_id: built.plan.execution_id };
+  };
+
+  // Ajuda debug: estado do lock
+  window.__NV_GET_BROWSER_EXEC_LOCK__ = () => activeBrowserExecutionId;
 }
 
 /* ============================================================
@@ -556,6 +652,9 @@ export function initFlowOrchestrator(apiAdapter) {
 
   console.log("[FlowOrchestrator] bound. hasApi:", !!api);
 
+  // ✅ hook canônico (chat → execução)
+  bindDirectorChatExecuteHook();
+
   document.addEventListener("panel:action", async (e) => {
     const action = e.detail?.action;
     console.log("[FlowOrchestrator] event panel:action:", e?.detail);
@@ -570,7 +669,7 @@ export function initFlowOrchestrator(apiAdapter) {
     explainBlockedAction(action);
   });
 
-   // 🔹 NOVO FLUXO — EXECUÇÃO BROWSER VIA PROMPT (ISOLADO)
+  // 🔹 EXECUÇÃO BROWSER VIA PROMPT (ISOLADO)
   document.addEventListener("browser:execute", async (e) => {
     const plan = e.detail?.plan;
     if (!plan) return;
@@ -579,4 +678,3 @@ export function initFlowOrchestrator(apiAdapter) {
     await executeBrowserPlan(plan);
   });
 }
-
