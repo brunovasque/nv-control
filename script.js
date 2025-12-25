@@ -740,8 +740,22 @@ async function askEnaviaAnalysis(intentText) {
   }
 }
 
+/* ============================================================
+   AO VIVO — noVNC (VISUALIZAÇÃO EXTERNA)
+============================================================ */
 
+document.addEventListener("DOMContentLoaded", () => {
+  const liveBtn = document.getElementById("liveViewBtn");
 
+  if (!liveBtn) return;
 
+  liveBtn.addEventListener("click", () => {
+    const liveUrl = "/novnc/vnc_lite.html";
 
-
+    window.open(
+      liveUrl,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  });
+});
