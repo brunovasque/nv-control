@@ -741,39 +741,23 @@ async function askEnaviaAnalysis(intentText) {
 }
 
 /* ============================================================
-   🔴 AO VIVO — EXECUÇÃO REAL DO BROWSER (CANÔNICO)
-   Substitui visualização estática por execução real
+   AO VIVO — noVNC (VISUALIZAÇÃO DO BROWSER)
+   - NÃO executa
+   - NÃO dispara plano
+   - Apenas entra na sala
 ============================================================ */
 
 document.addEventListener("DOMContentLoaded", () => {
   const liveBtn = document.getElementById("liveViewBtn");
+  if (!liveBtn) return;
 
-  if (!liveBtn) {
-    console.warn("[NV-CONTROL] #liveViewBtn não encontrado.");
-    return;
-  }
+  liveBtn.addEventListener("click", () => {
+    const liveUrl = "/novnc/vnc_lite.html";
 
-  liveBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    console.log("[NV-CONTROL] 🔴 AO VIVO clicado");
-
-    const plan = {
-      action: "open",
-      url: "https://example.com",
-      execution_id: "live_view_manual",
-    };
-
-    if (typeof window.dispatchBrowserExecute !== "function") {
-      console.error(
-        "[NV-CONTROL] dispatchBrowserExecute não disponível no window."
-      );
-      return;
-    }
-
-    window.dispatchBrowserExecute(plan);
+    window.open(
+      liveUrl,
+      "_blank",
+      "noopener,noreferrer"
+    );
   });
 });
-
-
