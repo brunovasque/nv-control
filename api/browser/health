@@ -1,0 +1,17 @@
+import { browserHealth } from "@/lib/browserExecutorClient";
+
+export default async function handler(req, res) {
+  try {
+    const data = await browserHealth();
+    res.status(200).json({
+      ok: true,
+      source: "NV-CONTROL",
+      browser: data,
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      ok: false,
+      error: err.message,
+    });
+  }
+}
