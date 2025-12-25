@@ -1,3 +1,5 @@
+alert("BROWSER-EXECUTOR EXECUTOU");
+
 /**
  * Browser Executor Client
  * Frontend-only (NV-CONTROL)
