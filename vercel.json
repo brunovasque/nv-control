@@ -1,6 +1,12 @@
 {
-  "routes": [
-    { "src": "^/$", "dest": "/index.html" },
-    { "src": "/(.*)", "dest": "/$1" }
+  "rewrites": [
+    {
+      "source": "/executor-browser/:path*",
+      "destination": "http://167.71.116.105:3100/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }
