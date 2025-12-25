@@ -328,3 +328,24 @@ html, body {
 ::-webkit-scrollbar-thumb:hover {
   background: #3a415a;
 }
+
+/* ============================================================
+   AO VIVO (noVNC)
+============================================================ */
+
+.live-divider {
+  margin: 18px 0 14px;
+  opacity: 0.45;
+}
+
+.action-btn.live-btn {
+  border: 1px solid #ff3b3b;
+  color: #ff3b3b;
+  background: rgba(255, 59, 59, 0.08);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.action-btn.live-btn:hover {
+  background: rgba(255, 59, 59, 0.18);
+}
