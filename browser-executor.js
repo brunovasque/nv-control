@@ -1,14 +1,8 @@
-/**
- * Browser Executor Client
- * Frontend-only (NV-CONTROL)
- * Responsável por enviar comandos direto ao executor remoto
- */
-
 export async function callBrowserExecutor(payload) {
-  const EXECUTOR_URL = window.EXECUTOR_URL || process.env.EXECUTOR_URL;
+  const EXECUTOR_URL = window.EXECUTOR_URL;
 
   if (!EXECUTOR_URL) {
-    throw new Error("EXECUTOR_URL not set");
+    throw new Error("EXECUTOR_URL not defined on window");
   }
 
   const r = await fetch(`${EXECUTOR_URL}/run`, {
