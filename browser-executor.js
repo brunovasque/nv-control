@@ -1,4 +1,9 @@
-export async function callBrowserExecutor(payload) {
+/**
+ * Browser Executor Client
+ * Frontend-only (NV-CONTROL)
+ */
+
+window.callBrowserExecutor = async function (payload) {
   const EXECUTOR_URL = window.EXECUTOR_URL;
 
   if (!EXECUTOR_URL) {
@@ -19,4 +24,4 @@ export async function callBrowserExecutor(payload) {
   }
 
   return await r.json();
-}
+};
