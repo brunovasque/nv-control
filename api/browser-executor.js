@@ -1,27 +1,39 @@
+// api/browser-executor.js
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({
+      ok: false,
+      error: "Method not allowed",
+    });
   }
 
   try {
-    const response = await fetch(process.env.BROWSER_EXECUTOR_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(req.body)
-    });
+    const body = req.body;
 
-    const result = await response.json();
+    const executorResponse = await fetch(
+      "http://167.71.116.105:3100/run",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      }
+    );
+
+    const data = await executorResponse.json();
 
     return res.status(200).json({
       ok: true,
-      executor: result
+      executor: data,
     });
   } catch (error) {
+    console.error("[browser-executor] error:", error);
+
     return res.status(500).json({
       ok: false,
-      error: error.message || "Browser executor call failed"
+      error: "Failed to call browser executor",
+      details: String(error),
     });
   }
 }
