@@ -4,6 +4,9 @@ export const config = {
 
 const NV_FIRST_URL = "https://nv-first.brunovasque.workers.dev/engineer";
 
+// ✅ CANÔNICO: Vercel NÃO executa nada real (apenas simulação)
+const ALLOW_REAL_EXECUTION = false;
+
 export default async function handler(req: Request) {
   try {
     // CORS
@@ -20,34 +23,54 @@ export default async function handler(req: Request) {
 
     const body = await req.json().catch(() => ({}));
 
-    // Se o painel pedir simulação → devolvemos MOCK
+    // ✅ Simulação permitida
     if (body.simulate === true) {
-  return json({
-    ok: true,
-    mode: "simulate",
-    executor: "vercel-executor-v1",
-    message: "Simulação executada com sucesso.",
-    received: body,
-    result: {
-      mock: true,
-      notes:
-        "Este é o executor Vercel V1. A ENAVIA poderá evoluir esta função.",
-      steps: [
-        "Recebi o comando do painel (simulate: true).",
-        "Validei a estrutura básica do payload.",
-        "Simulei a análise do patch/código.",
-        "Preparei este resultado para o painel exibir na tela."
-      ]
-    },
-    telemetry: {
-      source: "Vercel",
-      stage: "simulate",
-      timestamp: Date.now(),
-    },
-  });
-}
+      return json({
+        ok: true,
+        mode: "simulate",
+        executor: "vercel-executor-v1",
+        message: "Simulação executada com sucesso.",
+        received: body,
+        result: {
+          mock: true,
+          notes: "Executor Vercel V1 (bloqueado para execução real).",
+          steps: [
+            "Recebi o comando do painel (simulate: true).",
+            "Validei a estrutura básica do payload.",
+            "Simulei a análise do patch/código.",
+            "Preparei este resultado para o painel exibir na tela.",
+          ],
+        },
+        telemetry: {
+          source: "Vercel",
+          stage: "simulate",
+          timestamp: Date.now(),
+        },
+      });
+    }
 
-    // Caso contrário → encaminha ao NV-FIRST (executor real)
+    // ❌ Execução real bloqueada (canônico)
+    if (!ALLOW_REAL_EXECUTION) {
+      return json(
+        {
+          ok: false,
+          blocked: true,
+          executor: "vercel-executor-v1",
+          message:
+            "Execução real no Vercel está DESABILITADA por contrato. " +
+            "Use o Browser Executor (noVNC) via chat do Diretor para executar planos.",
+          received: body,
+          telemetry: {
+            source: "Vercel",
+            stage: "blocked",
+            timestamp: Date.now(),
+          },
+        },
+        403
+      );
+    }
+
+    // (Mantido por compatibilidade, mas não deve rodar enquanto ALLOW_REAL_EXECUTION=false)
     const forward = await fetch(NV_FIRST_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
