@@ -5,16 +5,20 @@
   <title>ENAVIA — Control Panel</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+  <!-- 🚫 DESATIVA GOOGLE TRANSLATE (CRÍTICO) -->
+  <meta name="google" content="notranslate" />
+
+  <!-- 🔐 CSP EXPLÍCITA -->
   <meta
-  http-equiv="Content-Security-Policy"
-  content="
-    default-src 'self';
-    script-src 'self' 'unsafe-inline';
-    connect-src 'self' http://167.71.116.105:3100;
-    img-src 'self' data: blob:;
-    style-src 'self' 'unsafe-inline';
-  "
-/>
+    http-equiv="Content-Security-Policy"
+    content="
+      default-src 'self';
+      script-src 'self' 'unsafe-inline';
+      connect-src 'self' http://167.71.116.105:3100;
+      img-src 'self' data: blob:;
+      style-src 'self' 'unsafe-inline';
+    "
+  />
 
   <!-- CSS PRINCIPAL -->
   <link rel="stylesheet" href="./style.css" />
@@ -206,5 +210,6 @@
 
 </body>
 </html>
+
 
 
