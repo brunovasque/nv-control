@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const EXECUTOR_URL = process.env.NEXT_PUBLIC_EXECUTOR_URL;
+    const EXECUTOR_URL = process.env.BROWSER_EXECUTOR_URL;
 
     if (!EXECUTOR_URL) {
       return res.status(500).json({
