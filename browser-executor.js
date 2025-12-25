@@ -12,20 +12,50 @@ window.callBrowserExecutor = async function (payload) {
     throw new Error("EXECUTOR_URL not defined on window");
   }
 
-  const r = await fetch(`${EXECUTOR_URL}/run`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  try {
+    const r = await fetch(`${EXECUTOR_URL}/run`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
 
-  if (!r.ok) {
-    const text = await r.text();
-    throw new Error(`Executor error (${r.status}): ${text}`);
+    if (!r.ok) {
+      const text = await r.text();
+
+      // 🔁 LOOP — erro reportado ao Diretor
+      await reportToDirector({
+        execution_id: payload.execution_id,
+        status: "error",
+        message: text,
+      });
+
+      throw new Error(`Executor error (${r.status}): ${text}`);
+    }
+
+    const result = await r.json();
+
+    // 🔁 LOOP — finalização reportada ao Diretor
+    await reportToDirector({
+      execution_id: payload.execution_id,
+      status: "finished",
+      message: "Execução finalizada",
+      evidence: result,
+    });
+
+    return result;
+
+  } catch (err) {
+    // 🔁 LOOP — erro inesperado / exceção
+    await reportToDirector({
+      execution_id: payload.execution_id,
+      status: "exception",
+      message: err.message || String(err),
+    });
+
+    throw err;
   }
-
-  return await r.json();
 };
 
 async function reportToDirector(payload) {
@@ -40,9 +70,9 @@ async function reportToDirector(payload) {
     await fetch(DIRECTOR_REPORT_URL, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
   } catch (err) {
     console.error("Falha ao reportar ao Diretor:", err);
