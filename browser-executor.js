@@ -27,3 +27,24 @@ window.callBrowserExecutor = async function (payload) {
 
   return await r.json();
 };
+
+async function reportToDirector(payload) {
+  const DIRECTOR_REPORT_URL = window.DIRECTOR_REPORT_URL;
+
+  if (!DIRECTOR_REPORT_URL) {
+    console.warn("DIRECTOR_REPORT_URL não definido, relatório não enviado");
+    return;
+  }
+
+  try {
+    await fetch(DIRECTOR_REPORT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+  } catch (err) {
+    console.error("Falha ao reportar ao Diretor:", err);
+  }
+}
