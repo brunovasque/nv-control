@@ -1,167 +1,86 @@
-// ============================================================================
-// DIRECTOR PLAN BUILDER — v1 (CANÔNICO)
-// Responsável por:
-// - Converter respostas do Director em PLANO EXECUTÁVEL
-// - NÃO executar
-// - NÃO alterar estado
-// - NÃO chamar botões
-// - NÃO falar com Executor
-//
-// Este arquivo é PURAMENTE determinístico.
-// ============================================================================
+/* ============================================================
+   DIRECTOR PLAN BUILDER — NV-CONTROL (SIMPLES / CANÔNICO)
+   - NÃO executa nada
+   - Apenas valida autorização ("executar") e monta um plan mínimo
+============================================================ */
 
-/*
-  Estrutura de retorno possível:
+export function hasExplicitAuthorization(text) {
+  if (typeof text !== "string") return false;
 
-  - null → não é execução
-  - plan → execução de browser proposta
-*/
+  // gatilhos simples e explícitos (sem improviso)
+  // mantém o contrato: humano autoriza no chat
+  const normalized = text.toLowerCase();
 
-/**
- * Decide se a resposta do Director deve virar um plano de execução.
- * @param {object} params
- * @param {string} params.message - mensagem original do humano
- * @param {string} params.directorOutput - resposta textual do Director
- * @param {string} params.executionId - execution_id atual do painel
- * @returns {object|null}
- */
-export function buildDirectorPlan({
-  message,
-  directorOutput,
-  executionId,
-}) {
-  if (!directorOutput || typeof directorOutput !== "string") {
-    return null;
+  return (
+    /\bexecutar\b/.test(normalized) ||
+    /\bpode executar\b/.test(normalized) ||
+    /\bexecute\b/.test(normalized) ||
+    /\bprossiga\b/.test(normalized) ||
+    /\bprosseguir\b/.test(normalized)
+  );
+}
+
+export function buildPlanFromDirectorChat(rawText, opts = {}) {
+  const text = typeof rawText === "string" ? rawText.trim() : "";
+
+  if (!text) {
+    return {
+      ok: false,
+      reason: "empty_message",
+      error: "Mensagem vazia. Não é possível montar um plano.",
+    };
   }
 
-  const text = directorOutput.toLowerCase();
-
-  // ============================================================
-  // FILTRO 1 — PALAVRAS QUE INDICAM EXECUÇÃO DE BROWSER
-  // ============================================================
-  const browserSignals = [
-    "abrir site",
-    "acessar site",
-    "entrar no site",
-    "verificar site",
-    "checar site",
-    "extrair",
-    "coletar",
-    "capturar",
-    "pegar informação",
-    "ver se existe",
-    "print",
-    "screenshot",
-    "visualizar página",
-  ];
-
-  const isBrowserIntent = browserSignals.some((s) => text.includes(s));
-
-  if (!isBrowserIntent) {
-    return null;
+  if (!hasExplicitAuthorization(text)) {
+    return {
+      ok: false,
+      reason: "missing_authorization",
+      error:
+        'Falta autorização explícita no chat. Use a palavra "executar" para liberar.',
+    };
   }
 
-  // ============================================================
-  // FILTRO 2 — BLOQUEIO DE COISAS QUE NÃO SÃO BROWSER
-  // ============================================================
-  const forbiddenSignals = [
-    "deploy",
-    "worker",
-    "cloudflare",
-    "vercel",
-    "supabase",
-    "meta",
-    "api",
-    "patch",
-    "commit",
-    "merge",
-    "produção",
-  ];
+  // remove só a palavra "executar" do objetivo (sem tentar interpretar)
+  const objective = text
+    .replace(/\bexecutar\b/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 
-  const hasForbidden = forbiddenSignals.some((s) => text.includes(s));
+  const execution_id =
+    opts.execution_id ||
+    `exec_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 
-  if (hasForbidden) {
-    return null;
-  }
-
-  // ============================================================
-  // CONSTRUÇÃO DO PLANO CANÔNICO
-  // ============================================================
+  // Plan simples: 1 passo literal (sem inventar sub-passos)
   const plan = {
-    execution_id: executionId || `exec-${Date.now()}`,
-    type: "browser",
-
-    objective: extractObjective(directorOutput),
-
-    steps: extractSteps(directorOutput),
-
-    stop_conditions: [
-      "Erro ao carregar página",
-      "Elemento esperado não encontrado",
-      "Timeout de navegação",
+    version: "plan.v1.simple",
+    source: "director-chat",
+    execution_id,
+    objective: objective || "Executar comando autorizado pelo Diretor.",
+    steps: [
+      {
+        id: "S1",
+        type: "do",
+        text: objective || "Executar comando autorizado pelo Diretor.",
+      },
     ],
-
-    report_expectation:
-      "Relatar resultado encontrado ou erro ocorrido. Não continuar após concluir.",
+    stop_conditions: [
+      {
+        id: "STOP_ANY_ERROR",
+        when: "any_error",
+        action: "report_and_wait",
+      },
+      {
+        id: "STOP_ANY_AMBIGUITY",
+        when: "any_ambiguity",
+        action: "report_and_wait",
+      },
+    ],
+    report_schema: {
+      channel: "director_chat",
+      must_report: ["error", "ambiguity", "done"],
+      statuses: ["running", "blocked_by_ambiguity", "error", "done"],
+    },
   };
 
-  // Segurança mínima
-  if (!plan.steps.length) {
-    return null;
-  }
-
-  return plan;
-}
-
-// ============================================================================
-// UTILITÁRIOS INTERNOS (DETERMINÍSTICOS)
-// ============================================================================
-
-function extractObjective(text) {
-  const lines = text.split("\n").map((l) => l.trim());
-
-  const objLine =
-    lines.find((l) =>
-      l.toLowerCase().startsWith("objetivo")
-    ) || lines[0];
-
-  return sanitize(objLine);
-}
-
-function extractSteps(text) {
-  const steps = [];
-
-  const lines = text.split("\n");
-
-  for (const line of lines) {
-    const l = line.trim();
-
-    if (!l) continue;
-
-    if (
-      l.startsWith("-") ||
-      l.match(/^\d+\./)
-    ) {
-      steps.push(sanitize(l.replace(/^[-\d.]+/, "")));
-    }
-  }
-
-  // fallback simples
-  if (!steps.length) {
-    steps.push("Executar a navegação conforme descrito e parar.");
-  }
-
-  // regra canônica: sempre parar
-  if (!steps.some((s) => s.toLowerCase().includes("parar"))) {
-    steps.push("Parar execução.");
-  }
-
-  return steps;
-}
-
-function sanitize(str) {
-  return str
-    .replace(/\*\*/g, "")
-    .replace(/`/g, "")
-    .trim();
+  return { ok: true, plan };
 }
