@@ -1,4 +1,5 @@
-// api/browser-executor.js
+// pages/api/browser-executor.js
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({
@@ -8,32 +9,30 @@ export default async function handler(req, res) {
   }
 
   try {
-    const body = req.body;
+    const EXECUTOR_URL = process.env.NEXT_PUBLIC_EXECUTOR_URL;
 
-    const executorResponse = await fetch(
-      "http://167.71.116.105:3100/run",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      }
-    );
+    if (!EXECUTOR_URL) {
+      return res.status(500).json({
+        ok: false,
+        error: "EXECUTOR_URL not configured",
+      });
+    }
 
-    const data = await executorResponse.json();
-
-    return res.status(200).json({
-      ok: true,
-      executor: data,
+    const r = await fetch(`${EXECUTOR_URL}/run`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(req.body),
     });
-  } catch (error) {
-    console.error("[browser-executor] error:", error);
 
+    const data = await r.json();
+
+    return res.status(r.status).json(data);
+  } catch (e) {
     return res.status(500).json({
       ok: false,
-      error: "Failed to call browser executor",
-      details: String(error),
+      error: String(e),
     });
   }
 }
