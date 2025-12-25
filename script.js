@@ -761,3 +761,39 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   });
 });
+
+/* ============================================================
+   STATUS DO BROWSER — READ ONLY (SAFE)
+   (DESATIVADO — fase futura)
+============================================================
+
+(function initBrowserStatusMonitor() {
+  const STATUS_URL = "https://browser.nv-imoveis.com/health";
+  const POLL_INTERVAL = 5000;
+
+  const statusPill = document.getElementById("statusPill");
+  if (!statusPill) return;
+
+  async function checkBrowserStatus() {
+    try {
+      const res = await fetch(STATUS_URL, { method: "GET" });
+      if (!res.ok) throw new Error("health_not_ok");
+
+      const data = await res.json();
+
+      if (data?.ok === true) {
+        statusPill.textContent = "Browser Online";
+        statusPill.className = "status-pill success";
+      } else {
+        throw new Error("health_invalid");
+      }
+    } catch (err) {
+      statusPill.textContent = "Browser Offline";
+      statusPill.className = "status-pill danger";
+    }
+  }
+
+  checkBrowserStatus();
+  setInterval(checkBrowserStatus, POLL_INTERVAL);
+})();
+*/
