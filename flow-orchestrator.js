@@ -474,6 +474,60 @@ export async function handlePanelAction(action) {
 }
 
 /* ============================================================
+   EXECUÇÃO BROWSER (FORA DO FLUXO DE BOTÕES)
+   - NÃO altera estado
+   - NÃO usa PATCH_STATUSES
+   - NÃO interfere no Cloudflare
+============================================================ */
+
+async function executeBrowserPlan(plan) {
+  try {
+    addChatMessage({
+      role: "director",
+      text: "Plano aprovado. Enviando execução ao Browser Executor.",
+      typing: true,
+    });
+
+    if (typeof window.callBrowserExecutor !== "function") {
+      throw new Error("Browser Executor não disponível no window.");
+    }
+
+    const result = await window.callBrowserExecutor(plan);
+
+    // 🔁 LOOP DE RETORNO AO DIRETOR
+    addChatMessage({
+      role: "executor",
+      text: JSON.stringify(result, null, 2),
+    });
+
+    // opcional: reporta também para endpoint do diretor
+    if (typeof window.reportToDirector === "function") {
+      await window.reportToDirector({
+        type: "browser_execution_result",
+        execution_id: plan.execution_id,
+        result,
+      });
+    }
+  } catch (err) {
+    console.error("[BrowserExecutionError]", err);
+
+    addChatMessage({
+      role: "director",
+      text:
+        "Erro durante execução no browser:\n" +
+        (err?.message || "Erro desconhecido"),
+    });
+
+    if (typeof window.reportToDirector === "function") {
+      await window.reportToDirector({
+        type: "browser_execution_error",
+        error: err?.message || String(err),
+      });
+    }
+  }
+}
+
+/* ============================================================
    BIND DE EVENTOS DO PAINEL (CANÔNICO)
 ============================================================ */
 
@@ -515,4 +569,14 @@ export function initFlowOrchestrator(apiAdapter) {
     const action = e.detail?.action;
     explainBlockedAction(action);
   });
+
+   // 🔹 NOVO FLUXO — EXECUÇÃO BROWSER VIA PROMPT (ISOLADO)
+  document.addEventListener("browser:execute", async (e) => {
+    const plan = e.detail?.plan;
+    if (!plan) return;
+
+    console.log("[FlowOrchestrator] event browser:execute", plan);
+    await executeBrowserPlan(plan);
+  });
 }
+
