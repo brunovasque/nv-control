@@ -33,10 +33,15 @@ export default async function handler(req, res) {
   import { browserRun } from "../lib/browserExecutorClient.js";
 
 // ============================================================================
-// 🔗 GATILHO EXPLÍCITO — CHAT → BROWSER (APENAS open_url)
+// 🔗 GATILHO ROBUSTO — CHAT → BROWSER
 // ============================================================================
-if (message.startsWith("browser: abrir ")) {
-  const url = message.replace("browser: abrir ", "").trim();
+const rawText =
+  typeof message === "string"
+    ? message
+    : message?.content || "";
+
+if (rawText.startsWith("browser: abrir ")) {
+  const url = rawText.replace("browser: abrir ", "").trim();
 
   if (!/^https?:\/\//i.test(url)) {
     return res.status(400).json({
@@ -56,7 +61,7 @@ if (message.startsWith("browser: abrir ")) {
     return res.status(200).json({
       ok: true,
       role: "browser",
-      output: `Browser abriu a URL: ${url}`,
+      output: `🧠 Browser executou: abrir ${url}`,
       executor_result: result
     });
   } catch (err) {
