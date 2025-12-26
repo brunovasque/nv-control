@@ -1,10 +1,8 @@
 // ============================================================================
-//  NV-DIRECTOR v1 — Rota oficial do Diretor-Geral do ecossistema NV-IA
-//  Responsável por interpretar comandos do CEO e gerar instruções técnicas
-//  para a ENAVIA, seguindo padrões de segurança e arquitetura NV-FIRST.
+//  NV-DIRECTOR v1 — Director 5.2 THINKING
+//  Diretor-Geral Cognitivo do ecossistema NV-IA / ENAVIA / ENOVA
+//  Papel: Pensar melhor que o CEO, estruturar decisões e traduzir estratégia.
 // ============================================================================
-
-import { browserHealth } from "../lib/browserExecutorClient.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -31,67 +29,56 @@ export default async function handler(req, res) {
   }
 
   // ============================================================================
-  // 🩺 ETAPA 1 — HEALTH CHECK DO BROWSER EXECUTOR (CANÔNICO)
-  // ============================================================================
-  try {
-    const health = await browserHealth();
-    console.log("[BROWSER_EXECUTOR_HEALTH_OK]", health);
-  } catch (err) {
-    console.error("[BROWSER_EXECUTOR_HEALTH_ERROR]", err);
-    // NÃO bloqueia o Director ainda — apenas evidencia o problema
-  }
-
-  // ============================================================================
-  // 🎯 Inferência de INTENT do Director
+  // 🎯 Inferência de INTENT (não executável, apenas cognitiva)
   // ============================================================================
   function inferIntent(message = "") {
     const m = message.toLowerCase();
 
-    if (m.includes("deploy") && m.includes("erro")) return "deploy_incident";
-    if (m.includes("acelerar") && m.includes("deploy")) return "deploy_planning";
-    if (m.includes("futuro") || m.includes("visão") || m.includes("roadmap")) return "strategy_vision";
-    if (m.includes("produto") || m.includes("feature")) return "product_decision";
-    if (m.includes("processo") || m.includes("fluxo")) return "process_improvement";
+    if (m.includes("erro") || m.includes("falha")) return "incident_analysis";
+    if (m.includes("arquitetura") || m.includes("estrutura")) return "architecture_reasoning";
+    if (m.includes("plano") || m.includes("estratégia")) return "strategic_planning";
+    if (m.includes("decisão") || m.includes("caminho")) return "decision_support";
+    if (m.includes("executor") || m.includes("browser")) return "execution_design";
 
-    return "generic";
+    return "generic_thinking";
   }
 
   const intent = inferIntent(message);
 
   // ============================================================================
-  // 🎛️ Mapa de estilo por INTENT
+  // 🎛️ Estilo cognitivo por INTENT
   // ============================================================================
   const intentStyleMap = {
-    deploy_incident: {
+    incident_analysis: {
       verbosity: "low",
-      tone: "firme e direto",
+      tone: "direto, técnico e preventivo"
     },
-    deploy_planning: {
-      verbosity: "medium",
-      tone: "conversacional com alerta",
-    },
-    strategy_vision: {
+    architecture_reasoning: {
       verbosity: "high",
-      tone: "reflexivo e estratégico",
+      tone: "estratégico, profundo e comparativo"
     },
-    product_decision: {
-      verbosity: "medium",
-      tone: "objetivo e comparativo",
+    strategic_planning: {
+      verbosity: "high",
+      tone: "visionário, estruturado e pragmático"
     },
-    process_improvement: {
+    decision_support: {
       verbosity: "medium",
-      tone: "prático",
+      tone: "claro, honesto e orientado a consequências"
     },
-    generic: {
+    execution_design: {
       verbosity: "medium",
-      tone: "equilibrado",
+      tone: "técnico, organizado e traduzível"
+    },
+    generic_thinking: {
+      verbosity: "medium",
+      tone: "equilibrado e analítico"
     }
   };
 
   const intentStyle = intentStyleMap[intent];
 
   // ============================================================================
-  // 🧠 CÉREBRO CANÔNICO DO DIRECTOR (via ENAVIA Worker)
+  // 🧠 CÉREBRO CANÔNICO — DIRECTOR (ENAVIA)
   // ============================================================================
   let directorBrain = "";
 
@@ -103,7 +90,7 @@ export default async function handler(req, res) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           role: "director",
-          intent: "generic",
+          intent,
           context
         })
       }
@@ -126,10 +113,17 @@ export default async function handler(req, res) {
   }
 
   // ============================================================================
-  // SISTEMA DO DIRETOR — CLONE GPT COM MENTALIDADE DE CTO
+  // 🧠 SYSTEM PROMPT — DIRECTOR 5.2 THINKING
   // ============================================================================
   const systemPrompt = `
-Você é o DIRETOR-GERAL NV-IA.
+Você é o DIRECTOR-GERAL NV-IA — versão 5.2 THINKING.
+
+Você NÃO é um executor.
+Você NÃO é um assistente operacional.
+Você NÃO é um chatbot genérico.
+
+Você é a camada cognitiva mais alta do ecossistema NV.
+Seu papel é pensar melhor que o CEO quando necessário.
 
 ======================================================================
 CÉREBRO CANÔNICO ATIVO — DIRECTOR
@@ -138,28 +132,71 @@ CÉREBRO CANÔNICO ATIVO — DIRECTOR
 ${directorBrain}
 
 ======================================================================
-MODO DE ATUAÇÃO DO DIRETOR
+MISSÃO DO DIRECTOR
 ======================================================================
 
-Você atua como um CTO sênior conversando diretamente com o CEO.
-Explique riscos, cenários e consequências reais.
-Seja firme quando necessário, mas humano.
+- Refinar ideias brutas do CEO.
+- Questionar premissas frágeis.
+- Antecipar riscos invisíveis.
+- Comparar caminhos possíveis.
+- Explicar impactos reais de cada decisão.
+- Traduzir estratégia em instruções compreensíveis para humanos e IAs.
+- Preparar planos que o Executor possa seguir depois.
+
+Você melhora o pensamento.
+Você organiza o caos.
+Você NÃO executa nada.
+
+======================================================================
+COMPORTAMENTO ESPERADO
+======================================================================
+
+- Pense antes de responder.
+- Se algo estiver mal definido, diga isso claramente.
+- Se o CEO estiver pulando etapas, aponte.
+- Se houver risco futuro, explique o porquê.
+- Sugira alternativas quando fizer sentido.
+- Não seja submisso. Seja parceiro estratégico.
+
+======================================================================
+ESTILO DE RESPOSTA
+======================================================================
+
+1. Comece sempre com análise conversada (raciocínio em voz alta).
+2. Mostre o quadro completo, não só o detalhe técnico.
+3. Quando aplicável, organize em blocos claros:
+   - Cenário
+   - Opções
+   - Impactos
+   - Recomendação
+
+NUNCA:
+- Dê respostas genéricas.
+- Dê respostas vagas.
+- Execute ações.
+- Proponha código direto.
 
 ======================================================================
 CONTEXTO ATUAL
 ======================================================================
 
 - Intent identificado: ${intent}
-- Nível de verbosidade esperado: ${intentStyle.verbosity}
-- Tom de comunicação: ${intentStyle.tone}
+- Verbosidade esperada: ${intentStyle.verbosity}
+- Tom: ${intentStyle.tone}
 
 ======================================================================
 REGRAS ABSOLUTAS
 ======================================================================
 
-- Você NÃO executa código.
+- Você NÃO chama executores.
+- Você NÃO dispara browser.
 - Você NÃO faz deploy.
-- Segurança e estabilidade prevalecem sempre.
+- Você NÃO altera arquitetura sozinho.
+
+Você prepara o terreno.
+A decisão final é sempre humana.
+
+======================================================================
 `.trim();
 
   // ============================================================================
@@ -187,7 +224,7 @@ REGRAS ABSOLUTAS
   if (!data.choices) {
     return res.status(500).json({
       ok: false,
-      error: "Erro ao consultar o diretor.",
+      error: "Erro ao consultar o Director.",
       detail: data
     });
   }
@@ -205,6 +242,7 @@ REGRAS ABSOLUTAS
     telemetry: {
       timestamp: new Date().toISOString(),
       tokens: data.usage || null,
+      intent
     }
   });
 }
