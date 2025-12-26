@@ -28,6 +28,44 @@ export default async function handler(req, res) {
     });
   }
 
+  import { browserRun } from "../lib/browserExecutorClient.js";
+
+// ============================================================================
+// 🔗 GATILHO EXPLÍCITO — CHAT → BROWSER (APENAS open_url)
+// ============================================================================
+if (message.startsWith("browser: abrir ")) {
+  const url = message.replace("browser: abrir ", "").trim();
+
+  if (!/^https?:\/\//i.test(url)) {
+    return res.status(400).json({
+      ok: false,
+      error: "URL inválida. Use http(s)://"
+    });
+  }
+
+  try {
+    const result = await browserRun({
+      action: "open_url",
+      url,
+      source: "nv-control-chat",
+      dryRun: false
+    });
+
+    return res.status(200).json({
+      ok: true,
+      role: "browser",
+      output: `Browser abriu a URL: ${url}`,
+      executor_result: result
+    });
+  } catch (err) {
+    return res.status(500).json({
+      ok: false,
+      error: "Falha ao executar ação no browser",
+      detail: String(err)
+    });
+  }
+}
+
   // ============================================================================
   // 🎯 Inferência de INTENT (não executável, apenas cognitiva)
   // ============================================================================
