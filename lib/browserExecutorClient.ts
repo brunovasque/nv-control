@@ -1,3 +1,5 @@
+/// <reference types="node" />
+
 const BASE_URL =
   process.env.BROWSER_EXECUTOR_BASE_URL || "https://browser.nv-imoveis.com";
 
