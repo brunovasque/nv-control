@@ -1,17 +1,14 @@
 const BASE_URL =
   process.env.BROWSER_EXECUTOR_BASE_URL || "https://browser.nv-imoveis.com";
 
-const DIRECT_RUN_URL = process.env.BROWSER_EXECUTOR_URL || null;
+const RUN_URL =
+  process.env.BROWSER_EXECUTOR_URL || null;
 
 // ----------------------------------------------------------------------------
-// HEALTH CHECK
+// HEALTH CHECK (sempre via BASE_URL)
 // ----------------------------------------------------------------------------
 export async function browserHealth() {
-  const healthUrl = DIRECT_RUN_URL
-    ? `${BASE_URL}/health`
-    : `${BASE_URL}/health`;
-
-  const res = await fetch(healthUrl);
+  const res = await fetch(`${BASE_URL}/health`);
 
   if (!res.ok) {
     const text = await res.text();
@@ -22,14 +19,16 @@ export async function browserHealth() {
 }
 
 // ----------------------------------------------------------------------------
-// RUN (EXECUÇÃO REAL)
+// RUN (EXECUÇÃO REAL — SEMPRE VIA URL DIRETA)
 // ----------------------------------------------------------------------------
 export async function browserRun(payload: any) {
-  const runUrl = DIRECT_RUN_URL
-    ? DIRECT_RUN_URL
-    : `${BASE_URL}/run`;
+  if (!RUN_URL) {
+    throw new Error(
+      "BROWSER_EXECUTOR_URL não configurada no ambiente. Execução bloqueada."
+    );
+  }
 
-  const res = await fetch(runUrl, {
+  const res = await fetch(RUN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
