@@ -1,10 +1,14 @@
-const BASE_URL = process.env.BROWSER_EXECUTOR_BASE_URL || "https://browser.nv-imoveis.com";
+const BASE_URL =
+  process.env.BROWSER_EXECUTOR_BASE_URL || "https://browser.nv-imoveis.com";
 
 export async function browserHealth() {
   const res = await fetch(`${BASE_URL}/health`);
+
   if (!res.ok) {
-    throw new Error(`Browser health failed: ${res.status}`);
+    const text = await res.text();
+    throw new Error(`Browser health failed: ${res.status} - ${text}`);
   }
+
   return res.json();
 }
 
