@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   }
 
   const OPENAI_KEY = process.env.OPENAI_API_KEY_DIRECTOR;
-  const MODEL = process.env.DIRECTOR_MODEL || "gpt-4.1";
+  const MODEL = process.env.DIRECTOR_MODEL || "gpt-5.2";
 
   if (!OPENAI_KEY) {
     return res.status(500).json({
@@ -20,6 +20,8 @@ export default async function handler(req, res) {
   }
 
   const { message, context } = req.body || {};
+
+  console.log("[DIRECTOR RAW MESSAGE]", message);
 
   if (!message) {
     return res.status(400).json({
