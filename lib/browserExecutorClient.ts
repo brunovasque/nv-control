@@ -24,13 +24,7 @@ export async function browserHealth() {
 // RUN (EXECUÇÃO REAL — DEFINITIVO)
 // ----------------------------------------------------------------------------
 export async function browserRun(payload: any) {
-  if (!RUN_URL) {
-    throw new Error(
-      "BROWSER_EXECUTOR_URL não configurada no ambiente. Execução bloqueada."
-    );
-  }
-
-  const res = await fetch(RUN_URL, {
+  const res = await fetch(`${BASE_URL}/run`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
