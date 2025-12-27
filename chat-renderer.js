@@ -65,7 +65,7 @@ function afterMessageRendered(role, text, messageEl) {
   // 🔐 APROVAÇÃO CANÔNICA DO PLANO
   if (
     role === "director" &&
-    text.trim().toLowerCase() === "plano aprovado"
+    text.toLowerCase().includes("plano aprovado")
   ) {
     if (window.__PENDING_BROWSER_PLAN__) {
       window.__APPROVED_BROWSER_PLAN__ =
