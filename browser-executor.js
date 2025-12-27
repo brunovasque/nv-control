@@ -9,7 +9,8 @@ window.callBrowserExecutor = async function (payload) {
   // 🔴 RESOLUÇÃO CANÔNICA DA URL DO EXECUTOR (HTTPS)
   const EXECUTOR_URL =
   window.RUN_ADAPTER_URL ||
-  localStorage.getItem("nv_run_adapter_url");
+  localStorage.getItem("nv_run_adapter_url") ||
+  "https://run.nv-imoveis.com";
 
 if (!EXECUTOR_URL) {
   throw new Error("RUN_ADAPTER_URL não definida");
