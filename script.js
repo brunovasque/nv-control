@@ -596,19 +596,33 @@ function bindChatSend() {
    - Nenhuma execução automática
 ============================================================ */
 function handleDirectorMessage(text) {
-  const t = String(text || "").toLowerCase().trim();
+  const t = String(text || "").trim();
+
+  // 🔴 BYPASS EXECUÇÃO EXPLÍCITA (CANÔNICO)
+  // Se o humano escrever "executar ...", não conversa. Executa.
+  if (t.toLowerCase().startsWith("executar")) {
+    if (typeof window.__NV_DIRECTOR_CHAT_EXECUTE__ === "function") {
+      window.__NV_DIRECTOR_CHAT_EXECUTE__(t);
+      return;
+    } else {
+      directorSay("Executor ainda não está disponível. Verifique o carregamento do browser executor.");
+      return;
+    }
+  }
+
+  const tl = t.toLowerCase();
 
   // =========================
   // 1) CONVERSA HUMANA
   // =========================
   if (
-    t === "oi" ||
-    t === "olá" ||
-    t.startsWith("oi ") ||
-    t.startsWith("olá") ||
-    t.includes("tá on") ||
-    t.includes("esta on") ||
-    t.includes("está on")
+    tl === "oi" ||
+    tl === "olá" ||
+    tl.startsWith("oi ") ||
+    tl.startsWith("olá") ||
+    tl.includes("tá on") ||
+    tl.includes("esta on") ||
+    tl.includes("está on")
   ) {
     directorSay("Estou sim. O que você quer analisar ou executar agora?");
     return;
@@ -618,10 +632,10 @@ function handleDirectorMessage(text) {
   // 2) DÚVIDA / EXPLORAÇÃO
   // =========================
   if (
-    t.includes("o que você faz") ||
-    t.includes("como funciona") ||
-    t.includes("me ajuda") ||
-    t.includes("ajuda")
+    tl.includes("o que você faz") ||
+    tl.includes("como funciona") ||
+    tl.includes("me ajuda") ||
+    tl.includes("ajuda")
   ) {
     directorSay(
       "Posso te ajudar a analisar patches, avaliar riscos e executar o ciclo com segurança. O que você quer fazer agora?"
@@ -629,48 +643,48 @@ function handleDirectorMessage(text) {
     return;
   }
 
-// =========================
-// 3.1) CONFIRMAÇÃO DE CONSULTA À ENAVIA
-// =========================
-if (
-  pendingEnaviaIntent &&
-  (
-    t === "sim" ||
-    t === "ok" ||
-    t === "pode" ||
-    t === "confirmo" ||
-    t.includes("pode analisar") ||
-    t.includes("analisa") ||
-    t.includes("analisar")
-  )
-) {
-  const intent = pendingEnaviaIntent;
-  pendingEnaviaIntent = null;
+  // =========================
+  // 3.1) CONFIRMAÇÃO DE CONSULTA À ENAVIA
+  // =========================
+  if (
+    pendingEnaviaIntent &&
+    (
+      tl === "sim" ||
+      tl === "ok" ||
+      tl === "pode" ||
+      tl === "confirmo" ||
+      tl.includes("pode analisar") ||
+      tl.includes("analisa") ||
+      tl.includes("analisar")
+    )
+  ) {
+    const intent = pendingEnaviaIntent;
+    pendingEnaviaIntent = null;
 
-  directorSay("Perfeito. Consultando a ENAVIA agora, em modo seguro (read-only).");
-  askEnaviaAnalysis(intent);
-  return;
-}
+    directorSay("Perfeito. Consultando a ENAVIA agora, em modo seguro (read-only).");
+    askEnaviaAnalysis(intent);
+    return;
+  }
 
-// =========================
-// 3) INTENÇÃO TÉCNICA (SEM EXECUTAR)
-// =========================
-if (
-  t.includes("audit") ||
-  t.includes("analisar") ||
-  t.includes("analisa") ||
-  t.includes("deploy") ||
-  t.includes("patch") ||
-  t.includes("segurança") ||
-  t.includes("risco")
-) {
-  pendingEnaviaIntent = text;
+  // =========================
+  // 3) INTENÇÃO TÉCNICA (SEM EXECUTAR)
+  // =========================
+  if (
+    tl.includes("audit") ||
+    tl.includes("analisar") ||
+    tl.includes("analisa") ||
+    tl.includes("deploy") ||
+    tl.includes("patch") ||
+    tl.includes("segurança") ||
+    tl.includes("risco")
+  ) {
+    pendingEnaviaIntent = text;
 
-  directorSay(
-    "Entendi sua intenção técnica. Quer que eu consulte a ENAVIA para analisar isso com segurança antes de qualquer ação? (responda: sim / analisar)"
-  );
-  return;
-}
+    directorSay(
+      "Entendi sua intenção técnica. Quer que eu consulte a ENAVIA para analisar isso com segurança antes de qualquer ação? (responda: sim / analisar)"
+    );
+    return;
+  }
 
   // =========================
   // 4) FALLBACK INTELIGENTE
@@ -797,5 +811,6 @@ document.addEventListener("DOMContentLoaded", () => {
   setInterval(checkBrowserStatus, POLL_INTERVAL);
 })();
 */
+
 
 
