@@ -14,6 +14,9 @@ import {
 import { addChatMessage } from "./chat-renderer.js";
 import { buildPlanFromDirectorChat } from "./directorPlanBuilder.js";
 
+// ✅ NOVO (BRIDGE): chama run-adapter via /run (porta 3200)
+import { callBrowserRunAdapter } from "../lib/browser-run-client.js";
+
 /* ============================================================
    API INJETADO (CANÔNICO — VIA initFlowOrchestrator)
 ============================================================ */
@@ -648,6 +651,15 @@ export function initFlowOrchestrator(apiAdapter) {
   if (typeof window !== "undefined") {
     window.api = apiAdapter;
     window.__NV_FLOW_BOUND__ = true;
+
+    // ✅ NOVO: garante Browser Executor no window (bridge para run-adapter)
+    // - não sobrescreve se outra parte já tiver definido
+    if (typeof window.callBrowserExecutor !== "function") {
+      window.callBrowserExecutor = async function (plan) {
+        // transporte puro: plan -> POST /run
+        return await callBrowserRunAdapter(plan);
+      };
+    }
   }
 
   console.log("[FlowOrchestrator] bound. hasApi:", !!api);
