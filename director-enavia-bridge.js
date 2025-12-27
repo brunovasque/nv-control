@@ -44,6 +44,25 @@ export async function askEnaviaFromDirector(directorText, context = {}) {
   // 1️⃣ Registra mensagem do Director
   logCognitiveMessage("director", directorText);
 
+   // 🟢 APROVAÇÃO CANÔNICA DE PLANO (UI REAGE, NÃO DECIDE)
+if (detectPlanApproval(directorText)) {
+  if (window.__PENDING_BROWSER_PLAN__) {
+    window.__APPROVED_BROWSER_PLAN__ = window.__PENDING_BROWSER_PLAN__;
+
+    document.dispatchEvent(
+      new CustomEvent("browser:plan-approved", {
+        detail: window.__APPROVED_BROWSER_PLAN__,
+      })
+    );
+
+    console.log("[BRIDGE] Plano aprovado e liberado para execução.");
+  } else {
+    console.warn(
+      "[BRIDGE] Plano aprovado, mas nenhum plano pendente encontrado."
+    );
+  }
+}
+
   // 2️⃣ Monta payload READ-ONLY
   const payload = {
     source: "NV-CONTROL",
