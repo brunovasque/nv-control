@@ -6,10 +6,14 @@
 console.log("BROWSER EXECUTOR CARREGADO");
 
 window.callBrowserExecutor = async function (payload) {
-  const EXECUTOR_URL = window.EXECUTOR_URL;
+  // 🔴 RESOLUÇÃO CANÔNICA DA URL DO EXECUTOR (HTTPS)
+  const EXECUTOR_URL =
+    window.RUN_ADAPTER_URL ||
+    localStorage.getItem("nv_run_adapter_url") ||
+    window.EXECUTOR_URL; // fallback legado
 
   if (!EXECUTOR_URL) {
-    throw new Error("EXECUTOR_URL not defined on window");
+    throw new Error("Executor URL não definida (RUN_ADAPTER_URL / localStorage / EXECUTOR_URL)");
   }
 
   try {
