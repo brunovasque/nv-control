@@ -40,6 +40,36 @@ export function buildPlanFromDirectorChat(rawText, opts = {}) {
     };
   }
 
+  // ============================================================
+  // ✅ AJUSTE CIRÚRGICO — COMANDO EXPLÍCITO: "executar abrir <url>"
+  // ============================================================
+
+  const openUrlMatch = text.match(
+    /\bexecutar\s+abrir\s+(https?:\/\/[^\s]+)/i
+  );
+
+  if (openUrlMatch) {
+    const url = openUrlMatch[1];
+
+    const execution_id =
+      opts.execution_id ||
+      `exec_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+
+    return {
+      ok: true,
+      plan: {
+        action: "open_url",
+        url,
+        source: "director-chat",
+        execution_id,
+      },
+    };
+  }
+
+  // ============================================================
+  // 🔁 FALLBACK CANÔNICO (PLANO ABSTRATO, COMO ERA ANTES)
+  // ============================================================
+
   // remove só a palavra "executar" do objetivo (sem tentar interpretar)
   const objective = text
     .replace(/\bexecutar\b/gi, "")
