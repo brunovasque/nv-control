@@ -11,7 +11,7 @@ import {
 import { initButtonsController } from "./buttons-controller.js";
 import { initFlowOrchestrator } from "./flow-orchestrator.js";
 import { createApiClient } from "./api-client.js";
-import { addChatMessage } from "./chat-renderer.js";
+import { addChatMessage, initChatRenderer } from "./chat-renderer.js";
 import { setChatMode, CHAT_MODES } from "./chat-modes.js";
 
 /* ============================================================
@@ -113,6 +113,7 @@ if (document.readyState === "loading") {
 function boot() {
   initPanelState();
   initButtonsController();
+  initChatRenderer(); // 👈 ADICIONE ESTA LINHA AQUI
 
   hydrateFromLocalStorage();
   bindPersistence();
@@ -811,6 +812,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setInterval(checkBrowserStatus, POLL_INTERVAL);
 })();
 */
+
 
 
 
