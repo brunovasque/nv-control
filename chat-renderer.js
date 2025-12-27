@@ -5,7 +5,7 @@
    - Escrita progressiva (estilo GPT)
    - Scroll automático
    - Limpar input
-   - Ação explícita de execução via Browser Executor
+   - Reagir a eventos externos (Browser Executor)
 ============================================================ */
 
 const chatMessagesEl = document.getElementById("chatMessages");
@@ -22,6 +22,9 @@ export function initChatRenderer() {
 
   autoResizeInput(chatInputEl);
   chatInputEl.addEventListener("keydown", handleInputKeydown);
+
+  // 🟢 Listener canônico — aprovação de plano vem do bridge
+  document.addEventListener("browser:plan-approved", handlePlanApproved);
 }
 
 /* ============================================================
@@ -49,57 +52,45 @@ export function addChatMessage({
   scrollToBottom();
 
   if (typing) {
-    typeWriter(textEl, text, () => {
-      afterMessageRendered(role, text, messageEl);
-    });
+    typeWriter(textEl, text);
   } else {
     textEl.textContent = text;
-    afterMessageRendered(role, text, messageEl);
   }
 }
 
 /* ============================================================
-   PÓS-RENDER — HOOK DE APROVAÇÃO + BOTÃO
+   EVENTO — PLANO APROVADO (REAGE, NÃO DECIDE)
 ============================================================ */
-function afterMessageRendered(role, text, messageEl) {
-  // 🔐 APROVAÇÃO CANÔNICA DO PLANO
-  if (
-    role === "director" &&
-    text.toLowerCase().includes("plano aprovado")
-  ) {
-    if (window.__PENDING_BROWSER_PLAN__) {
-      window.__APPROVED_BROWSER_PLAN__ =
-        window.__PENDING_BROWSER_PLAN__;
+function handlePlanApproved(e) {
+  const plan = e.detail;
 
-      console.log("[CHAT] Plano aprovado e salvo para execução.");
-      renderBrowserExecutorButton(messageEl);
-    } else {
-      console.warn(
-        "[CHAT] Plano aprovado, mas nenhum plano pendente encontrado."
-      );
-    }
+  if (!plan) {
+    console.warn("[chat-renderer] Plano aprovado sem payload.");
+    return;
   }
+
+  renderBrowserExecutorButton(plan);
 }
 
 /* ============================================================
    BOTÃO — BROWSER EXECUTOR
 ============================================================ */
-function renderBrowserExecutorButton(container) {
+function renderBrowserExecutorButton(plan) {
   // Evita duplicação
-  if (container.querySelector(".browser-executor-btn")) return;
+  if (document.querySelector(".browser-executor-btn")) return;
+
+  const container = document.createElement("div");
+  container.className = "chat-message role-system";
+
+  const textEl = document.createElement("div");
+  textEl.className = "chat-text";
+  textEl.textContent = "Plano aprovado. Execução manual disponível:";
 
   const btn = document.createElement("button");
   btn.className = "browser-executor-btn";
   btn.textContent = "▶️ Browser Executor";
 
   btn.addEventListener("click", async () => {
-    const plan = window.__APPROVED_BROWSER_PLAN__;
-
-    if (!plan) {
-      alert("Nenhum plano aprovado para executar.");
-      return;
-    }
-
     if (typeof window.callBrowserExecutor !== "function") {
       alert("Browser Executor não disponível.");
       return;
@@ -119,7 +110,11 @@ function renderBrowserExecutorButton(container) {
     }
   });
 
+  container.appendChild(textEl);
   container.appendChild(btn);
+  chatMessagesEl.appendChild(container);
+
+  scrollToBottom();
 }
 
 /* ============================================================
@@ -183,7 +178,7 @@ function roleLabel(role) {
 /* ============================================================
    ESCRITA PROGRESSIVA
 ============================================================ */
-function typeWriter(element, text, onDone, speed = 14) {
+function typeWriter(element, text, speed = 14) {
   let i = 0;
   element.textContent = "";
 
@@ -195,7 +190,6 @@ function typeWriter(element, text, onDone, speed = 14) {
 
     if (i >= text.length) {
       clearInterval(interval);
-      if (onDone) onDone();
     }
   }, speed);
 }
