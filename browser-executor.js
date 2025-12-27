@@ -82,3 +82,13 @@ async function reportToDirector(payload) {
     console.error("Falha ao reportar ao Diretor:", err);
   }
 }
+
+// =======================================================
+// CANONICAL DIRECTOR → BROWSER EXECUTOR BRIDGE
+// =======================================================
+window.__NV_DIRECTOR_CHAT_EXECUTE__ = async function (prompt) {
+  if (typeof window.callBrowserExecutor !== "function") {
+    throw new Error("Browser executor not initialized");
+  }
+  return window.callBrowserExecutor(prompt);
+};
