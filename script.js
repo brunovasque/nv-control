@@ -515,22 +515,25 @@ function bindChatSend() {
 
   el.value = "";
 
-  // Director cognitivo
+// Director cognitivo
+if (typeof handleDirectorMessage === "function") {
   handleDirectorMessage(text);
-};
+} else {
+  console.error("handleDirectorMessage não está disponível");
+}
 
-  // 1) Blindagem contra submit em qualquer form que contenha o chatInput real
-  const u0 = ui();
-  const chat0 = u0.chatInput;
-  if (chat0) {
-    const form = chat0.closest("form");
-    if (form) {
-      form.addEventListener("submit", (e) => {
-        safePrevent(e);
-        return false;
-      });
-    }
+// 1) Blindagem contra submit em qualquer form que contenha o chatInput real
+const u0 = ui();
+const chat0 = u0.chatInput;
+if (chat0) {
+  const form = chat0.closest("form");
+  if (form) {
+    form.addEventListener("submit", (e) => {
+      safePrevent(e);
+      return false;
+    });
   }
+}
 
   // 2) Binding direto (se elementos existirem)
   const u = ui();
@@ -928,6 +931,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setInterval(checkBrowserStatus, POLL_INTERVAL);
 })();
 */
+
 
 
 
