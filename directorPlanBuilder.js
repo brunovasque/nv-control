@@ -75,14 +75,9 @@ export function buildPlanFromDirectorChat(rawText, opts = {}) {
   plan: {
     execution_id: execId,
     steps: [
-      {
-        type: "open",
-        url: "about:blank",
-      },
-      {
-        type: "wait",
-        ms: 3000,
-      },
+      { type: "open", url: "about:blank" },
+      { type: "wait", ms: 3000 },
     ],
   },
+};
 }
