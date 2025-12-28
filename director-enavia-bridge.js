@@ -46,24 +46,24 @@ export async function askEnaviaFromDirector(directorText, context = {}) {
   // 1️⃣ Registra mensagem do Director
   logCognitiveMessage("director", directorText);
 
-   // 🟢 APROVAÇÃO CANÔNICA DE PLANO (UI REAGE, NÃO DECIDE)
-if (detectPlanApproval(directorText)) {
-  if (window.__PENDING_BROWSER_PLAN__) {
-    setApprovedBrowserPlan(window.__PENDING_BROWSER_PLAN__);
+  // 🟢 APROVAÇÃO CANÔNICA DE PLANO (UI REAGE, NÃO DECIDE)
+  if (detectPlanApproval(directorText)) {
+    if (window.__PENDING_BROWSER_PLAN__) {
+      setApprovedBrowserPlan(window.__PENDING_BROWSER_PLAN__);
 
-document.dispatchEvent(
-  new CustomEvent("browser:plan-approved", {
-    detail: window.__PENDING_BROWSER_PLAN__,
-  })
-);
+      document.dispatchEvent(
+        new CustomEvent("browser:plan-approved", {
+          detail: window.__PENDING_BROWSER_PLAN__,
+        })
+      );
 
-    console.log("[BRIDGE] Plano aprovado e liberado para execução.");
-  } else {
-    console.warn(
-      "[BRIDGE] Plano aprovado, mas nenhum plano pendente encontrado."
-    );
+      console.log("[BRIDGE] Plano aprovado e liberado para execução.");
+    } else {
+      console.warn(
+        "[BRIDGE] Aprovação detectada, mas nenhum plano pendente encontrado."
+      );
+    }
   }
-}
 
   // 2️⃣ Monta payload READ-ONLY
   const payload = {
@@ -75,10 +75,10 @@ document.dispatchEvent(
   };
 
   if (!window.api) {
-  throw new Error("API ENAVIA não inicializada (window.api ausente).");
-}
+    throw new Error("API ENAVIA não inicializada (window.api ausente).");
+  }
 
-const response = await window.api.audit(payload);
+  const response = await window.api.audit(payload);
 
   const enaviaText =
     response?.message ||
@@ -119,3 +119,22 @@ function logCognitiveMessage(role, content) {
     timestamp: Date.now(),
   });
 }
+
+/**
+ * Detecta autorização explícita do Director para execução
+ * CONTRATO: sem inferência, sem NLP criativo
+ */
+function detectPlanApproval(text) {
+  if (typeof text !== "string") return false;
+
+  const normalized = text.toLowerCase();
+
+  return (
+    /\bexecutar\b/.test(normalized) ||
+    /\bexecute\b/.test(normalized) ||
+    /\bpode executar\b/.test(normalized) ||
+    /\bprossiga\b/.test(normalized) ||
+    /\bprosseguir\b/.test(normalized)
+  );
+}
+
