@@ -6,7 +6,6 @@
 console.log("BROWSER EXECUTOR CARREGADO");
 
 window.callBrowserExecutor = async function (payload) {
-  // 🔴 RESOLUÇÃO CANÔNICA DA URL DO EXECUTOR (HTTPS)
   const EXECUTOR_URL =
     window.RUN_ADAPTER_URL ||
     localStorage.getItem("nv_run_adapter_url") ||
@@ -16,10 +15,18 @@ window.callBrowserExecutor = async function (payload) {
     throw new Error("RUN_ADAPTER_URL não definida");
   }
 
-  // 🔒 GARANTIA CANÔNICA DE FORMATO
-  // Backend espera { plan: {...} }
+  // ✅ NORMALIZAÇÃO CANÔNICA DO PLANO
+  if (!payload || !payload.execution_id || !Array.isArray(payload.steps)) {
+    throw new Error("Payload inválido para Browser Executor");
+  }
+
   const requestBody = {
-    plan: payload
+    plan: {
+      execution_id: payload.execution_id,
+      version: "plan.v1",
+      source: "nv-control",
+      steps: payload.steps,
+    },
   };
 
   try {
@@ -34,7 +41,6 @@ window.callBrowserExecutor = async function (payload) {
     if (!r.ok) {
       const text = await r.text();
 
-      // 🔁 LOOP — erro reportado ao Diretor
       await reportToDirector({
         execution_id: payload.execution_id,
         status: "error",
@@ -46,7 +52,6 @@ window.callBrowserExecutor = async function (payload) {
 
     const result = await r.json();
 
-    // 🔁 LOOP — finalização reportada ao Diretor
     await reportToDirector({
       execution_id: payload.execution_id,
       status: "finished",
@@ -57,7 +62,6 @@ window.callBrowserExecutor = async function (payload) {
     return result;
 
   } catch (err) {
-    // 🔁 LOOP — erro inesperado / exceção
     await reportToDirector({
       execution_id: payload.execution_id,
       status: "exception",
