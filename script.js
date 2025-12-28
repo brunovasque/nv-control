@@ -599,6 +599,23 @@ function bindChatSend() {
 function handleDirectorMessage(text) {
   const t = String(text || "").trim();
 
+// =========================
+// ALIAS HUMANO — GERAR PLANO (SEM EXECUTAR)
+// =========================
+const tlow = t.toLowerCase();
+
+if (
+  tlow === "gerar plano" ||
+  tlow === "gerar plano?" ||
+  tlow === "criar plano" ||
+  tlow === "montar plano"
+) {
+  directorSay(
+    "Certo. Descreva o que você quer que o browser faça (ex: abrir site, clicar, digitar). Vou gerar o plano para aprovação."
+  );
+  return;
+}
+
   // 🔒 FLUXO CANÔNICO DE EXECUÇÃO
 // "executar abrir ..." → gera plano pendente
 // "executar"           → aprova plano via bridge
@@ -708,6 +725,22 @@ if (t.toLowerCase().startsWith("executar")) {
     directorSay(
       "Entendi sua intenção técnica. Quer que eu consulte a ENAVIA para analisar isso com segurança antes de qualquer ação? (responda: sim / analisar)"
     );
+    return;
+  }
+
+  // =========================
+  // BLOCO B — EXECUTAR
+  // =========================
+  if (
+    tlow === "executar" ||
+    tlow === "executar plano" ||
+    tlow === "rodar plano" ||
+    tlow === "confirmar execução"
+  ) {
+    // 👉 AQUI entra o código que você JÁ TEM
+    // que valida plano pendente e chama o executor
+    // NÃO inventa lógica nova
+    executarPlanoPendente();
     return;
   }
 
@@ -836,6 +869,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setInterval(checkBrowserStatus, POLL_INTERVAL);
 })();
 */
+
 
 
 
