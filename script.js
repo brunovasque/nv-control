@@ -598,73 +598,72 @@ function bindChatSend() {
 ============================================================ */
 function handleDirectorMessage(text) {
   const t = String(text || "").trim();
+  const tlow = t.toLowerCase();
 
-// =========================
-// ALIAS HUMANO — GERAR PLANO (SEM EXECUTAR)
-// =========================
-const tlow = t.toLowerCase();
+  // =========================
+  // ALIAS HUMANO — GERAR PLANO (SEM EXECUTAR)
+  // =========================
+  if (
+    tlow === "gerar plano" ||
+    tlow === "gerar plano?" ||
+    tlow === "criar plano" ||
+    tlow === "montar plano"
+  ) {
+    directorSay(
+      "Certo. Descreva o que você quer que o browser faça (ex: abrir site, clicar, digitar). Vou gerar o plano para aprovação."
+    );
+    return;
+  }
 
-if (
-  tlow === "gerar plano" ||
-  tlow === "gerar plano?" ||
-  tlow === "criar plano" ||
-  tlow === "montar plano"
-) {
-  directorSay(
-    "Certo. Descreva o que você quer que o browser faça (ex: abrir site, clicar, digitar). Vou gerar o plano para aprovação."
-  );
-  return;
-}
+  // =========================
+  // 🔒 FLUXO CANÔNICO EXECUTAR
+  // =========================
+  // "executar abrir ..." → gera plano pendente
+  // "executar"          → aprova plano existente
+  if (tlow.startsWith("executar")) {
 
-  // 🔒 FLUXO CANÔNICO DE EXECUÇÃO
-// "executar abrir ..." → gera plano pendente
-// "executar"           → aprova plano via bridge
-if (t.toLowerCase().startsWith("executar")) {
+    // CASO 1 — comando completo (gera plano)
+    if (tlow !== "executar") {
+      import("./directorPlanBuilder.js").then(({ buildPlanFromDirectorChat }) => {
+        const result = buildPlanFromDirectorChat(t, {
+          execution_id: getExecutionId(),
+        });
 
-  // CASO 1 — comando completo: gerar plano
-  if (t.toLowerCase() !== "executar") {
-    import("./directorPlanBuilder.js").then(({ buildPlanFromDirectorChat }) => {
-      const result = buildPlanFromDirectorChat(t, {
-        execution_id: getExecutionId(),
+        if (result?.ok && result.plan) {
+          window.__PENDING_BROWSER_PLAN__ = result.plan;
+
+          directorSay(
+            "Plano gerado. Para aprovar e liberar o botão, digite: executar"
+          );
+        } else {
+          directorSay(
+            "Não consegui gerar o plano. Verifique o comando."
+          );
+        }
       });
 
-      if (result?.ok && result.plan) {
-        window.__PENDING_BROWSER_PLAN__ = result.plan;
+      return;
+    }
 
-        directorSay(
-          "Plano gerado. Para aprovar e liberar o botão, digite: executar"
-        );
-      } else {
-        directorSay(
-          "Não consegui gerar o plano. Verifique o comando."
-        );
-      }
+    // CASO 2 — "executar" puro (APROVAÇÃO)
+    import("./director-enavia-bridge.js").then(({ askEnaviaFromDirector }) => {
+      askEnaviaFromDirector("executar");
     });
 
     return;
   }
 
-  // CASO 2 — "executar" puro: APROVAÇÃO
-  import("./director-enavia-bridge.js").then(({ askEnaviaFromDirector }) => {
-    askEnaviaFromDirector("executar");
-  });
-
-  return;
-}
-
-  const tl = t.toLowerCase();
-
   // =========================
   // 1) CONVERSA HUMANA
   // =========================
   if (
-    tl === "oi" ||
-    tl === "olá" ||
-    tl.startsWith("oi ") ||
-    tl.startsWith("olá") ||
-    tl.includes("tá on") ||
-    tl.includes("esta on") ||
-    tl.includes("está on")
+    tlow === "oi" ||
+    tlow === "olá" ||
+    tlow.startsWith("oi ") ||
+    tlow.startsWith("olá") ||
+    tlow.includes("tá on") ||
+    tlow.includes("esta on") ||
+    tlow.includes("está on")
   ) {
     directorSay("Estou sim. O que você quer analisar ou executar agora?");
     return;
@@ -674,10 +673,10 @@ if (t.toLowerCase().startsWith("executar")) {
   // 2) DÚVIDA / EXPLORAÇÃO
   // =========================
   if (
-    tl.includes("o que você faz") ||
-    tl.includes("como funciona") ||
-    tl.includes("me ajuda") ||
-    tl.includes("ajuda")
+    tlow.includes("o que você faz") ||
+    tlow.includes("como funciona") ||
+    tlow.includes("me ajuda") ||
+    tlow.includes("ajuda")
   ) {
     directorSay(
       "Posso te ajudar a analisar patches, avaliar riscos e executar o ciclo com segurança. O que você quer fazer agora?"
@@ -686,18 +685,18 @@ if (t.toLowerCase().startsWith("executar")) {
   }
 
   // =========================
-  // 3.1) CONFIRMAÇÃO DE CONSULTA À ENAVIA
+  // 3) CONFIRMAÇÃO DE CONSULTA À ENAVIA
   // =========================
   if (
     pendingEnaviaIntent &&
     (
-      tl === "sim" ||
-      tl === "ok" ||
-      tl === "pode" ||
-      tl === "confirmo" ||
-      tl.includes("pode analisar") ||
-      tl.includes("analisa") ||
-      tl.includes("analisar")
+      tlow === "sim" ||
+      tlow === "ok" ||
+      tlow === "pode" ||
+      tlow === "confirmo" ||
+      tlow.includes("pode analisar") ||
+      tlow.includes("analisa") ||
+      tlow.includes("analisar")
     )
   ) {
     const intent = pendingEnaviaIntent;
@@ -709,16 +708,16 @@ if (t.toLowerCase().startsWith("executar")) {
   }
 
   // =========================
-  // 3) INTENÇÃO TÉCNICA (SEM EXECUTAR)
+  // 4) INTENÇÃO TÉCNICA (SEM EXECUTAR)
   // =========================
   if (
-    tl.includes("audit") ||
-    tl.includes("analisar") ||
-    tl.includes("analisa") ||
-    tl.includes("deploy") ||
-    tl.includes("patch") ||
-    tl.includes("segurança") ||
-    tl.includes("risco")
+    tlow.includes("audit") ||
+    tlow.includes("analisar") ||
+    tlow.includes("analisa") ||
+    tlow.includes("deploy") ||
+    tlow.includes("patch") ||
+    tlow.includes("segurança") ||
+    tlow.includes("risco")
   ) {
     pendingEnaviaIntent = text;
 
@@ -729,23 +728,7 @@ if (t.toLowerCase().startsWith("executar")) {
   }
 
   // =========================
-  // BLOCO B — EXECUTAR
-  // =========================
-  if (
-    tlow === "executar" ||
-    tlow === "executar plano" ||
-    tlow === "rodar plano" ||
-    tlow === "confirmar execução"
-  ) {
-    // 👉 AQUI entra o código que você JÁ TEM
-    // que valida plano pendente e chama o executor
-    // NÃO inventa lógica nova
-    executarPlanoPendente();
-    return;
-  }
-
-  // =========================
-  // 4) FALLBACK INTELIGENTE
+  // 5) FALLBACK
   // =========================
   directorSay(
     "Entendi. Pode detalhar um pouco melhor o que você quer fazer?"
@@ -869,6 +852,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setInterval(checkBrowserStatus, POLL_INTERVAL);
 })();
 */
+
 
 
 
