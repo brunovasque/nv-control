@@ -570,14 +570,13 @@ function bindChatSend() {
 
     el.value = "";
 
-    // Director cognitivo (hook canônico)
+    // Director cognitivo — ÚNICO PONTO CANÔNICO
 if (typeof window.__NV_DIRECTOR_CHAT_EXECUTE__ === "function") {
   window.__NV_DIRECTOR_CHAT_EXECUTE__(text);
-} else if (typeof handleDirectorMessage === "function") {
-  // fallback de segurança (não interfere no browser)
-  handleDirectorMessage(text);
 } else {
-  console.error("Nenhum handler cognitivo do Director disponível");
+  console.error(
+    "__NV_DIRECTOR_CHAT_EXECUTE__ não está disponível — Director desconectado"
+  );
 }
 
     // 1) Blindagem contra submit em qualquer form que contenha o chatInput real
@@ -1006,4 +1005,5 @@ document.addEventListener("DOMContentLoaded", () => {
   setInterval(checkBrowserStatus, POLL_INTERVAL);
 })();
 */
+
 
