@@ -34,38 +34,37 @@ const cognitiveLog = [];
 
 /**
  * Envia uma consulta cognitiva do Director para a ENAVIA.
- * @param {string} directorText - Texto já aprovado pelo humano.
- * @param {object} context - Contexto opcional (status, execução, etc.)
- * @returns {Promise<string>} resposta técnica da ENAVIA (texto)
  */
 export async function askEnaviaFromDirector(directorText, context = {}) {
   if (!directorText || typeof directorText !== "string") {
     throw new Error("[director-enavia-bridge] Texto inválido do Director.");
   }
 
-  // 1️⃣ Registra mensagem do Director
+  // 1️⃣ Log cognitivo
   logCognitiveMessage("director", directorText);
 
-  // 🟢 APROVAÇÃO CANÔNICA DE PLANO (UI REAGE, NÃO DECIDE)
+  // 2️⃣ APROVAÇÃO EXPLÍCITA DE PLANO (CHAT CONTROLA)
   if (detectPlanApproval(directorText)) {
-    if (window.__PENDING_BROWSER_PLAN__) {
-      setApprovedBrowserPlan(window.__PENDING_BROWSER_PLAN__);
+    const pending = window.__PENDING_BROWSER_PLAN__;
+
+    if (pending) {
+      setApprovedBrowserPlan(pending);
 
       document.dispatchEvent(
         new CustomEvent("browser:plan-approved", {
-          detail: window.__PENDING_BROWSER_PLAN__,
+          detail: pending,
         })
       );
 
-      console.log("[BRIDGE] Plano aprovado e liberado para execução.");
+      console.log("[BRIDGE] Plano aprovado e botão liberado no chat:", pending);
     } else {
       console.warn(
-        "[BRIDGE] Aprovação detectada, mas nenhum plano pendente encontrado."
+        "[BRIDGE] Diretor aprovou, mas não há plano pendente para aprovar."
       );
     }
   }
 
-  // 2️⃣ Monta payload READ-ONLY
+  // 3️⃣ Payload READ-ONLY
   const payload = {
     source: "NV-CONTROL",
     mode: "cognitive-readonly",
@@ -85,24 +84,20 @@ export async function askEnaviaFromDirector(directorText, context = {}) {
     response?.analysis ||
     "A ENAVIA retornou uma resposta sem conteúdo textual.";
 
-  // 4️⃣ Registra resposta da ENAVIA
+  // 4️⃣ Log cognitivo da resposta
   logCognitiveMessage("enavia", enaviaText);
 
-  // 5️⃣ Retorna SOMENTE o texto técnico (Director traduz depois)
   return enaviaText;
 }
 
-/**
- * Retorna o histórico completo da conversa cognitiva.
- * Usado apenas para visualização (somente leitura).
- */
+/* ============================================================
+   LOG COGNITIVO
+============================================================ */
+
 export function getCognitiveLog() {
   return [...cognitiveLog];
 }
 
-/**
- * Limpa o histórico cognitivo (opcional, controlado pela UI).
- */
 export function clearCognitiveLog() {
   cognitiveLog.length = 0;
 }
@@ -121,20 +116,19 @@ function logCognitiveMessage(role, content) {
 }
 
 /**
- * Detecta autorização explícita do Director para execução
- * CONTRATO: sem inferência, sem NLP criativo
+ * Detecta aprovação explícita do Diretor
+ * NÃO executa nada
  */
 function detectPlanApproval(text) {
-  if (typeof text !== "string") return false;
-
-  const normalized = text.toLowerCase();
+  const normalized = text.toLowerCase().trim();
 
   return (
-    /\bexecutar\b/.test(normalized) ||
-    /\bexecute\b/.test(normalized) ||
-    /\bpode executar\b/.test(normalized) ||
-    /\bprossiga\b/.test(normalized) ||
-    /\bprosseguir\b/.test(normalized)
+    normalized === "executar" ||
+    normalized === "pode executar" ||
+    normalized === "aprovar" ||
+    normalized === "pode prosseguir" ||
+    normalized === "confirmo execução"
   );
 }
+
 
