@@ -187,6 +187,26 @@ function notifyStateChange() {
 }
 
 /* ============================================================
+   BROWSER EXECUTOR — PLANO APROVADO
+============================================================ */
+
+export function setApprovedBrowserPlan(plan) {
+  if (!plan || typeof plan !== "object") {
+    console.warn("[panel-state] Plano de browser inválido.");
+    return;
+  }
+
+  updatePanelState({
+    approved_browser_plan: plan,
+  });
+}
+
+export function getApprovedBrowserPlan() {
+  return state.approved_browser_plan;
+}
+
+
+/* ============================================================
    EXPORTS CANÔNICOS
 ============================================================ */
 export { PATCH_STATUSES };
