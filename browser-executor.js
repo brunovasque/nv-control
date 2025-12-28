@@ -7,9 +7,9 @@ console.log("BROWSER EXECUTOR CARREGADO");
 
 window.callBrowserExecutor = async function (payload) {
   const EXECUTOR_URL =
-    window.RUN_ADAPTER_URL ||
-    localStorage.getItem("nv_run_adapter_url") ||
-    "https://run.nv-imoveis.com";
+  window.RUN_ADAPTER_URL ||
+  localStorage.getItem("nv_run_adapter_url") ||
+  "http://browser.nv-imoveis.com:3200";
 
   if (!EXECUTOR_URL) {
     throw new Error("RUN_ADAPTER_URL não definida");
