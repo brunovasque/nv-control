@@ -65,4 +65,4 @@ return {
   ok: false,
   error: "Não consegui extrair uma URL válida para abrir no browser.",
 };
-
+}
