@@ -222,3 +222,6 @@ document.addEventListener("panel:state-changed", (e) => {
     "execution_id:", e.detail.execution_id
   );
 });
+
+window.__setApprovedBrowserPlan = setApprovedBrowserPlan;
+window.__getApprovedBrowserPlan = getApprovedBrowserPlan;
