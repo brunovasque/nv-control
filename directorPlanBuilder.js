@@ -41,7 +41,15 @@ export function buildPlanFromDirectorChat(rawText, opts = {}) {
   }
 
   // ============================================================
-  // ✅ AJUSTE CIRÚRGICO — COMANDO EXPLÍCITO: "executar abrir <url>"
+  // 🔑 execution_id — gerado UMA vez por fluxo
+  // ============================================================
+
+  const execution_id =
+    opts.execution_id ||
+    `exec_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+
+  // ============================================================
+  // ✅ COMANDO EXPLÍCITO: "executar abrir <url>"
   // ============================================================
 
   const openUrlMatch = text.match(
@@ -51,27 +59,22 @@ export function buildPlanFromDirectorChat(rawText, opts = {}) {
   if (openUrlMatch) {
     const url = openUrlMatch[1];
 
-    const execution_id =
-      opts.execution_id ||
-      `exec_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-
     return {
-  ok: true,
-  plan: {
-    execution_id,
-    plan: {
-      steps: [
-        {
-          type: "open",
-          url
-        }
-      ]
-    }
+      ok: true,
+      plan: {
+        execution_id,
+        steps: [
+          {
+            type: "open",
+            url,
+          },
+        ],
+      },
+    };
   }
-};
 
   // ============================================================
-  // 🔁 FALLBACK CANÔNICO (PLANO ABSTRATO, COMO ERA ANTES)
+  // 🔁 FALLBACK CANÔNICO (PLANO ABSTRATO)
   // ============================================================
 
   // remove só a palavra "executar" do objetivo (sem tentar interpretar)
@@ -80,11 +83,6 @@ export function buildPlanFromDirectorChat(rawText, opts = {}) {
     .replace(/\s{2,}/g, " ")
     .trim();
 
-  const execution_id =
-    opts.execution_id ||
-    `exec_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-
-  // Plan simples: 1 passo literal (sem inventar sub-passos)
   const plan = {
     version: "plan.v1.simple",
     source: "director-chat",
