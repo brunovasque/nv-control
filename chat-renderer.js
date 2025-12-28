@@ -8,6 +8,8 @@
    - Reagir a eventos externos (Browser Executor)
 ============================================================ */
 
+import { getApprovedBrowserPlan } from "./panel-state.js";
+
 const chatMessagesEl = document.getElementById("chatMessages");
 const chatInputEl = document.getElementById("chatInput");
 
@@ -91,24 +93,26 @@ function renderBrowserExecutorButton(plan) {
   btn.textContent = "▶️ Browser Executor";
 
   btn.addEventListener("click", async () => {
-    if (typeof window.callBrowserExecutor !== "function") {
-      alert("Browser Executor não disponível.");
-      return;
-    }
+  const approvedPlan = getApprovedBrowserPlan();
 
-    try {
-      btn.disabled = true;
-      btn.textContent = "Executando...";
+  if (!approvedPlan) {
+    alert("Nenhum plano aprovado disponível.");
+    return;
+  }
 
-      await window.callBrowserExecutor(plan);
+  try {
+    btn.disabled = true;
+    btn.textContent = "Executando...";
 
-      btn.textContent = "Executado ✔";
-    } catch (err) {
-      console.error("[Browser Executor]", err);
-      btn.textContent = "Erro ❌";
-      btn.disabled = false;
-    }
-  });
+    await window.callBrowserExecutor(approvedPlan);
+
+    btn.textContent = "Executado ✔";
+  } catch (err) {
+    console.error("[Browser Executor]", err);
+    btn.textContent = "Erro ❌";
+    btn.disabled = false;
+  }
+});
 
   container.appendChild(textEl);
   container.appendChild(btn);
