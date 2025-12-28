@@ -311,23 +311,21 @@ const text =
 
 if (text === "gerar plano") {
   if (!context) {
-    return res.status(200).json({
-      ok: true,
-      role: "director",
-      output:
-        "Certo. Descreva com palavras humanas o que você quer resolver ou investigar no browser. Eu vou transformar isso em um plano executável."
-    });
+    // ⚠️ NÃO retornar aqui
+    // deixa o fluxo seguir para o directorPlanBuilder
   }
+}
 
   // Director interpreta a intenção (aqui é você + IA)
   const intentPayload = {
     goal: "Resolver ou diagnosticar a solicitação informada",
     context,
     strategy:
-      context.toLowerCase().includes("erro") ||
-      context.toLowerCase().includes("problema")
-        ? "diagnostico"
-        : "acao"
+  context &&
+  (context.toLowerCase().includes("erro") ||
+   context.toLowerCase().includes("problema"))
+    ? "diagnostico"
+    : "acao"
   };
 
   const planResult = buildBrowserPlanFromIntent(intentPayload);
