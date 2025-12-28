@@ -58,10 +58,30 @@ const isBrowserIntent =
   rawText.includes("facebook");
 
 if (isBrowserIntent && rawText !== "executar") {
+    // ✅ Login/conta é sensível: orientar com opções (não pedir “detalhe melhor”)
+  const isSensitiveAuth =
+    rawText.includes("login") ||
+    rawText.includes("entrar") ||
+    rawText.includes("conta") ||
+    rawText.includes("senha");
+
+  if (isSensitiveAuth) {
+    return res.status(200).json({
+      ok: true,
+      role: "director",
+      output:
+        "Entendi. Login envolve credencial e pode ter verificação.\n\n" +
+        "Posso seguir com segurança assim:\n" +
+        "1) Abrir a página de login e parar para você inserir os dados\n" +
+        "2) Verificar se já existe sessão ativa\n\n" +
+        "Responda só com: 1 ou 2."
+    });
+  }
+
   const intentPayload = {
     goal: "Resolver a intenção do usuário usando o browser",
     context: rawText,
-    mode:
+    strategy:
       rawText.includes("erro") ||
       rawText.includes("problema") ||
       rawText.includes("não funciona")
