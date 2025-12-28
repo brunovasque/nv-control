@@ -56,15 +56,19 @@ export function buildPlanFromDirectorChat(rawText, opts = {}) {
       `exec_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 
     return {
-      ok: true,
-      plan: {
-        action: "open_url",
-        url,
-        source: "director-chat",
-        execution_id,
-      },
-    };
+  ok: true,
+  plan: {
+    execution_id,
+    plan: {
+      steps: [
+        {
+          type: "open",
+          url
+        }
+      ]
+    }
   }
+};
 
   // ============================================================
   // 🔁 FALLBACK CANÔNICO (PLANO ABSTRATO, COMO ERA ANTES)
