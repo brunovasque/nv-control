@@ -1,14 +1,13 @@
 /* ============================================================
-   DIRECTOR PLAN BUILDER — NV-CONTROL (SIMPLES / CANÔNICO)
+   DIRECTOR PLAN BUILDER — NV-CONTROL (CANÔNICO)
    - NÃO executa nada
-   - Apenas valida autorização ("executar") e monta um plan mínimo
+   - Apenas valida autorização explícita
+   - Monta plano COMPATÍVEL com o Browser Executor
 ============================================================ */
 
 export function hasExplicitAuthorization(text) {
   if (typeof text !== "string") return false;
 
-  // gatilhos simples e explícitos (sem improviso)
-  // mantém o contrato: humano autoriza no chat
   const normalized = text.toLowerCase();
 
   return (
@@ -36,25 +35,20 @@ export function buildPlanFromDirectorChat(rawText, opts = {}) {
       ok: false,
       reason: "missing_authorization",
       error:
-        'Falta autorização explícita no chat. Use a palavra "executar" para liberar.',
+        'Falta autorização explícita. Use a palavra "executar".',
     };
   }
 
   // ============================================================
-  // 🔑 execution_id — gerado UMA vez por fluxo
+  // COMANDO EXPLÍCITO: "executar abrir <url>"
   // ============================================================
-
-  const execution_id =
-    opts.execution_id ||
-    `exec_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-
-  // ============================================================
-  // ✅ COMANDO EXPLÍCITO: "executar abrir <url>"
-  // ============================================================
-
   const openUrlMatch = text.match(
     /\bexecutar\s+abrir\s+(https?:\/\/[^\s]+)/i
   );
+
+  const execId =
+    opts.execution_id ||
+    `exec_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 
   if (openUrlMatch) {
     const url = openUrlMatch[1];
@@ -62,7 +56,7 @@ export function buildPlanFromDirectorChat(rawText, opts = {}) {
     return {
       ok: true,
       plan: {
-        execution_id,
+        execution_id: execId,
         steps: [
           {
             type: "open",
@@ -74,45 +68,18 @@ export function buildPlanFromDirectorChat(rawText, opts = {}) {
   }
 
   // ============================================================
-  // 🔁 FALLBACK CANÔNICO (PLANO ABSTRATO)
+  // FALLBACK SIMPLES (EXECUTOR NÃO INTERPRETA TEXTO)
   // ============================================================
-
-  // remove só a palavra "executar" do objetivo (sem tentar interpretar)
-  const objective = text
-    .replace(/\bexecutar\b/gi, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
-
-  const plan = {
-    version: "plan.v1.simple",
-    source: "director-chat",
-    execution_id,
-    objective: objective || "Executar comando autorizado pelo Diretor.",
-    steps: [
-      {
-        id: "S1",
-        type: "do",
-        text: objective || "Executar comando autorizado pelo Diretor.",
-      },
-    ],
-    stop_conditions: [
-      {
-        id: "STOP_ANY_ERROR",
-        when: "any_error",
-        action: "report_and_wait",
-      },
-      {
-        id: "STOP_ANY_AMBIGUITY",
-        when: "any_ambiguity",
-        action: "report_and_wait",
-      },
-    ],
-    report_schema: {
-      channel: "director_chat",
-      must_report: ["error", "ambiguity", "done"],
-      statuses: ["running", "blocked_by_ambiguity", "error", "done"],
+  return {
+    ok: true,
+    plan: {
+      execution_id: execId,
+      steps: [
+        {
+          type: "do",
+          text: text.replace(/\bexecutar\b/gi, "").trim(),
+        },
+      ],
     },
   };
-
-  return { ok: true, plan };
 }
