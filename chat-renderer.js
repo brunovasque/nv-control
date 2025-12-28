@@ -93,26 +93,26 @@ function renderBrowserExecutorButton(plan) {
   btn.textContent = "▶️ Browser Executor";
 
   btn.addEventListener("click", async () => {
-  const approvedPlan = getApprovedBrowserPlan();
+    const approvedPlan = getApprovedBrowserPlan();
 
-  if (!approvedPlan) {
-    alert("Nenhum plano aprovado disponível.");
-    return;
-  }
+    if (!approvedPlan) {
+      alert("Nenhum plano aprovado disponível.");
+      return;
+    }
 
-  try {
-    btn.disabled = true;
-    btn.textContent = "Executando...";
+    try {
+      btn.disabled = true;
+      btn.textContent = "Executando...";
 
-    await window.callBrowserExecutor(approvedPlan);
+      await window.callBrowserExecutor(approvedPlan);
 
-    btn.textContent = "Executado ✔";
-  } catch (err) {
-    console.error("[Browser Executor]", err);
-    btn.textContent = "Erro ❌";
-    btn.disabled = false;
-  }
-});
+      btn.textContent = "Executado ✔";
+    } catch (err) {
+      console.error("[Browser Executor]", err);
+      btn.textContent = "Erro ❌";
+      btn.disabled = false;
+    }
+  });
 
   container.appendChild(textEl);
   container.appendChild(btn);
@@ -146,6 +146,15 @@ function handleInputKeydown(e) {
     });
 
     clearChatInput();
+
+    // ✅ CORREÇÃO CIRÚRGICA:
+    // Se já existe plano aprovado no panel-state, o chat mostra o botão
+    // mesmo que o evento browser:plan-approved não tenha sido disparado.
+    const approved = getApprovedBrowserPlan();
+    if (approved && approved.plan) {
+      renderBrowserExecutorButton(approved);
+    }
+
     dispatchChatEvent(value);
   }
 }
