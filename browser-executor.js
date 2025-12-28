@@ -15,17 +15,24 @@ window.callBrowserExecutor = async function (payload) {
     throw new Error("RUN_ADAPTER_URL não definida");
   }
 
-  // ✅ NORMALIZAÇÃO CANÔNICA DO PLANO
-  if (!payload || !payload.execution_id || !Array.isArray(payload.steps)) {
+  // =======================================================
+  // 🔧 NORMALIZAÇÃO CANÔNICA (AJUSTE CIRÚRGICO)
+  // Aceita:
+  //  - payload = { execution_id, steps }
+  //  - payload = { plan: { execution_id, steps, ... } }
+  // =======================================================
+  const plan = payload && payload.plan ? payload.plan : payload;
+
+  if (!plan || !plan.execution_id || !Array.isArray(plan.steps)) {
     throw new Error("Payload inválido para Browser Executor");
   }
 
   const requestBody = {
     plan: {
-      execution_id: payload.execution_id,
-      version: "plan.v1",
-      source: "nv-control",
-      steps: payload.steps,
+      execution_id: plan.execution_id,
+      version: plan.version || "plan.v1",
+      source: plan.source || "nv-control",
+      steps: plan.steps,
     },
   };
 
@@ -42,7 +49,7 @@ window.callBrowserExecutor = async function (payload) {
       const text = await r.text();
 
       await reportToDirector({
-        execution_id: payload.execution_id,
+        execution_id: plan.execution_id,
         status: "error",
         message: text,
       });
@@ -53,7 +60,7 @@ window.callBrowserExecutor = async function (payload) {
     const result = await r.json();
 
     await reportToDirector({
-      execution_id: payload.execution_id,
+      execution_id: plan.execution_id,
       status: "finished",
       message: "Execução finalizada",
       evidence: result,
@@ -63,7 +70,7 @@ window.callBrowserExecutor = async function (payload) {
 
   } catch (err) {
     await reportToDirector({
-      execution_id: payload.execution_id,
+      execution_id: plan.execution_id,
       status: "exception",
       message: err.message || String(err),
     });
@@ -87,8 +94,8 @@ async function reportToDirector(payload) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(
-  payload.plan ? payload : { plan: payload }
-),
+        payload.plan ? payload : { plan: payload }
+      ),
     });
   } catch (err) {
     console.error("Falha ao reportar ao Diretor:", err);
