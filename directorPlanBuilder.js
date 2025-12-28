@@ -30,15 +30,6 @@ export function buildPlanFromDirectorChat(rawText, opts = {}) {
     };
   }
 
-  if (!hasExplicitAuthorization(text)) {
-    return {
-      ok: false,
-      reason: "missing_authorization",
-      error:
-        'Falta autorização explícita. Use a palavra "executar".',
-    };
-  }
-
   // ============================================================
   // COMANDO EXPLÍCITO: "executar abrir <url>"
   // ============================================================
