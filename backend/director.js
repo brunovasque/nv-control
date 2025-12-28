@@ -39,41 +39,75 @@ export default async function handler(req, res) {
   // 🔗 GATILHO ROBUSTO — CHAT → BROWSER
   // ============================================================================
   const rawText =
-    typeof message === "string"
-      ? message.toLowerCase()
-      : message?.content?.toLowerCase() || "";
+  typeof message === "string"
+    ? message.toLowerCase()
+    : message?.content?.toLowerCase() || "";
 
-if (rawText.startsWith("browser: abrir ")) {
-  const url = rawText.replace("browser: abrir ", "").trim();
+// ============================================================================
+// 🧠 AUTO-INTENT → BROWSER PLANNER (linguagem humana)
+// ============================================================================
+const isBrowserIntent =
+  rawText.includes("login") ||
+  rawText.includes("entrar") ||
+  rawText.includes("acessar") ||
+  rawText.includes("abrir") ||
+  rawText.includes("site") ||
+  rawText.includes("browser") ||
+  rawText.includes("gpt") ||
+  rawText.includes("meta") ||
+  rawText.includes("facebook");
 
-  if (!/^https?:\/\//i.test(url)) {
-    return res.status(400).json({
-      ok: false,
-      error: "URL inválida. Use http(s)://"
-    });
-  }
+if (isBrowserIntent && rawText !== "executar") {
+  const intentPayload = {
+    goal: "Resolver a intenção do usuário usando o browser",
+    context: rawText,
+    mode:
+      rawText.includes("erro") ||
+      rawText.includes("problema") ||
+      rawText.includes("não funciona")
+        ? "diagnostico"
+        : "acao"
+  };
 
-  try {
-    const result = await browserRun({
-      action: "open_url",
-      url,
-      source: "nv-control-chat",
-      dryRun: false
-    });
+  const planResult = buildBrowserPlanFromIntent(intentPayload);
+
+  if (planResult.ok) {
+    globalThis.__PENDING_BROWSER_PLAN__ = planResult.plan;
 
     return res.status(200).json({
       ok: true,
-      role: "browser",
-      output: `🧠 Browser executou: abrir ${url}`,
-      executor_result: result
-    });
-  } catch (err) {
-    return res.status(500).json({
-      ok: false,
-      error: "Falha ao executar ação no browser",
-      detail: String(err)
+      role: "director",
+      output:
+        "Entendi sua intenção. Já montei um plano para o browser executar exatamente isso.\n\nPosso executar agora?"
     });
   }
+}
+
+// ============================================================================
+// ▶️ EXECUÇÃO CONFIRMADA
+// ============================================================================
+if (rawText === "executar") {
+  const plan = globalThis.__PENDING_BROWSER_PLAN__;
+
+  if (!plan) {
+    return res.status(200).json({
+      ok: true,
+      role: "director",
+      output:
+        "Ainda não tenho um plano pronto. Me diga o que você quer fazer."
+    });
+  }
+
+  await browserRun({ plan });
+
+  globalThis.__PENDING_BROWSER_PLAN__ = null;
+
+  return res.status(200).json({
+    ok: true,
+    role: "director",
+    output:
+      "Estou executando agora no browser. Acompanhe ao vivo."
+  });
 }
 
   // ============================================================================
