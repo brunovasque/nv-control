@@ -9,7 +9,7 @@ window.callBrowserExecutor = async function (payload) {
   const EXECUTOR_URL =
   window.RUN_ADAPTER_URL ||
   localStorage.getItem("nv_run_adapter_url") ||
-  "http://browser.nv-imoveis.com:3200";
+  "https://run.nv-imoveis.com/run";
 
   if (!EXECUTOR_URL) {
     throw new Error("RUN_ADAPTER_URL não definida");
