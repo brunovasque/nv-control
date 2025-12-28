@@ -602,14 +602,29 @@ function handleDirectorMessage(text) {
   // 🔴 BYPASS EXECUÇÃO EXPLÍCITA (CANÔNICO)
   // Se o humano escrever "executar ...", não conversa. Executa.
   if (t.toLowerCase().startsWith("executar")) {
-    if (typeof window.__NV_DIRECTOR_CHAT_EXECUTE__ === "function") {
-      window.__NV_DIRECTOR_CHAT_EXECUTE__(t);
-      return;
+  // ❗️NUNCA executa direto
+  // Apenas gera PLANO PENDENTE
+
+  import("./directorPlanBuilder.js").then(({ buildPlanFromDirectorChat }) => {
+    const result = buildPlanFromDirectorChat(t, {
+      execution_id: getExecutionId(),
+    });
+
+    if (result?.ok && result.plan) {
+      window.__PENDING_BROWSER_PLAN__ = result.plan;
+
+      directorSay(
+        "Plano gerado. Para aprovar e liberar o botão, digite: executar"
+      );
     } else {
-      directorSay("Executor ainda não está disponível. Verifique o carregamento do browser executor.");
-      return;
+      directorSay(
+        "Não consegui gerar o plano. Verifique o comando."
+      );
     }
-  }
+  });
+
+  return;
+}
 
   const tl = t.toLowerCase();
 
@@ -812,6 +827,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setInterval(checkBrowserStatus, POLL_INTERVAL);
 })();
 */
+
 
 
 
