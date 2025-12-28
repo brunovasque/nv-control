@@ -599,28 +599,37 @@ function bindChatSend() {
 function handleDirectorMessage(text) {
   const t = String(text || "").trim();
 
-  // 🔴 BYPASS EXECUÇÃO EXPLÍCITA (CANÔNICO)
-  // Se o humano escrever "executar ...", não conversa. Executa.
-  if (t.toLowerCase().startsWith("executar")) {
-  // ❗️NUNCA executa direto
-  // Apenas gera PLANO PENDENTE
+  // 🔒 FLUXO CANÔNICO DE EXECUÇÃO
+// "executar abrir ..." → gera plano pendente
+// "executar"           → aprova plano via bridge
+if (t.toLowerCase().startsWith("executar")) {
 
-  import("./directorPlanBuilder.js").then(({ buildPlanFromDirectorChat }) => {
-    const result = buildPlanFromDirectorChat(t, {
-      execution_id: getExecutionId(),
+  // CASO 1 — comando completo: gerar plano
+  if (t.toLowerCase() !== "executar") {
+    import("./directorPlanBuilder.js").then(({ buildPlanFromDirectorChat }) => {
+      const result = buildPlanFromDirectorChat(t, {
+        execution_id: getExecutionId(),
+      });
+
+      if (result?.ok && result.plan) {
+        window.__PENDING_BROWSER_PLAN__ = result.plan;
+
+        directorSay(
+          "Plano gerado. Para aprovar e liberar o botão, digite: executar"
+        );
+      } else {
+        directorSay(
+          "Não consegui gerar o plano. Verifique o comando."
+        );
+      }
     });
 
-    if (result?.ok && result.plan) {
-      window.__PENDING_BROWSER_PLAN__ = result.plan;
+    return;
+  }
 
-      directorSay(
-        "Plano gerado. Para aprovar e liberar o botão, digite: executar"
-      );
-    } else {
-      directorSay(
-        "Não consegui gerar o plano. Verifique o comando."
-      );
-    }
+  // CASO 2 — "executar" puro: APROVAÇÃO
+  import("./director-enavia-bridge.js").then(({ askEnaviaFromDirector }) => {
+    askEnaviaFromDirector("executar");
   });
 
   return;
@@ -827,6 +836,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setInterval(checkBrowserStatus, POLL_INTERVAL);
 })();
 */
+
 
 
 
