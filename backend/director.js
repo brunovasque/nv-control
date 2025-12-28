@@ -6,7 +6,7 @@
 
 import OpenAI from "openai";
 
-import { browserRun } from "../lib/browserExecutorClient.js";
+// import { browserRun } from "../lib/browserExecutorClient.js";
 import { buildBrowserPlanFromIntent } from "../lib/browserPlanner.v1.js";
 
 export default async function handler(req, res) {
@@ -118,7 +118,7 @@ if (rawText === "executar") {
     });
   }
 
-  await browserRun({ plan });
+  // await browserRun({ plan });
 
   globalThis.__PENDING_BROWSER_PLAN__ = null;
 
@@ -367,12 +367,14 @@ if (text === "executar") {
     });
   }
 
-  try {
-    const result = await browserRun({
-      plan,
-      source: "nv-director",
-      dryRun: false
-    });
+  /*
+try {
+  const result = await browserRun({
+    plan,
+    source: "nv-director",
+    dryRun: false
+  });
+*/
 
     // Limpa plano após disparo
     globalThis.__PENDING_BROWSER_PLAN__ = null;
