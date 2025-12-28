@@ -71,15 +71,18 @@ export function buildPlanFromDirectorChat(rawText, opts = {}) {
   // FALLBACK SIMPLES (EXECUTOR NÃO INTERPRETA TEXTO)
   // ============================================================
   return {
-    ok: true,
-    plan: {
-      execution_id: execId,
-      steps: [
-        {
-          type: "do",
-          text: text.replace(/\bexecutar\b/gi, "").trim(),
-        },
-      ],
-    },
-  };
+  ok: true,
+  plan: {
+    execution_id: execId,
+    steps: [
+      {
+        type: "open",
+        url: "about:blank",
+      },
+      {
+        type: "wait",
+        ms: 3000,
+      },
+    ],
+  },
 }
