@@ -601,6 +601,29 @@ function handleDirectorMessage(text) {
   const tlow = t.toLowerCase();
 
   // =========================
+  // CONFIG — EXPIRAÇÃO DO PLANO
+  // =========================
+  const PLAN_TTL_MS = 10 * 60 * 1000; // 10 minutos
+
+  function isPlanExpired(plan) {
+    return plan && plan.__createdAt && (Date.now() - plan.__createdAt) > PLAN_TTL_MS;
+  }
+
+  function markPlanState(state) {
+    window.__BROWSER_PLAN_STATE__ = state; // 🟡 🟢 🔵 ✅ ❌
+  }
+
+  // =========================
+  // COMANDO — CANCELAR PLANO
+  // =========================
+  if (tlow === "cancelar plano") {
+    window.__PENDING_BROWSER_PLAN__ = null;
+    markPlanState(null);
+    directorSay("Plano cancelado.");
+    return;
+  }
+
+  // =========================
   // ALIAS HUMANO — GERAR PLANO (SEM EXECUTAR)
   // =========================
   if (
@@ -609,6 +632,13 @@ function handleDirectorMessage(text) {
     tlow === "criar plano" ||
     tlow === "montar plano"
   ) {
+    if (window.__PENDING_BROWSER_PLAN__) {
+      directorSay(
+        "Já existe um plano pendente. Deseja substituir? (responda: sim / não)"
+      );
+      return;
+    }
+
     directorSay(
       "Certo. Descreva o que você quer que o browser faça (ex: abrir site, clicar, digitar). Vou gerar o plano para aprovação."
     );
@@ -618,34 +648,65 @@ function handleDirectorMessage(text) {
   // =========================
   // 🔒 FLUXO CANÔNICO EXECUTAR
   // =========================
-  // "executar abrir ..." → gera plano pendente
-  // "executar"          → aprova plano existente
-  if (tlow.startsWith("executar")) {
+  // "executar abrir ..." → gera plano
+  // "executar"          → aprova plano
+  if (
+    tlow.startsWith("executar") ||
+    tlow === "executar plano" ||
+    tlow === "rodar plano" ||
+    tlow === "confirmar execução" ||
+    tlow === "pode executar"
+  ) {
 
     // CASO 1 — comando completo (gera plano)
-    if (tlow !== "executar") {
+    if (tlow.startsWith("executar") && tlow !== "executar") {
       import("./directorPlanBuilder.js").then(({ buildPlanFromDirectorChat }) => {
         const result = buildPlanFromDirectorChat(t, {
           execution_id: getExecutionId(),
         });
 
         if (result?.ok && result.plan) {
+          result.plan.__createdAt = Date.now();
           window.__PENDING_BROWSER_PLAN__ = result.plan;
+          markPlanState("🟡");
+
+          const preview = Array.isArray(result.plan.steps)
+            ? result.plan.steps
+                .map((s, i) => `• ${i + 1}. ${s.type}${s.url ? ` → ${s.url}` : ""}`)
+                .join("\n")
+            : "";
 
           directorSay(
-            "Plano gerado. Para aprovar e liberar o botão, digite: executar"
+            `🟡 Plano pendente:\n${preview}\n\nPara aprovar e liberar o botão, digite: executar`
           );
         } else {
-          directorSay(
-            "Não consegui gerar o plano. Verifique o comando."
-          );
+          directorSay("Não consegui gerar o plano. Verifique o comando.");
         }
       });
 
       return;
     }
 
-    // CASO 2 — "executar" puro (APROVAÇÃO)
+    // CASO 2 — executar sem plano
+    if (!window.__PENDING_BROWSER_PLAN__) {
+      directorSay(
+        "❌ Não há plano pendente para executar. Peça para gerar um plano primeiro."
+      );
+      return;
+    }
+
+    // CASO 3 — plano expirado
+    if (isPlanExpired(window.__PENDING_BROWSER_PLAN__)) {
+      window.__PENDING_BROWSER_PLAN__ = null;
+      markPlanState(null);
+      directorSay("⏰ O plano expirou. Gere um novo plano.");
+      return;
+    }
+
+    // CASO 4 — aprovação
+    markPlanState("🟢");
+    directorSay("🟢 Plano aprovado. Iniciando execução no browser...");
+
     import("./director-enavia-bridge.js").then(({ askEnaviaFromDirector }) => {
       askEnaviaFromDirector("executar");
     });
@@ -728,11 +789,26 @@ function handleDirectorMessage(text) {
   }
 
   // =========================
+  // UX — SUGESTÃO AUTOMÁTICA DE GERAR PLANO
+  // =========================
+  if (
+    tlow.includes("abrir ") ||
+    tlow.includes("acessar ") ||
+    tlow.includes("clicar") ||
+    tlow.includes("digitar") ||
+    tlow.includes("preencher") ||
+    tlow.includes("navegar")
+  ) {
+    directorSay(
+      "Entendi a intenção. Quer que eu gere o plano para execução no browser? (responda: gerar plano)"
+    );
+    return;
+  }
+
+  // =========================
   // 5) FALLBACK
   // =========================
-  directorSay(
-    "Entendi. Pode detalhar um pouco melhor o que você quer fazer?"
-  );
+  directorSay("Entendi. Pode detalhar um pouco melhor o que você quer fazer?");
 }
 
 /* ============================================================
@@ -852,6 +928,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setInterval(checkBrowserStatus, POLL_INTERVAL);
 })();
 */
+
 
 
 
