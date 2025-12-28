@@ -86,7 +86,9 @@ async function reportToDirector(payload) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(
+  payload.plan ? payload : { plan: payload }
+),
     });
   } catch (err) {
     console.error("Falha ao reportar ao Diretor:", err);
