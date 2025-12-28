@@ -570,12 +570,15 @@ function bindChatSend() {
 
     el.value = "";
 
-    // Director cognitivo
-    if (typeof handleDirectorMessage === "function") {
-      handleDirectorMessage(text);
-    } else {
-      console.error("handleDirectorMessage não está disponível");
-    }
+    // Director cognitivo (hook canônico)
+if (typeof window.__NV_DIRECTOR_CHAT_EXECUTE__ === "function") {
+  window.__NV_DIRECTOR_CHAT_EXECUTE__(text);
+} else if (typeof handleDirectorMessage === "function") {
+  // fallback de segurança (não interfere no browser)
+  handleDirectorMessage(text);
+} else {
+  console.error("Nenhum handler cognitivo do Director disponível");
+}
 
     // 1) Blindagem contra submit em qualquer form que contenha o chatInput real
     const u0 = ui();
@@ -1003,3 +1006,4 @@ document.addEventListener("DOMContentLoaded", () => {
   setInterval(checkBrowserStatus, POLL_INTERVAL);
 })();
 */
+
