@@ -534,6 +534,7 @@ if (chat0) {
     });
   }
 }
+}; // ⬅️ ESTE FECHAMENTO ESTAVA FALTANDO     
 
   // 2) Binding direto (se elementos existirem)
   const u = ui();
@@ -931,6 +932,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setInterval(checkBrowserStatus, POLL_INTERVAL);
 })();
 */
+
 
 
 
