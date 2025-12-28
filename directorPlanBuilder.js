@@ -33,42 +33,36 @@ export function buildPlanFromDirectorChat(rawText, opts = {}) {
   // ============================================================
   // COMANDO EXPLÍCITO: "executar abrir <url>"
   // ============================================================
-  const openUrlMatch = text.match(
-    /\bexecutar\s+abrir\s+(https?:\/\/[^\s]+)/i
-  );
+ const openUrlMatch = text.match(
+  /\babrir\s+(https?:\/\/[^\s]+)/i
+);
 
-  const execId =
-    opts.execution_id ||
-    `exec_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+const execId =
+  opts?.execution_id ||
+  `exec_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 
-  if (openUrlMatch) {
-    const url = openUrlMatch[1];
+if (openUrlMatch) {
+  const url = openUrlMatch[1];
 
-    return {
-      ok: true,
-      plan: {
-        execution_id: execId,
-        steps: [
-          {
-            type: "open",
-            url,
-          },
-        ],
-      },
-    };
-  }
-
-  // ============================================================
-  // FALLBACK SIMPLES (EXECUTOR NÃO INTERPRETA TEXTO)
-  // ============================================================
   return {
-  ok: true,
-  plan: {
-    execution_id: execId,
-    steps: [
-      { type: "open", url: "about:blank" },
-      { type: "wait", ms: 3000 },
-    ],
-  },
-};
+    ok: true,
+    plan: {
+      execution_id: execId,
+      steps: [
+        {
+          type: "open",
+          url,
+        },
+      ],
+    },
+  };
 }
+
+// ============================================================
+// FALLBACK CONTROLADO (SEM ENGESSAR, SEM MASCARAR ERRO)
+// ============================================================
+return {
+  ok: false,
+  error: "Não consegui extrair uma URL válida para abrir no browser.",
+};
+
