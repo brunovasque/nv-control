@@ -31,12 +31,18 @@ const LS = {
   LAST_TARGET_WORKERID: "nv_target_workerid",
   LAST_EXECUTION_ID: "nv_execution_id",
   APPROVED_BY: "nv_approved_by",
+
+  // ✅ Browser Adapter (canal separado)
+  BROWSER_RUN_URL: "nv_browser_run_url",
 };
 
 const DEFAULTS = {
   debug: false,
   env: "test",
   approved_by: "VASQUES",
+
+  // ✅ default do fio do botão (pode sobrescrever via localStorage)
+  browser_run_url: "https://browser.nv-imoveis.com/run",
 };
 
 function qs(sel) { return document.querySelector(sel); }
@@ -350,6 +356,55 @@ function directorReportApi(label, result) {
 }
 
 /* ============================================================
+   BROWSER EXECUTOR — FIO DO BOTÃO (CANAL SEPARADO)
+============================================================ */
+function getBrowserRunUrl() {
+  const raw = (localStorage.getItem(LS.BROWSER_RUN_URL) || DEFAULTS.browser_run_url || "").trim();
+  return raw;
+}
+
+async function runBrowserPlan(plan) {
+  const runUrl = getBrowserRunUrl();
+  if (!runUrl) throw new Error("browser_run_url ausente (LS nv_browser_run_url).");
+
+  // mínimo necessário para /run
+  const payload = {
+    execution_id: getExecutionId() || `browser-${Date.now()}`,
+    plan: {
+      steps: Array.isArray(plan?.steps) ? plan.steps : [],
+    },
+    meta: {
+      source: "NV-CONTROL",
+      channel: "BROWSER",
+      ts: Date.now(),
+    },
+  };
+
+  // log técnico
+  addChatMessage({
+    role: "director_enavia",
+    text: "[DIRECTOR → BROWSER_ADAPTER] POST " + runUrl + "\n" + JSON.stringify(payload, null, 2),
+  });
+
+  const res = await fetch(runUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const txt = await res.text();
+  let data = null;
+  try { data = JSON.parse(txt); } catch (_) {}
+
+  if (!res.ok) {
+    const msg = data?.error || data?.message || txt || `HTTP_${res.status}`;
+    throw new Error(msg);
+  }
+
+  return data || { ok: true, raw: txt };
+}
+
+/* ============================================================
    API ADAPTER (payloads corretos + relatórios humanos)
 ============================================================ */
 function buildApiAdapter(api) {
@@ -502,39 +557,39 @@ function bindChatSend() {
   };
 
   const send = () => {
-  const el = pickChatEl();
-  if (!el) return;
+    const el = pickChatEl();
+    if (!el) return;
 
-  const text = String(el.value || "").trim();
-  if (!text) return;
+    const text = String(el.value || "").trim();
+    if (!text) return;
 
-  addChatMessage({ role: "user", text });
+    addChatMessage({ role: "user", text });
 
-  // 🔑 LINHA CRÍTICA — PATCH ENTRA NO STATE CANÔNICO
-  updatePanelState({ patch: text });
+    // 🔑 LINHA CRÍTICA — PATCH ENTRA NO STATE CANÔNICO
+    updatePanelState({ patch: text });
 
-  el.value = "";
+    el.value = "";
 
-// Director cognitivo
-if (typeof handleDirectorMessage === "function") {
-  handleDirectorMessage(text);
-} else {
-  console.error("handleDirectorMessage não está disponível");
-}
+    // Director cognitivo
+    if (typeof handleDirectorMessage === "function") {
+      handleDirectorMessage(text);
+    } else {
+      console.error("handleDirectorMessage não está disponível");
+    }
 
-// 1) Blindagem contra submit em qualquer form que contenha o chatInput real
-const u0 = ui();
-const chat0 = u0.chatInput;
-if (chat0) {
-  const form = chat0.closest("form");
-  if (form) {
-    form.addEventListener("submit", (e) => {
-      safePrevent(e);
-      return false;
-    });
-  }
-}
-}; // ⬅️ ESTE FECHAMENTO ESTAVA FALTANDO     
+    // 1) Blindagem contra submit em qualquer form que contenha o chatInput real
+    const u0 = ui();
+    const chat0 = u0.chatInput;
+    if (chat0) {
+      const form = chat0.closest("form");
+      if (form) {
+        form.addEventListener("submit", (e) => {
+          safePrevent(e);
+          return false;
+        });
+      }
+    }
+  };
 
   // 2) Binding direto (se elementos existirem)
   const u = ui();
@@ -592,7 +647,7 @@ if (chat0) {
       send();
     }
   }, true);
-}   // ← fecha send()
+}
 
 /* ============================================================
    DIRECTOR — ROTEADOR COGNITIVO (FASE 1)
@@ -653,7 +708,7 @@ function handleDirectorMessage(text) {
   // 🔒 FLUXO CANÔNICO EXECUTAR
   // =========================
   // "executar abrir ..." → gera plano
-  // "executar"          → aprova plano
+  // "executar"          → aprova plano + chama adapter /run (direto)
   if (
     tlow.startsWith("executar") ||
     tlow === "executar plano" ||
@@ -681,7 +736,7 @@ function handleDirectorMessage(text) {
             : "";
 
           directorSay(
-            `🟡 Plano pendente:\n${preview}\n\nPara aprovar e liberar o botão, digite: executar`
+            `🟡 Plano pendente:\n${preview}\n\nPara aprovar e executar no browser, digite: executar`
           );
         } else {
           directorSay("Não consegui gerar o plano. Verifique o comando.");
@@ -707,13 +762,29 @@ function handleDirectorMessage(text) {
       return;
     }
 
-    // CASO 4 — aprovação
-    markPlanState("🟢");
-    directorSay("🟢 Plano aprovado. Iniciando execução no browser...");
+    // CASO 4 — aprovação + execução direta (fio do botão)
+    const planToRun = window.__PENDING_BROWSER_PLAN__;
+    window.__PENDING_BROWSER_PLAN__ = null; // ✅ consome (one-shot)
+    markPlanState("🔵");
+    directorSay("🔵 Execução iniciada no browser. Aguarde...");
 
-    import("./director-enavia-bridge.js").then(({ askEnaviaFromDirector }) => {
-      askEnaviaFromDirector("executar");
-    });
+    void runBrowserPlan(planToRun)
+      .then((data) => {
+        markPlanState("✅");
+        addChatMessage({
+          role: "director_enavia",
+          text: "[BROWSER_ADAPTER → DIRECTOR]\n" + JSON.stringify(data, null, 2),
+        });
+        directorSay("✅ Execução concluída. Abra o noVNC para ver o Chrome rodando o plano.");
+      })
+      .catch((err) => {
+        markPlanState("❌");
+        addChatMessage({
+          role: "director_enavia",
+          text: "[BROWSER_ADAPTER → DIRECTOR] ERRO: " + (err?.message || String(err)),
+        });
+        directorSay("❌ Falha ao executar no browser. Veja o erro no log técnico e confirme o endpoint do adapter.");
+      });
 
     return;
   }
@@ -932,14 +1003,3 @@ document.addEventListener("DOMContentLoaded", () => {
   setInterval(checkBrowserStatus, POLL_INTERVAL);
 })();
 */
-
-
-
-
-
-
-
-
-
-
-
