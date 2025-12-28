@@ -11,6 +11,8 @@
    ❌ NÃO chama botões
 ============================================================ */
 
+import { setApprovedBrowserPlan } from "./panel-state.js";
+
 /* ============================================================
    ESTADO INTERNO (Cognitivo)
 ============================================================ */
@@ -47,13 +49,13 @@ export async function askEnaviaFromDirector(directorText, context = {}) {
    // 🟢 APROVAÇÃO CANÔNICA DE PLANO (UI REAGE, NÃO DECIDE)
 if (detectPlanApproval(directorText)) {
   if (window.__PENDING_BROWSER_PLAN__) {
-    window.__APPROVED_BROWSER_PLAN__ = window.__PENDING_BROWSER_PLAN__;
+    setApprovedBrowserPlan(window.__PENDING_BROWSER_PLAN__);
 
-    document.dispatchEvent(
-      new CustomEvent("browser:plan-approved", {
-        detail: window.__APPROVED_BROWSER_PLAN__,
-      })
-    );
+document.dispatchEvent(
+  new CustomEvent("browser:plan-approved", {
+    detail: window.__PENDING_BROWSER_PLAN__,
+  })
+);
 
     console.log("[BRIDGE] Plano aprovado e liberado para execução.");
   } else {
