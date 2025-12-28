@@ -4,6 +4,11 @@
 //  Papel: Pensar melhor que o CEO, estruturar decisões e traduzir estratégia.
 // ============================================================================
 
+import OpenAI from "openai";
+
+import { browserRun } from "../lib/browserExecutorClient.js";
+import { buildBrowserPlanFromIntent } from "../lib/browserPlanner.v1.js";
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ ok: false, error: "Use POST" });
@@ -30,15 +35,13 @@ export default async function handler(req, res) {
     });
   }
 
-  import { browserRun } from "../lib/browserExecutorClient.js";
-
-// ============================================================================
-// 🔗 GATILHO ROBUSTO — CHAT → BROWSER
-// ============================================================================
-const rawText =
-  typeof message === "string"
-    ? message
-    : message?.content || "";
+  // ============================================================================
+  // 🔗 GATILHO ROBUSTO — CHAT → BROWSER
+  // ============================================================================
+  const rawText =
+    typeof message === "string"
+      ? message.toLowerCase()
+      : message?.content?.toLowerCase() || "";
 
 if (rawText.startsWith("browser: abrir ")) {
   const url = rawText.replace("browser: abrir ", "").trim();
@@ -243,6 +246,99 @@ A decisão final é sempre humana.
 
 ======================================================================
 `.trim();
+
+// ============================================================================
+// 🧭 FLUXO: GERAR PLANO PARA BROWSER (INTENÇÃO → PLANO EXECUTÁVEL)
+// ============================================================================
+const text =
+  typeof message === "string"
+    ? message.toLowerCase()
+    : message?.content?.toLowerCase() || "";
+
+if (text === "gerar plano") {
+  if (!context) {
+    return res.status(200).json({
+      ok: true,
+      role: "director",
+      output:
+        "Certo. Descreva com palavras humanas o que você quer resolver ou investigar no browser. Eu vou transformar isso em um plano executável."
+    });
+  }
+
+  // Director interpreta a intenção (aqui é você + IA)
+  const intentPayload = {
+    goal: "Resolver ou diagnosticar a solicitação informada",
+    context,
+    strategy:
+      context.toLowerCase().includes("erro") ||
+      context.toLowerCase().includes("problema")
+        ? "diagnostico"
+        : "acao"
+  };
+
+  const planResult = buildBrowserPlanFromIntent(intentPayload);
+
+  if (!planResult.ok) {
+    return res.status(200).json({
+      ok: true,
+      role: "director",
+      output:
+        "Não consegui estruturar um plano executável a partir dessa descrição. Pode detalhar um pouco mais o que espera que seja feito?"
+    });
+  }
+
+  // Armazena plano pendente para execução
+  globalThis.__PENDING_BROWSER_PLAN__ = planResult.plan;
+
+  return res.status(200).json({
+    ok: true,
+    role: "director",
+    output:
+      "Plano pronto. Estruturei as ações que o browser deve executar passo a passo.\n\nQuando quiser, responda apenas: executar"
+  });
+}
+
+// ============================================================================
+// ▶️ FLUXO: EXECUTAR PLANO DE BROWSER
+// ============================================================================
+if (text === "executar") {
+  const plan = globalThis.__PENDING_BROWSER_PLAN__;
+
+  if (!plan) {
+    return res.status(200).json({
+      ok: true,
+      role: "director",
+      output:
+        "Não há nenhum plano pronto para executar. Primeiro peça para eu gerar um plano."
+    });
+  }
+
+  try {
+    const result = await browserRun({
+      plan,
+      source: "nv-director",
+      dryRun: false
+    });
+
+    // Limpa plano após disparo
+    globalThis.__PENDING_BROWSER_PLAN__ = null;
+
+    return res.status(200).json({
+      ok: true,
+      role: "director",
+      output:
+        "Execução iniciada. O browser está rodando ao vivo agora. Vou acompanhar e te aviso se algo não sair como esperado."
+    });
+
+  } catch (err) {
+    return res.status(200).json({
+      ok: true,
+      role: "director",
+      output:
+        "Tentei executar o plano, mas algo deu errado durante a execução. Vou analisar o que aconteceu e propor um novo plano."
+    });
+  }
+}
 
   // ============================================================================
   // CALL OPENAI
