@@ -58,6 +58,9 @@ let state = {
   // 🧠 SNAPSHOT DO AUDIT (READ-ONLY / UX DECISION)
   audit: null,
 
+   // 🟢 PLANO DE BROWSER APROVADO (CANÔNICO)
+  approved_browser_plan: null,
+
   current_step: null,
   target: null,
   last_error: null,
