@@ -1006,4 +1006,7 @@ document.addEventListener("DOMContentLoaded", () => {
 })();
 */
 
+// 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
+window.handleDirectorMessage = handleDirectorMessage;
+
 
