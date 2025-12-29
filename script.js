@@ -470,14 +470,10 @@ function renderBrowserExecuteButton() {
 
   window.__NV_DIRECTOR_CHAT_EXECUTE__({ plan });
 
-  // limpeza canônica
+  // limpeza canônica (estado ÚNICO)
   updatePanelState({
     approved_browser_plan: null,
   });
-
-  // limpa flags locais do chat
-  window.__PENDING_BROWSER_PLAN__ = null;
-  window.__AWAITING_CONFIRMATION__ = false;
 
   btn.remove();
 };
@@ -824,7 +820,7 @@ if (getPanelState()?.approved_browser_plan) {
       }
 
 // ============================================================
-// 🧠 DECISÃO EXPLÍCITA DO DIRETOR → LIBERA EXECUÇÃO
+// 🧠 DECISÃO EXPLÍCITA DO DIRETOR → LIBERA EXECUÇÃO NO PAINEL
 // ============================================================
 if (
   data?.decision?.type === "browser_execute_ready" &&
@@ -985,6 +981,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
