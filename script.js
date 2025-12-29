@@ -740,10 +740,14 @@ window.__NV_CHAT_WRITE__ = function (text) {
 async function routeDirector(text) {
   const USE_COGNITIVE_DIRECTOR = true;
 
-// Confirmação explícita → LIBERA BOTÃO EXECUTAR (SEM EXECUTAR)
+// ============================================================
+// Confirmação explícita → LIBERA BOTÃO EXECUTAR (CANÔNICO)
+// ============================================================
+const st = getPanelState();
+
 if (
-  window.__AWAITING_CONFIRMATION__ === true &&
-  window.__PENDING_BROWSER_PLAN__
+  st?.browser_plan &&
+  window.__AWAITING_CONFIRMATION__ === true
 ) {
   const normalized = text.toLowerCase().trim();
 
@@ -751,15 +755,15 @@ if (
     // 🔒 limpa estado de confirmação
     window.__AWAITING_CONFIRMATION__ = false;
 
-    // ✅ informa o painel que há um plano aprovado
+    // ✅ estado canônico: plano aprovado
     updatePanelState({
-      browser_plan: window.__PENDING_BROWSER_PLAN__,
+      browser_plan: st.browser_plan,
       browser_plan_approved: true,
     });
 
-    // ⚠️ NÃO executa aqui
-    // ⚠️ NÃO chama __NV_DIRECTOR_CHAT_EXECUTE__
-    // ⚠️ NÃO responde nada no chat
+    // ❌ NÃO executa
+    // ❌ NÃO responde
+    // ❌ NÃO chama executor aqui
 
     return;
   }
@@ -939,16 +943,3 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
-
-
-
-
-
-
-
-
-
-
-
-
-
