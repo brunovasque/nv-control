@@ -404,6 +404,41 @@ async function runBrowserPlan(plan) {
   return data || { ok: true, raw: txt };
 }
 
+// ============================================================
+// 🔧 DIRECTOR OPERACIONAL — EXECUTOR DO BROWSER (CANÔNICO)
+// ============================================================
+window.__NV_DIRECTOR_CHAT_EXECUTE__ = async function (payload) {
+  try {
+    if (!payload || !payload.plan) {
+      console.warn("EXECUTOR: payload inválido", payload);
+      return;
+    }
+
+    addChatMessage({
+      role: "director",
+      text: "Executando no browser conforme combinado.",
+      typing: true,
+    });
+
+    const result = await runBrowserPlan(payload.plan);
+
+    addChatMessage({
+      role: "director_enavia",
+      text:
+        "[BROWSER EXECUTOR RESULT]\n" +
+        JSON.stringify(result, null, 2),
+    });
+  } catch (err) {
+    console.error("EXECUTOR ERROR:", err);
+    addChatMessage({
+      role: "director",
+      text:
+        "Tive um erro ao tentar executar no browser. Veja os detalhes técnicos.",
+      typing: true,
+    });
+  }
+};
+
 /* ============================================================
    API ADAPTER (payloads corretos + relatórios humanos)
 ============================================================ */
@@ -896,5 +931,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
