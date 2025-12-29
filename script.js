@@ -574,11 +574,53 @@ function bindChatSend() {
 // ============================================================
 // 🔀 SWITCH CANÔNICO — DIRECTOR COGNITIVO vs OPERACIONAL
 // ============================================================
-const USE_COGNITIVE_DIRECTOR = false; // ← muda para true depois
+const USE_COGNITIVE_DIRECTOR = true;
 
 if (USE_COGNITIVE_DIRECTOR) {
-  // FUTURO: Director Cognitivo (ainda não existe)
-  console.warn("Director Cognitivo ainda não conectado");
+  // Director Cognitivo (Worker externo)
+  (async () => {
+    try {
+      const res = await fetch(
+        "https://nv-director-cognitive.brunovasque.workers.dev/director/cognitive",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: text,
+            context: {
+              last_director_reply: window.__LAST_DIRECTOR_REPLY__ || null,
+              pending_plan: window.__PENDING_BROWSER_PLAN__ || null,
+              awaiting_confirmation:
+                window.__AWAITING_CONFIRMATION__ || false,
+              conversation_summary:
+                window.__CONVERSATION_SUMMARY__ || ""
+            }
+          })
+        }
+      );
+
+      const data = await res.json();
+
+      // escreve resposta no chat
+      if (typeof directorSay === "function" && data.reply) {
+        directorSay(data.reply);
+        window.__LAST_DIRECTOR_REPLY__ = data.reply;
+      }
+
+      // armazena plano sugerido (NÃO executa)
+      if (data.suggested_plan) {
+        window.__PENDING_BROWSER_PLAN__ = data.suggested_plan;
+        window.__AWAITING_CONFIRMATION__ = data.needs_confirmation;
+      }
+    } catch (e) {
+      console.error("Erro Director Cognitivo:", e);
+      if (typeof directorSay === "function") {
+        directorSay(
+          "Tive um problema técnico agora. Tenta novamente em alguns segundos."
+        );
+      }
+    }
+  })();
 } else {
   // Director Operacional (ATUAL)
   if (typeof window.__NV_DIRECTOR_CHAT_EXECUTE__ === "function") {
@@ -588,78 +630,6 @@ if (USE_COGNITIVE_DIRECTOR) {
       "__NV_DIRECTOR_CHAT_EXECUTE__ não está disponível — Director desconectado"
     );
   }
-}
-
-    // 1) Blindagem contra submit em qualquer form que contenha o chatInput real
-    const u0 = ui();
-    const chat0 = u0.chatInput;
-    if (chat0) {
-      const form = chat0.closest("form");
-      if (form) {
-        form.addEventListener("submit", (e) => {
-          safePrevent(e);
-          return false;
-        });
-      }
-    }
-  };
-
-  // 2) Binding direto (se elementos existirem)
-  const u = ui();
-
-  if (u.sendBtn && typeof u.sendBtn.type === "string") {
-    // garante que o botão não seja submit
-    u.sendBtn.type = "button";
-  }
-
-  if (u.sendBtn) {
-    u.sendBtn.addEventListener("click", (e) => {
-      safePrevent(e);
-      send();
-    }, true);
-  }
-
-  if (u.chatInput) {
-    u.chatInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        safePrevent(e);
-        send();
-      }
-    }, true);
-  }
-
-  // 3) Delegação global (fallback) — cobre casos em que o HTML usa IDs diferentes
-  document.addEventListener("keydown", (e) => {
-    if (e.key !== "Enter") return;
-    if (e.shiftKey) return;
-
-    const ae = document.activeElement;
-    if (!ae || ae.tagName !== "TEXTAREA") return;
-
-    // só intercepta se for o textarea do chat (heurística segura)
-    const id = (ae.id || "").toLowerCase();
-    const df = (ae.getAttribute("data-field") || "").toLowerCase();
-    if (id.includes("chat") || id.includes("message") || df === "chat-input") {
-      safePrevent(e);
-      send();
-    }
-  }, true);
-
-  document.addEventListener("click", (e) => {
-    const t = e.target;
-    if (!t) return;
-
-    // tenta localizar um botão “enviar” pelos seletores já usados no painel
-    const btn =
-      t.closest?.("#sendBtn") ||
-      t.closest?.("#sendButton") ||
-      t.closest?.("[data-action='send']");
-
-    if (btn) {
-      safePrevent(e);
-      send();
-    }
-  }, true);
 }
 
 /* ============================================================
@@ -1019,6 +989,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
