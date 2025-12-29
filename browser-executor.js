@@ -82,23 +82,34 @@ async function reportToDirector(payload) {
   const DIRECTOR_REPORT_URL = window.DIRECTOR_REPORT_URL;
 
   if (!DIRECTOR_REPORT_URL) {
-    console.warn("DIRECTOR_REPORT_URL não definido, relatório não enviado");
-    return;
+  console.warn("DIRECTOR_REPORT_URL não definido, retorno local aplicado");
+
+  // 🔁 Fallback local: simula retorno do Executor → Director no front
+  if (typeof window.handleDirectorMessage === "function") {
+    const plan = payload.plan ? payload.plan : payload;
+
+    window.handleDirectorMessage(
+      `✅ Execução concluída.\n` +
+      `Plano: ${plan.execution_id}\n` +
+      `Steps executados: ${Array.isArray(plan.steps) ? plan.steps.length : 0}`
+    );
   }
 
-  try {
-    await fetch(DIRECTOR_REPORT_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(
-        payload.plan ? payload : { plan: payload }
-      ),
-    });
-  } catch (err) {
-    console.error("Falha ao reportar ao Diretor:", err);
-  }
+  return;
+}
+
+try {
+  await fetch(DIRECTOR_REPORT_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(
+      payload.plan ? payload : { plan: payload }
+    ),
+  });
+} catch (err) {
+  console.error("Falha ao reportar ao Diretor:", err);
 }
 
 // =======================================================
