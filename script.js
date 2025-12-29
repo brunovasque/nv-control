@@ -380,11 +380,7 @@ async function runBrowserPlan(plan) {
     },
   };
 
-  // log técnico
-  addChatMessage({
-    role: "director_enavia",
-    text: "[DIRECTOR → BROWSER_ADAPTER] POST " + runUrl + "\n" + JSON.stringify(payload, null, 2),
-  });
+  console.debug("[BROWSER_ADAPTER → RUN]", runUrl, payload);
 
   const res = await fetch(runUrl, {
     method: "POST",
@@ -401,7 +397,36 @@ async function runBrowserPlan(plan) {
     throw new Error(msg);
   }
 
+  // retorno técnico → Director (não renderiza no chat)
+  handleBrowserExecutorResult({
+    execution_id: payload.execution_id,
+    ok: true,
+    result: data || { raw: txt },
+  });
+
   return data || { ok: true, raw: txt };
+}
+
+// ============================================================
+// 🧠 DIRECTOR — INTERPRETA RETORNO DO BROWSER EXECUTOR
+// ============================================================
+function handleBrowserExecutorResult(exec) {
+  // aqui NÃO é chat técnico
+  // é insumo cognitivo
+
+  // exemplo humano mínimo (mock)
+  const humanMessage = exec.ok
+  ? "Execução concluída. Quer ajustar algo ou seguir com outro passo?"
+  : "Tive um problema ao executar no navegador. Quer que eu revise o plano ou tente outra abordagem?";
+
+  // só o Director fala no chat
+  addChatMessage({
+    role: "director",
+    text: humanMessage,
+  });
+
+  // futuro:
+  // → enviar exec.result para o cognitivo real interpretar
 }
 
 // ============================================================
@@ -983,6 +1008,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
