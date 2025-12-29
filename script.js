@@ -546,14 +546,19 @@ function bindChatSend() {
     if (ae && ae.tagName === "TEXTAREA") {
       const id = (ae.id || "").toLowerCase();
       const df = (ae.getAttribute("data-field") || "").toLowerCase();
-      if (id.includes("chat") || id.includes("message") || df === "chat-input") return ae;
+      if (id.includes("chat") || id.includes("message") || df === "chat-input")
+        return ae;
     }
     return null;
   };
 
   const safePrevent = (e) => {
-    try { e.preventDefault(); } catch (_) {}
-    try { e.stopPropagation(); } catch (_) {}
+    try {
+      e.preventDefault();
+    } catch (_) {}
+    try {
+      e.stopPropagation();
+    } catch (_) {}
   };
 
   const send = () => {
@@ -570,14 +575,107 @@ function bindChatSend() {
 
     el.value = "";
 
-    // Director cognitivo — ÚNICO PONTO CANÔNICO
-// ============================================================
-// 🔀 SWITCH CANÔNICO — DIRECTOR COGNITIVO vs OPERACIONAL
-// ============================================================
-const USE_COGNITIVE_DIRECTOR = true;
+    // Director — roteamento (cognitivo vs operacional)
+    routeDirector(text);
+  };
 
-if (USE_COGNITIVE_DIRECTOR) {
-  (async function runCognitiveDirector() {
+  // 1) Blindagem contra submit em qualquer form que contenha o chatInput real
+  const u0 = ui();
+  const chat0 = u0.chatInput;
+  if (chat0) {
+    const form = chat0.closest("form");
+    if (form) {
+      form.addEventListener("submit", (e) => {
+        safePrevent(e);
+        return false;
+      });
+    }
+  }
+
+  // 2) Binding direto (se elementos existirem)
+  const u = ui();
+
+  if (u.sendBtn && typeof u.sendBtn.type === "string") {
+    // garante que o botão não seja submit
+    u.sendBtn.type = "button";
+  }
+
+  if (u.sendBtn) {
+    u.sendBtn.addEventListener(
+      "click",
+      (e) => {
+        safePrevent(e);
+        send();
+      },
+      true
+    );
+  }
+
+  if (u.chatInput) {
+    u.chatInput.addEventListener(
+      "keydown",
+      (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          safePrevent(e);
+          send();
+        }
+      },
+      true
+    );
+  }
+
+  // 3) Delegação global (fallback) — cobre casos em que o HTML usa IDs diferentes
+  document.addEventListener(
+    "keydown",
+    (e) => {
+      if (e.key !== "Enter") return;
+      if (e.shiftKey) return;
+
+      const ae = document.activeElement;
+      if (!ae || ae.tagName !== "TEXTAREA") return;
+
+      // só intercepta se for o textarea do chat (heurística segura)
+      const id = (ae.id || "").toLowerCase();
+      const df = (ae.getAttribute("data-field") || "").toLowerCase();
+      if (id.includes("chat") || id.includes("message") || df === "chat-input") {
+        safePrevent(e);
+        send();
+      }
+    },
+    true
+  );
+
+  document.addEventListener(
+    "click",
+    (e) => {
+      const t = e.target;
+      if (!t) return;
+
+      // tenta localizar um botão “enviar” pelos seletores já usados no painel
+      const btn =
+        t.closest?.("#sendBtn") ||
+        t.closest?.("#sendButton") ||
+        t.closest?.("[data-action='send']");
+
+      if (btn) {
+        safePrevent(e);
+        send();
+      }
+    },
+    true
+  );
+}
+
+/* ============================================================
+   DIRECTOR — ROTEAMENTO (CANÔNICO)
+   - Switch cognitivo vs operacional
+   - Cognitivo: Worker externo (mock por enquanto)
+   - Operacional: hook local (__NV_DIRECTOR_CHAT_EXECUTE__) / fallback handleDirectorMessage
+============================================================ */
+async function routeDirector(text) {
+  const USE_COGNITIVE_DIRECTOR = true;
+
+  if (USE_COGNITIVE_DIRECTOR) {
     try {
       const res = await fetch(
         "https://nv-director-cognitive.brunovasque.workers.dev/director/cognitive",
@@ -589,280 +687,50 @@ if (USE_COGNITIVE_DIRECTOR) {
             context: {
               last_director_reply: window.__LAST_DIRECTOR_REPLY__ || null,
               pending_plan: window.__PENDING_BROWSER_PLAN__ || null,
-              awaiting_confirmation:
-                window.__AWAITING_CONFIRMATION__ || false,
-              conversation_summary:
-                window.__CONVERSATION_SUMMARY__ || ""
-            }
-          })
+              awaiting_confirmation: window.__AWAITING_CONFIRMATION__ || false,
+              conversation_summary: window.__CONVERSATION_SUMMARY__ || "",
+            },
+          }),
         }
       );
 
       const data = await res.json();
 
-      if (typeof directorSay === "function" && data.reply) {
+      if (typeof directorSay === "function" && data?.reply) {
         directorSay(data.reply);
         window.__LAST_DIRECTOR_REPLY__ = data.reply;
       }
 
-      if (data.suggested_plan) {
+      // armazena plano sugerido (NÃO executa)
+      if (data?.suggested_plan) {
         window.__PENDING_BROWSER_PLAN__ = data.suggested_plan;
-        window.__AWAITING_CONFIRMATION__ = data.needs_confirmation;
+        window.__AWAITING_CONFIRMATION__ = !!data.needs_confirmation;
       }
+
+      return;
     } catch (e) {
       console.error("Erro Director Cognitivo:", e);
       if (typeof directorSay === "function") {
-        directorSay(
-          "Tive um problema técnico agora. Tenta novamente em alguns segundos."
-        );
+        directorSay("Tive um problema técnico agora. Tenta novamente.");
       }
+      return;
     }
-  })();
-} else {
+  }
+
+  // Operacional (ATUAL)
   if (typeof window.__NV_DIRECTOR_CHAT_EXECUTE__ === "function") {
     window.__NV_DIRECTOR_CHAT_EXECUTE__(text);
-  } else {
-    console.error(
-      "__NV_DIRECTOR_CHAT_EXECUTE__ não está disponível — Director desconectado"
-    );
-  }
-}
-
-/* ============================================================
-   DIRECTOR — ROTEADOR COGNITIVO (FASE 1)
-   - Conversa humana
-   - Identificação de intenção
-   - Nenhuma execução automática
-============================================================ */
-function handleDirectorMessage(text) {
-  const t = String(text || "").trim();
-  const tlow = t.toLowerCase();
-
-  // =========================
-  // CONFIG — EXPIRAÇÃO DO PLANO
-  // =========================
-  const PLAN_TTL_MS = 10 * 60 * 1000; // 10 minutos
-
-  function isPlanExpired(plan) {
-    return plan && plan.__createdAt && (Date.now() - plan.__createdAt) > PLAN_TTL_MS;
-  }
-
-  function markPlanState(state) {
-    window.__BROWSER_PLAN_STATE__ = state; // 🟡 🟢 🔵 ✅ ❌
-  }
-
-  // =========================
-  // COMANDO — CANCELAR PLANO
-  // =========================
-  if (tlow === "cancelar plano") {
-    window.__PENDING_BROWSER_PLAN__ = null;
-    markPlanState(null);
-    directorSay("Plano cancelado.");
     return;
   }
 
-  // =========================
-  // ALIAS HUMANO — GERAR PLANO (SEM EXECUTAR)
-  // =========================
-  if (
-    tlow === "gerar plano" ||
-    tlow === "gerar plano?" ||
-    tlow === "criar plano" ||
-    tlow === "montar plano"
-  ) {
-    if (window.__PENDING_BROWSER_PLAN__) {
-      directorSay(
-        "Já existe um plano pendente. Deseja substituir? (responda: sim / não)"
-      );
-      return;
-    }
-
-    directorSay(
-      "Certo. Descreva o que você quer que o browser faça (ex: abrir site, clicar, digitar). Vou gerar o plano para aprovação."
-    );
+  if (typeof handleDirectorMessage === "function") {
+    handleDirectorMessage(text);
     return;
   }
 
-  // =========================
-  // 🔒 FLUXO CANÔNICO EXECUTAR
-  // =========================
-  // "executar abrir ..." → gera plano
-  // "executar"          → aprova plano + chama adapter /run (direto)
-  if (
-    tlow.startsWith("executar") ||
-    tlow === "executar plano" ||
-    tlow === "rodar plano" ||
-    tlow === "confirmar execução" ||
-    tlow === "pode executar"
-  ) {
-
-    // CASO 1 — comando completo (gera plano)
-    if (tlow.startsWith("executar") && tlow !== "executar") {
-      import("./directorPlanBuilder.js").then(({ buildPlanFromDirectorChat }) => {
-        const result = buildPlanFromDirectorChat(t, {
-          execution_id: getExecutionId(),
-        });
-
-        if (result?.ok && result.plan) {
-          result.plan.__createdAt = Date.now();
-          window.__PENDING_BROWSER_PLAN__ = result.plan;
-          markPlanState("🟡");
-
-          const preview = Array.isArray(result.plan.steps)
-            ? result.plan.steps
-                .map((s, i) => `• ${i + 1}. ${s.type}${s.url ? ` → ${s.url}` : ""}`)
-                .join("\n")
-            : "";
-
-          directorSay(
-            `🟡 Plano pendente:\n${preview}\n\nPara aprovar e executar no browser, digite: executar`
-          );
-        } else {
-          directorSay("Não consegui gerar o plano. Verifique o comando.");
-        }
-      });
-
-      return;
-    }
-
-    // CASO 2 — executar sem plano
-    if (!window.__PENDING_BROWSER_PLAN__) {
-      directorSay(
-        "❌ Não há plano pendente para executar. Peça para gerar um plano primeiro."
-      );
-      return;
-    }
-
-    // CASO 3 — plano expirado
-    if (isPlanExpired(window.__PENDING_BROWSER_PLAN__)) {
-      window.__PENDING_BROWSER_PLAN__ = null;
-      markPlanState(null);
-      directorSay("⏰ O plano expirou. Gere um novo plano.");
-      return;
-    }
-
-    // CASO 4 — aprovação + execução direta (fio do botão)
-    const planToRun = window.__PENDING_BROWSER_PLAN__;
-    window.__PENDING_BROWSER_PLAN__ = null; // ✅ consome (one-shot)
-    markPlanState("🔵");
-    directorSay("🔵 Execução iniciada no browser. Aguarde...");
-
-    void runBrowserPlan(planToRun)
-      .then((data) => {
-        markPlanState("✅");
-        addChatMessage({
-          role: "director_enavia",
-          text: "[BROWSER_ADAPTER → DIRECTOR]\n" + JSON.stringify(data, null, 2),
-        });
-        directorSay("✅ Execução concluída. Abra o noVNC para ver o Chrome rodando o plano.");
-      })
-      .catch((err) => {
-        markPlanState("❌");
-        addChatMessage({
-          role: "director_enavia",
-          text: "[BROWSER_ADAPTER → DIRECTOR] ERRO: " + (err?.message || String(err)),
-        });
-        directorSay("❌ Falha ao executar no browser. Veja o erro no log técnico e confirme o endpoint do adapter.");
-      });
-
-    return;
-  }
-
-  // =========================
-  // 1) CONVERSA HUMANA
-  // =========================
-  if (
-    tlow === "oi" ||
-    tlow === "olá" ||
-    tlow.startsWith("oi ") ||
-    tlow.startsWith("olá") ||
-    tlow.includes("tá on") ||
-    tlow.includes("esta on") ||
-    tlow.includes("está on")
-  ) {
-    directorSay("Estou sim. O que você quer analisar ou executar agora?");
-    return;
-  }
-
-  // =========================
-  // 2) DÚVIDA / EXPLORAÇÃO
-  // =========================
-  if (
-    tlow.includes("o que você faz") ||
-    tlow.includes("como funciona") ||
-    tlow.includes("me ajuda") ||
-    tlow.includes("ajuda")
-  ) {
-    directorSay(
-      "Posso te ajudar a analisar patches, avaliar riscos e executar o ciclo com segurança. O que você quer fazer agora?"
-    );
-    return;
-  }
-
-  // =========================
-  // 3) CONFIRMAÇÃO DE CONSULTA À ENAVIA
-  // =========================
-  if (
-    pendingEnaviaIntent &&
-    (
-      tlow === "sim" ||
-      tlow === "ok" ||
-      tlow === "pode" ||
-      tlow === "confirmo" ||
-      tlow.includes("pode analisar") ||
-      tlow.includes("analisa") ||
-      tlow.includes("analisar")
-    )
-  ) {
-    const intent = pendingEnaviaIntent;
-    pendingEnaviaIntent = null;
-
-    directorSay("Perfeito. Consultando a ENAVIA agora, em modo seguro (read-only).");
-    askEnaviaAnalysis(intent);
-    return;
-  }
-
-  // =========================
-  // 4) INTENÇÃO TÉCNICA (SEM EXECUTAR)
-  // =========================
-  if (
-    tlow.includes("audit") ||
-    tlow.includes("analisar") ||
-    tlow.includes("analisa") ||
-    tlow.includes("deploy") ||
-    tlow.includes("patch") ||
-    tlow.includes("segurança") ||
-    tlow.includes("risco")
-  ) {
-    pendingEnaviaIntent = text;
-
-    directorSay(
-      "Entendi sua intenção técnica. Quer que eu consulte a ENAVIA para analisar isso com segurança antes de qualquer ação? (responda: sim / analisar)"
-    );
-    return;
-  }
-
-  // =========================
-  // UX — SUGESTÃO AUTOMÁTICA DE GERAR PLANO
-  // =========================
-  if (
-    tlow.includes("abrir ") ||
-    tlow.includes("acessar ") ||
-    tlow.includes("clicar") ||
-    tlow.includes("digitar") ||
-    tlow.includes("preencher") ||
-    tlow.includes("navegar")
-  ) {
-    directorSay(
-      "Entendi a intenção. Quer que eu gere o plano para execução no browser? (responda: gerar plano)"
-    );
-    return;
-  }
-
-  // =========================
-  // 5) FALLBACK
-  // =========================
-  directorSay("Entendi. Pode detalhar um pouco melhor o que você quer fazer?");
+  console.error(
+    "__NV_DIRECTOR_CHAT_EXECUTE__ não está disponível — Director desconectado"
+  );
 }
 
 /* ============================================================
@@ -985,6 +853,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
