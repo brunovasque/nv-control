@@ -486,6 +486,8 @@ function removeBrowserExecuteButton() {
   if (btn) btn.remove();
 }
 
+window.__renderBrowserExecuteButton = renderBrowserExecuteButton;
+
 /* ============================================================
    API ADAPTER (payloads corretos + relatórios humanos)
 ============================================================ */
@@ -981,6 +983,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
