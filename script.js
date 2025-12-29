@@ -666,6 +666,36 @@ function bindChatSend() {
   );
 }
 
+// ============================================================
+// ✍️ API PÚBLICA — ESCRITA HUMANA NO CHAT (CANÔNICA)
+// ============================================================
+window.__NV_CHAT_WRITE__ = function (text) {
+  try {
+    if (!text || typeof text !== "string") return false;
+
+    const u = ui();
+    if (!u || !u.chatInput) {
+      console.warn("CHAT_INPUT não encontrado");
+      return false;
+    }
+
+    // escreve como humano
+    u.chatInput.value = text;
+
+    // dispara eventos nativos (igual digitação real)
+    u.chatInput.dispatchEvent(new Event("input", { bubbles: true }));
+    u.chatInput.dispatchEvent(new Event("change", { bubbles: true }));
+
+    // foco no input (UX real)
+    u.chatInput.focus();
+
+    return true;
+  } catch (err) {
+    console.error("NV_CHAT_WRITE_ERROR:", err);
+    return false;
+  }
+};
+
 /* ============================================================
    DIRECTOR — ROTEAMENTO (CANÔNICO)
    - Switch cognitivo vs operacional
@@ -866,4 +896,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
