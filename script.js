@@ -577,8 +577,7 @@ function bindChatSend() {
 const USE_COGNITIVE_DIRECTOR = true;
 
 if (USE_COGNITIVE_DIRECTOR) {
-  // Director Cognitivo (Worker externo)
-  (async () => {
+  (async function runCognitiveDirector() {
     try {
       const res = await fetch(
         "https://nv-director-cognitive.brunovasque.workers.dev/director/cognitive",
@@ -601,13 +600,11 @@ if (USE_COGNITIVE_DIRECTOR) {
 
       const data = await res.json();
 
-      // escreve resposta no chat
       if (typeof directorSay === "function" && data.reply) {
         directorSay(data.reply);
         window.__LAST_DIRECTOR_REPLY__ = data.reply;
       }
 
-      // armazena plano sugerido (NÃO executa)
       if (data.suggested_plan) {
         window.__PENDING_BROWSER_PLAN__ = data.suggested_plan;
         window.__AWAITING_CONFIRMATION__ = data.needs_confirmation;
@@ -622,7 +619,6 @@ if (USE_COGNITIVE_DIRECTOR) {
     }
   })();
 } else {
-  // Director Operacional (ATUAL)
   if (typeof window.__NV_DIRECTOR_CHAT_EXECUTE__ === "function") {
     window.__NV_DIRECTOR_CHAT_EXECUTE__(text);
   } else {
@@ -989,6 +985,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
