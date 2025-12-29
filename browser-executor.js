@@ -6,20 +6,21 @@
 console.log("BROWSER EXECUTOR CARREGADO");
 
 window.callBrowserExecutor = async function (payload) {
-  const EXECUTOR_URL =
-  window.RUN_ADAPTER_URL ||
-  window.BROWSER_EXECUTOR_URL ||
-  localStorage.getItem("nv_run_adapter_url");
+  const RAW_EXECUTOR_URL =
+    window.RUN_ADAPTER_URL ||
+    window.BROWSER_EXECUTOR_URL ||
+    localStorage.getItem("nv_run_adapter_url");
 
-  if (!EXECUTOR_URL) {
+  if (!RAW_EXECUTOR_URL) {
     throw new Error("RUN_ADAPTER_URL não definida");
   }
 
+  // ✅ Normaliza base: remove trailing "/" e evita base já vir com "/run"
+  const base = String(RAW_EXECUTOR_URL).trim().replace(/\/+$/, "");
+  const EXECUTOR_BASE = base.endsWith("/run") ? base.slice(0, -4) : base;
+
   // =======================================================
-  // 🔧 NORMALIZAÇÃO CANÔNICA (AJUSTE CIRÚRGICO)
-  // Aceita:
-  //  - payload = { execution_id, steps }
-  //  - payload = { plan: { execution_id, steps, ... } }
+  // 🔧 NORMALIZAÇÃO CANÔNICA
   // =======================================================
   const plan = payload && payload.plan ? payload.plan : payload;
 
@@ -37,11 +38,9 @@ window.callBrowserExecutor = async function (payload) {
   };
 
   try {
-    const r = await fetch(`${EXECUTOR_URL}/run`, {
+    const r = await fetch(`${EXECUTOR_BASE}/run`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(requestBody),
     });
 
@@ -105,9 +104,33 @@ async function reportToDirector(payload) {
 // =======================================================
 // CANONICAL DIRECTOR → BROWSER EXECUTOR BRIDGE
 // =======================================================
-window.__NV_DIRECTOR_CHAT_EXECUTE__ = async function (prompt) {
+window.__NV_DIRECTOR_CHAT_EXECUTE__ = async function (input) {
   if (typeof window.callBrowserExecutor !== "function") {
     throw new Error("Browser executor not initialized");
   }
-  return window.callBrowserExecutor(prompt);
+
+  // Se já vier payload/plan pronto, só repassa
+  if (input && typeof input === "object") {
+    return window.callBrowserExecutor(input);
+  }
+
+  const text = String(input || "").trim();
+
+  // Comando mínimo suportado: "abrir https://..."
+  const urlMatch = text.match(/https?:\/\/[^\s]+/i);
+  if (!urlMatch) {
+    throw new Error(
+      "Comando inválido: envie 'abrir https://...' (preciso de uma URL)."
+    );
+  }
+
+  const plan = {
+    execution_id: `exec-${Date.now()}`,
+    steps: [{ type: "open", url: urlMatch[0] }],
+    source: "nv-control",
+    version: "plan.v1",
+  };
+
+  return window.callBrowserExecutor({ plan });
 };
+
