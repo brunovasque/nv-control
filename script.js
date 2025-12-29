@@ -439,6 +439,45 @@ window.__NV_DIRECTOR_CHAT_EXECUTE__ = async function (payload) {
   }
 };
 
+// ============================================================
+// 🌐 BROWSER EXECUTOR — BOTÃO EXCLUSIVO (VIA ISOLADA)
+// ============================================================
+
+function renderBrowserExecuteButton() {
+  const existing = document.getElementById("browser-execute-btn");
+  if (existing) return;
+
+  const container =
+    document.querySelector(".chat-input-container") ||
+    document.querySelector(".chat-input") ||
+    document.body;
+
+  const btn = document.createElement("button");
+  btn.id = "browser-execute-btn";
+  btn.textContent = "Executar Browser";
+  btn.style.marginLeft = "8px";
+  btn.style.padding = "8px 12px";
+  btn.style.cursor = "pointer";
+
+  btn.onclick = () => {
+    const st = getPanelState();
+    const plan = st?.approved_browser_plan;
+    if (!plan) return;
+
+    window.__NV_DIRECTOR_CHAT_EXECUTE__({ plan });
+
+    updatePanelState({ approved_browser_plan: null });
+    btn.remove();
+  };
+
+  container.appendChild(btn);
+}
+
+function removeBrowserExecuteButton() {
+  const btn = document.getElementById("browser-execute-btn");
+  if (btn) btn.remove();
+}
+
 /* ============================================================
    API ADAPTER (payloads corretos + relatórios humanos)
 ============================================================ */
@@ -943,3 +982,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
