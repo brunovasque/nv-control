@@ -707,6 +707,23 @@ async function routeDirector(text) {
         window.__AWAITING_CONFIRMATION__ = !!data.needs_confirmation;
       }
 
+       // Confirmação explícita → executar plano
+if (
+  window.__AWAITING_CONFIRMATION__ === true &&
+  window.__PENDING_BROWSER_PLAN__ &&
+  typeof window.__NV_DIRECTOR_CHAT_EXECUTE__ === "function"
+) {
+  const normalized = text.toLowerCase().trim();
+  if (normalized === "ok" || normalized === "executar") {
+    window.__AWAITING_CONFIRMATION__ = false;
+    window.__NV_DIRECTOR_CHAT_EXECUTE__({
+      plan: window.__PENDING_BROWSER_PLAN__,
+    });
+    window.__PENDING_BROWSER_PLAN__ = null;
+    return;
+  }
+}
+
       return;
     } catch (e) {
       console.error("Erro Director Cognitivo:", e);
@@ -849,3 +866,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
