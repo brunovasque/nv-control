@@ -718,19 +718,15 @@ async function routeDirector(text) {
   }
 
   // Operacional (ATUAL)
-  if (typeof window.__NV_DIRECTOR_CHAT_EXECUTE__ === "function") {
-    window.__NV_DIRECTOR_CHAT_EXECUTE__(text);
-    return;
-  }
+if (typeof window.__NV_DIRECTOR_CHAT_EXECUTE__ === "function") {
+  window.__NV_DIRECTOR_CHAT_EXECUTE__(text);
+  return;
+}
 
-  if (typeof handleDirectorMessage === "function") {
-    handleDirectorMessage(text);
-    return;
-  }
-
-  console.error(
-    "__NV_DIRECTOR_CHAT_EXECUTE__ não está disponível — Director desconectado"
-  );
+// fallback antigo removido de propósito
+console.warn(
+  "Director operacional indisponível — aguardando cognitivo"
+);
 }
 
 /* ============================================================
@@ -853,6 +849,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
