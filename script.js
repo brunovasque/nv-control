@@ -800,6 +800,8 @@ if (
       browser_plan_approved: true,
     });
 
+     renderBrowserExecuteButton();
+
     // ❌ NÃO executa
     // ❌ NÃO responde
     // ❌ NÃO chama executor aqui
@@ -982,4 +984,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
