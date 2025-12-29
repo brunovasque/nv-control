@@ -740,11 +740,10 @@ window.__NV_CHAT_WRITE__ = function (text) {
 async function routeDirector(text) {
   const USE_COGNITIVE_DIRECTOR = true;
 
-// Confirmação explícita → EXECUÇÃO IMEDIATA (sem nova fala)
+// Confirmação explícita → LIBERA BOTÃO EXECUTAR (SEM EXECUTAR)
 if (
   window.__AWAITING_CONFIRMATION__ === true &&
-  window.__PENDING_BROWSER_PLAN__ &&
-  typeof window.__NV_DIRECTOR_CHAT_EXECUTE__ === "function"
+  window.__PENDING_BROWSER_PLAN__
 ) {
   const normalized = text.toLowerCase().trim();
 
@@ -758,15 +757,10 @@ if (
       browser_plan_approved: true,
     });
 
-    // 🚀 dispara o executor operacional
-    window.__NV_DIRECTOR_CHAT_EXECUTE__({
-      plan: window.__PENDING_BROWSER_PLAN__,
-    });
+    // ⚠️ NÃO executa aqui
+    // ⚠️ NÃO chama __NV_DIRECTOR_CHAT_EXECUTE__
+    // ⚠️ NÃO responde nada no chat
 
-    // 🧹 limpa referência
-    window.__PENDING_BROWSER_PLAN__ = null;
-
-    // ❌ SEM nova resposta do Director
     return;
   }
 }
@@ -945,6 +939,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
