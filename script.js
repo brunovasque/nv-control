@@ -740,19 +740,33 @@ window.__NV_CHAT_WRITE__ = function (text) {
 async function routeDirector(text) {
   const USE_COGNITIVE_DIRECTOR = true;
 
-// Confirmação explícita → executar plano
+// Confirmação explícita → EXECUÇÃO IMEDIATA (sem nova fala)
 if (
   window.__AWAITING_CONFIRMATION__ === true &&
   window.__PENDING_BROWSER_PLAN__ &&
   typeof window.__NV_DIRECTOR_CHAT_EXECUTE__ === "function"
 ) {
   const normalized = text.toLowerCase().trim();
+
   if (normalized === "ok" || normalized === "executar") {
+    // 🔒 limpa estado de confirmação
     window.__AWAITING_CONFIRMATION__ = false;
+
+    // ✅ informa o painel que há um plano aprovado
+    updatePanelState({
+      browser_plan: window.__PENDING_BROWSER_PLAN__,
+      browser_plan_approved: true,
+    });
+
+    // 🚀 dispara o executor operacional
     window.__NV_DIRECTOR_CHAT_EXECUTE__({
       plan: window.__PENDING_BROWSER_PLAN__,
     });
+
+    // 🧹 limpa referência
     window.__PENDING_BROWSER_PLAN__ = null;
+
+    // ❌ SEM nova resposta do Director
     return;
   }
 }
@@ -931,6 +945,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
