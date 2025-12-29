@@ -82,34 +82,31 @@ async function reportToDirector(payload) {
   const DIRECTOR_REPORT_URL = window.DIRECTOR_REPORT_URL;
 
   if (!DIRECTOR_REPORT_URL) {
-  console.warn("DIRECTOR_REPORT_URL não definido, retorno local aplicado");
+    console.warn("DIRECTOR_REPORT_URL não definido, retorno local aplicado");
 
-  // 🔁 Fallback local: simula retorno do Executor → Director no front
-  if (typeof window.handleDirectorMessage === "function") {
-    const plan = payload.plan ? payload.plan : payload;
+    // 🔁 Fallback local: simula retorno do Executor → Director no front
+    if (typeof window.handleDirectorMessage === "function") {
+      window.handleDirectorMessage(
+        `✅ Execução concluída.\n` +
+        `Plano: ${payload.execution_id}\n` +
+        `Status: ${payload.status}`
+      );
+    }
 
-    window.handleDirectorMessage(
-      `✅ Execução concluída.\n` +
-      `Plano: ${plan.execution_id}\n` +
-      `Steps executados: ${Array.isArray(plan.steps) ? plan.steps.length : 0}`
-    );
+    return;
   }
 
-  return;
-}
-
-try {
-  await fetch(DIRECTOR_REPORT_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(
-      payload.plan ? payload : { plan: payload }
-    ),
-  });
-} catch (err) {
-  console.error("Falha ao reportar ao Diretor:", err);
+  try {
+    await fetch(DIRECTOR_REPORT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch (err) {
+    console.error("Falha ao reportar ao Diretor:", err);
+  }
 }
 
 // =======================================================
@@ -144,4 +141,3 @@ window.__NV_DIRECTOR_CHAT_EXECUTE__ = async function (input) {
 
   return window.callBrowserExecutor({ plan });
 };
-
