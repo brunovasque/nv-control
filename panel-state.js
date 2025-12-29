@@ -103,6 +103,9 @@ export function resetPanelState() {
     // 🧠 RESET DO AUDIT
     audit: null,
 
+    // 🟢 RESET DO PLANO DE BROWSER APROVADO (CANÔNICO)
+    approved_browser_plan: null,
+
     current_step: null,
     target: null,
     last_error: null,
