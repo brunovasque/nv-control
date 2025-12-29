@@ -743,7 +743,7 @@ async function routeDirector(text) {
   if (USE_COGNITIVE_DIRECTOR) {
     try {
       const res = await fetch(
-        "/director/cognitive",
+        "https://run.nv-imoveis.com/director/cognitive",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -931,6 +931,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
