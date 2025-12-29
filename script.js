@@ -460,15 +460,24 @@ function renderBrowserExecuteButton() {
   btn.style.cursor = "pointer";
 
   btn.onclick = () => {
-    const st = getPanelState();
-    const plan = st?.approved_browser_plan;
-    if (!plan) return;
+  const st = getPanelState();
+  const plan = st?.browser_plan;
 
-    window.__NV_DIRECTOR_CHAT_EXECUTE__({ plan });
+  if (!plan) {
+    console.warn("Browser Execute: plano inexistente no state");
+    return;
+  }
 
-    updatePanelState({ approved_browser_plan: null });
-    btn.remove();
-  };
+  window.__NV_DIRECTOR_CHAT_EXECUTE__({ plan });
+
+  // limpeza canônica
+  updatePanelState({
+    browser_plan: null,
+    browser_plan_approved: false,
+  });
+
+  btn.remove();
+};
 
   container.appendChild(btn);
 }
@@ -984,5 +993,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
