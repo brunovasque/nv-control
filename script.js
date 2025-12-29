@@ -408,25 +408,31 @@ async function runBrowserPlan(plan) {
 }
 
 // ============================================================
-// 🧠 DIRECTOR — INTERPRETA RETORNO DO BROWSER EXECUTOR
+// 🧠 DIRECTOR — INTERPRETA RETORNO DO BROWSER EXECUTOR (REAL)
 // ============================================================
 function handleBrowserExecutorResult(exec) {
-  // aqui NÃO é chat técnico
-  // é insumo cognitivo
+  // retorno técnico → insumo cognitivo
+  // NUNCA renderiza JSON direto no chat
 
-  // exemplo humano mínimo (mock)
-  const humanMessage = exec.ok
-  ? "Execução concluída. Quer ajustar algo ou seguir com outro passo?"
-  : "Tive um problema ao executar no navegador. Quer que eu revise o plano ou tente outra abordagem?";
+  if (typeof handleDirectorMessage !== "function") {
+    // fallback mínimo de segurança
+    addChatMessage({
+      role: "director",
+      text: "Recebi o retorno da execução. Quer ajustar algo ou seguir com outro passo?",
+    });
+    return;
+  }
 
-  // só o Director fala no chat
-  addChatMessage({
-    role: "director",
-    text: humanMessage,
+  // envia o resultado para o Diretor Cognitivo interpretar
+  handleDirectorMessage({
+    role: "executor",
+    content: {
+      type: "browser_result",
+      execution_id: exec.execution_id,
+      ok: exec.ok,
+      result: exec.result,
+    },
   });
-
-  // futuro:
-  // → enviar exec.result para o cognitivo real interpretar
 }
 
 // ============================================================
@@ -1008,12 +1014,3 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
-
-
-
-
-
-
-
-
-
