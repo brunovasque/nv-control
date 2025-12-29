@@ -818,6 +818,10 @@ if (
     return;
   }
 }
+   // 🚫 Após aprovação humana, o cognitivo NÃO é mais chamado
+if (getPanelState()?.browser_plan_approved === true) {
+  return;
+}
 
   if (USE_COGNITIVE_DIRECTOR) {
     try {
@@ -993,6 +997,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
