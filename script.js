@@ -356,21 +356,29 @@ function directorReportApi(label, result) {
 }
 
 /* ============================================================
-   BROWSER EXECUTOR — FIO DO BOTÃO (CANAL SEPARADO)
+   BROWSER EXECUTOR — CANAL ISOLADO (CANÔNICO)
+   ⚠️ DEVE FICAR ANTES DE QUALQUER USO
 ============================================================ */
 
 function getBrowserRunUrl() {
-  // 🔒 CANÔNICO: endpoint definido por storage (ou fallback absoluto)
+  const stored = localStorage.getItem("nv_browser_run_url");
+
+  // Log defensivo para diagnóstico (pode remover depois)
+  console.debug("[BROWSER RUN URL]", stored);
+
   return (
-    localStorage.getItem("nv_browser_run_url") ||
+    stored ||
     "https://run.nv-imoveis.com/browser/run"
   );
 }
 
+// expõe explicitamente para evitar shadow / override
 window.getBrowserRunUrl = getBrowserRunUrl;
 
 async function runBrowserPlan(plan) {
   const runUrl = getBrowserRunUrl();
+
+  console.debug("[BROWSER EXECUTOR] usando URL:", runUrl);
 
   if (!plan || !Array.isArray(plan.steps)) {
     throw new Error("Plano inválido para execução no browser.");
@@ -388,17 +396,22 @@ async function runBrowserPlan(plan) {
     },
   };
 
-  console.debug("[BROWSER → WORKER]", runUrl, payload);
+  console.debug("[BROWSER → WORKER PAYLOAD]", payload);
 
   const res = await fetch(runUrl, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify(payload),
   });
 
   const txt = await res.text();
   let data = null;
-  try { data = JSON.parse(txt); } catch (_) {}
+
+  try {
+    data = JSON.parse(txt);
+  } catch (_) {}
 
   if (!res.ok) {
     throw new Error(data?.error || data?.message || txt);
@@ -406,6 +419,9 @@ async function runBrowserPlan(plan) {
 
   return data || { ok: true };
 }
+
+// expõe explicitamente para evitar binding antigo
+window.runBrowserPlan = runBrowserPlan;
 
 // ============================================================
 // 🌐 BROWSER EXECUTOR — BOTÃO EXCLUSIVO (VIA ISOLADA)
@@ -961,18 +977,3 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
