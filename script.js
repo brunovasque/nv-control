@@ -398,10 +398,7 @@ async function runBrowserPlan(plan) {
     throw new Error(msg);
   }
 
-  return data;
-}
-
-  // retorno técnico → Director (não renderiza no chat)
+    // retorno técnico → Director (não renderiza no chat)
   handleBrowserExecutorResult({
     execution_id: payload.execution_id,
     ok: true,
@@ -1020,6 +1017,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
