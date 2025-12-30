@@ -364,7 +364,7 @@ function getBrowserRunUrl() {
 }
 
 async function runBrowserPlan(plan) {
-  const runUrl = getBrowserRunUrl();
+  const runUrl = normalizeBrowserRunUrl(getBrowserRunUrl());
   if (!runUrl) throw new Error("browser_run_url ausente (LS nv_browser_run_url).");
 
   // mínimo necessário para /run
@@ -404,7 +404,14 @@ async function runBrowserPlan(plan) {
     result: data || { raw: txt },
   });
 
-  return data || { ok: true, raw: txt };
+  const result = data || { ok: true, raw: txt };
+handleBrowserExecutorResult(result);
+return result;
+}
+
+function normalizeBrowserRunUrl(url) {
+  if (!url) return "";
+  return url.endsWith("/run") ? url : url.replace(/\/+$/, "") + "/run";
 }
 
 // ============================================================
@@ -1014,3 +1021,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
