@@ -368,6 +368,8 @@ function getBrowserRunUrl() {
   return normalizeBrowserRunUrl(raw);
 }
 
+window.getBrowserRunUrl = getBrowserRunUrl;
+
 function normalizeBrowserRunUrl(url) {
   if (!url) return "";
   return url.endsWith("/run") ? url : url.replace(/\/+$/, "") + "/run";
@@ -1026,5 +1028,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
