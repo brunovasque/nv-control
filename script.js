@@ -359,8 +359,18 @@ function directorReportApi(label, result) {
    BROWSER EXECUTOR — FIO DO BOTÃO (CANAL SEPARADO)
 ============================================================ */
 function getBrowserRunUrl() {
-  const raw = (localStorage.getItem(LS.BROWSER_RUN_URL) || DEFAULTS.browser_run_url || "").trim();
-  return raw;
+  const raw =
+    (localStorage.getItem(LS.BROWSER_RUN_URL) ||
+     DEFAULTS.browser_run_url ||
+     "https://run.nv-imoveis.com/run"
+    ).trim();
+
+  return normalizeBrowserRunUrl(raw);
+}
+
+function normalizeBrowserRunUrl(url) {
+  if (!url) return "";
+  return url.endsWith("/run") ? url : url.replace(/\/+$/, "") + "/run";
 }
 
 async function runBrowserPlan(plan) {
@@ -407,11 +417,6 @@ async function runBrowserPlan(plan) {
   const result = data || { ok: true, raw: txt };
 handleBrowserExecutorResult(result);
 return result;
-}
-
-function normalizeBrowserRunUrl(url) {
-  if (!url) return "";
-  return url.endsWith("/run") ? url : url.replace(/\/+$/, "") + "/run";
 }
 
 // ============================================================
@@ -1021,4 +1026,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
