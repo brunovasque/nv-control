@@ -359,13 +359,9 @@ function directorReportApi(label, result) {
    BROWSER EXECUTOR — FIO DO BOTÃO (CANAL SEPARADO)
 ============================================================ */
 function getBrowserRunUrl() {
-  const raw =
-    (localStorage.getItem(LS.BROWSER_RUN_URL) ||
-     DEFAULTS.browser_run_url ||
-     "https://run.nv-imoveis.com/run"
-    ).trim();
-
-  return normalizeBrowserRunUrl(raw);
+  // CANÔNICO: browser nunca chama executor direto (CSP)
+  // sempre chama o Worker (proxy)
+  return "/engine/browser/run";
 }
 
 window.getBrowserRunUrl = getBrowserRunUrl;
@@ -1028,6 +1024,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
