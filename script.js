@@ -355,12 +355,11 @@ function directorReportApi(label, result) {
   return directorSay(`⚠️ ${label}: falhou (${err}). Veja detalhes na telemetria.`);
 }
 
-/* ============================================================
+* ============================================================
    BROWSER EXECUTOR — FIO DO BOTÃO (CANAL SEPARADO)
 ============================================================ */
-// O painel NÃO fala com o adapter.
-// O painel fala SOMENTE com o próprio worker.
 function getBrowserRunUrl() {
+  // 🔒 CANÔNICO: painel fala APENAS com o próprio worker
   return "/engine/browser/run";
 }
 
@@ -369,10 +368,14 @@ window.getBrowserRunUrl = getBrowserRunUrl;
 async function runBrowserPlan(plan) {
   const runUrl = getBrowserRunUrl();
 
+  if (!plan || !Array.isArray(plan.steps)) {
+    throw new Error("Plano inválido para execução no browser.");
+  }
+
   const payload = {
     execution_id: getExecutionId() || `browser-${Date.now()}`,
     plan: {
-      steps: Array.isArray(plan?.steps) ? plan.steps : [],
+      steps: plan.steps,
     },
     meta: {
       source: "NV-CONTROL",
@@ -394,84 +397,11 @@ async function runBrowserPlan(plan) {
   try { data = JSON.parse(txt); } catch (_) {}
 
   if (!res.ok) {
-    const msg = data?.error || data?.message || txt || `HTTP_${res.status}`;
-    throw new Error(msg);
+    throw new Error(data?.error || data?.message || txt);
   }
 
-    // retorno técnico → Director (não renderiza no chat)
-  handleBrowserExecutorResult({
-    execution_id: payload.execution_id,
-    ok: true,
-    result: data || { raw: txt },
-  });
-
-  const result = data || { ok: true, raw: txt };
-handleBrowserExecutorResult(result);
-return result;
+  return data || { ok: true };
 }
-
-// ============================================================
-// 🧠 DIRECTOR — INTERPRETA RETORNO DO BROWSER EXECUTOR (REAL)
-// ============================================================
-function handleBrowserExecutorResult(exec) {
-  // retorno técnico → insumo cognitivo
-  // NUNCA renderiza JSON direto no chat
-
-  if (typeof handleDirectorMessage !== "function") {
-    // fallback mínimo de segurança
-    addChatMessage({
-      role: "director",
-      text: "Recebi o retorno da execução. Quer ajustar algo ou seguir com outro passo?",
-    });
-    return;
-  }
-
-  // envia o resultado para o Diretor Cognitivo interpretar
-  handleDirectorMessage({
-    role: "executor",
-    content: {
-      type: "browser_result",
-      execution_id: exec.execution_id,
-      ok: exec.ok,
-      result: exec.result,
-    },
-  });
-}
-
-// ============================================================
-// 🔧 DIRECTOR OPERACIONAL — EXECUTOR DO BROWSER (CANÔNICO)
-// ============================================================
-window.__NV_DIRECTOR_CHAT_EXECUTE__ = async function (payload) {
-  try {
-    if (!payload || !payload.plan) {
-      console.warn("EXECUTOR: payload inválido", payload);
-      return;
-    }
-
-    addChatMessage({
-      role: "director",
-      text: "Executando no browser conforme combinado.",
-      typing: true,
-    });
-
-    const result = await runBrowserPlan(payload.plan);
-
-    addChatMessage({
-      role: "director_enavia",
-      text:
-        "[BROWSER EXECUTOR RESULT]\n" +
-        JSON.stringify(result, null, 2),
-    });
-  } catch (err) {
-    console.error("EXECUTOR ERROR:", err);
-    addChatMessage({
-      role: "director",
-      text:
-        "Tive um erro ao tentar executar no browser. Veja os detalhes técnicos.",
-      typing: true,
-    });
-  }
-};
 
 // ============================================================
 // 🌐 BROWSER EXECUTOR — BOTÃO EXCLUSIVO (VIA ISOLADA)
@@ -1017,6 +947,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
