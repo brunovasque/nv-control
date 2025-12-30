@@ -48,6 +48,8 @@ const DEFAULTS = {
 function qs(sel) { return document.querySelector(sel); }
 function on(el, evt, fn) { if (el) el.addEventListener(evt, fn); }
 
+AQUI?
+
 /* ============================================================
    UI MAP — CANÔNICO (FALTAVA)
 ============================================================ */
@@ -354,74 +356,6 @@ function directorReportApi(label, result) {
   const err = result.error || "Erro desconhecido";
   return directorSay(`⚠️ ${label}: falhou (${err}). Veja detalhes na telemetria.`);
 }
-
-/* ============================================================
-   BROWSER EXECUTOR — CANAL ISOLADO (CANÔNICO)
-   ⚠️ DEVE FICAR ANTES DE QUALQUER USO
-============================================================ */
-
-function getBrowserRunUrl() {
-  const stored = localStorage.getItem("nv_browser_run_url");
-
-  // Log defensivo para diagnóstico (pode remover depois)
-  console.debug("[BROWSER RUN URL]", stored);
-
-  return (
-    stored ||
-    "https://run.nv-imoveis.com/browser/run"
-  );
-}
-
-// expõe explicitamente para evitar shadow / override
-window.getBrowserRunUrl = getBrowserRunUrl;
-
-async function runBrowserPlan(plan) {
-  const runUrl = getBrowserRunUrl();
-
-  console.debug("[BROWSER EXECUTOR] usando URL:", runUrl);
-
-  if (!plan || !Array.isArray(plan.steps)) {
-    throw new Error("Plano inválido para execução no browser.");
-  }
-
-  const payload = {
-    execution_id: getExecutionId() || `browser-${Date.now()}`,
-    plan: {
-      steps: plan.steps,
-    },
-    meta: {
-      source: "NV-CONTROL",
-      channel: "BROWSER",
-      ts: Date.now(),
-    },
-  };
-
-  console.debug("[BROWSER → WORKER PAYLOAD]", payload);
-
-  const res = await fetch(runUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-
-  const txt = await res.text();
-  let data = null;
-
-  try {
-    data = JSON.parse(txt);
-  } catch (_) {}
-
-  if (!res.ok) {
-    throw new Error(data?.error || data?.message || txt);
-  }
-
-  return data || { ok: true };
-}
-
-// expõe explicitamente para evitar binding antigo
-window.runBrowserPlan = runBrowserPlan;
 
 // ============================================================
 // 🌐 BROWSER EXECUTOR — BOTÃO EXCLUSIVO (VIA ISOLADA)
@@ -977,3 +911,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
