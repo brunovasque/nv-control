@@ -42,7 +42,7 @@ const DEFAULTS = {
   approved_by: "VASQUES",
 
   // ✅ default do fio do botão (pode sobrescrever via localStorage)
-  browser_run_url: "https://browser.nv-imoveis.com/run",
+  browser_run_url: "https://run.nv-imoveis.com/browser/run",
 };
 
 function qs(sel) { return document.querySelector(sel); }
@@ -961,6 +961,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
