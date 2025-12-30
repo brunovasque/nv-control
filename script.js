@@ -355,7 +355,7 @@ function directorReportApi(label, result) {
   return directorSay(`⚠️ ${label}: falhou (${err}). Veja detalhes na telemetria.`);
 }
 
-* ============================================================
+/* ============================================================
    BROWSER EXECUTOR — FIO DO BOTÃO (CANAL SEPARADO)
 ============================================================ */
 function getBrowserRunUrl() {
@@ -947,6 +947,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
