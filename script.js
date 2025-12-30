@@ -362,10 +362,10 @@ function getBrowserRunUrl() {
   const raw =
     (localStorage.getItem(LS.BROWSER_RUN_URL) ||
      DEFAULTS.browser_run_url ||
-     "https://browser.nv-imoveis.com"
+     "https://run.nv-imoveis.com"
     ).trim();
 
-  return normalizeBrowserRunUrl(raw);
+  return raw.replace(/\/+$/, "");
 }
 
 window.getBrowserRunUrl = getBrowserRunUrl;
@@ -1028,6 +1028,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
