@@ -776,73 +776,88 @@ window.__NV_CHAT_WRITE__ = function (text) {
 
 /* ============================================================
    DIRECTOR — ROTEAMENTO (CANÔNICO)
-   - Cognitivo: Worker externo (GPT-like)
-   - Executor: SOMENTE após aprovação explícita via botão
+   - Cognitivo: via proxy (run.nv-imoveis.com)
+   - Operacional: executor local (botões)
 ============================================================ */
 async function routeDirector(text) {
   const USE_COGNITIVE_DIRECTOR = true;
 
-  // ⛔ Se já existe plano aprovado, NÃO executa nada automaticamente
+  // 🔒 Se já existe plano aprovado, cognitivo NÃO executa nada
   if (getPanelState()?.approved_browser_plan) {
     return;
   }
 
-  if (!USE_COGNITIVE_DIRECTOR) {
-    console.warn("Cognitive Director desativado");
+  if (USE_COGNITIVE_DIRECTOR) {
+    try {
+      // ⚠️ SEMPRE via proxy do seu domínio (CSP-safe)
+      const res = await fetch(
+        "https://run.nv-imoveis.com/director/cognitive",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: text,
+            context: {
+              last_director_reply: window.__LAST_DIRECTOR_REPLY__ || null,
+              pending_plan: window.__PENDING_BROWSER_PLAN__ || null,
+              awaiting_confirmation:
+                window.__AWAITING_CONFIRMATION__ || false,
+              conversation_summary:
+                window.__CONVERSATION_SUMMARY__ || "",
+            },
+          }),
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error(`Director cognitivo HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      // 🧠 Resposta verbal do diretor
+      if (typeof directorSay === "function" && data?.reply) {
+        directorSay(data.reply);
+        window.__LAST_DIRECTOR_REPLY__ = data.reply;
+      }
+
+      // ✅ Diretor liberou execução
+      if (
+        data?.decision?.type === "browser_execute_ready" &&
+        data?.suggested_plan
+      ) {
+        updatePanelState({
+          approved_browser_plan: data.suggested_plan,
+        });
+
+        renderBrowserExecuteButton();
+      }
+
+      // 🧠 Plano sugerido (não executa)
+      if (data?.suggested_plan) {
+        window.__PENDING_BROWSER_PLAN__ = data.suggested_plan;
+        window.__AWAITING_CONFIRMATION__ = !!data.needs_confirmation;
+      }
+
+      return;
+    } catch (e) {
+      console.error("Erro Director Cognitivo:", e);
+      if (typeof directorSay === "function") {
+        directorSay("Tive um problema técnico agora. Tenta novamente.");
+      }
+      return;
+    }
+  }
+
+  // 🔧 Diretor executor (botões)
+  if (typeof window.__NV_DIRECTOR_CHAT_EXECUTE__ === "function") {
+    window.__NV_DIRECTOR_CHAT_EXECUTE__(text);
     return;
   }
 
-  try {
-    const res = await fetch(
-      "https://nv-enavia.brunovasque.workers.dev/director/cognitive",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: text,
-          context: {
-            last_director_reply: window.__LAST_DIRECTOR_REPLY__ || null,
-            pending_plan: window.__PENDING_BROWSER_PLAN__ || null,
-            awaiting_confirmation: window.__AWAITING_CONFIRMATION__ || false,
-            conversation_summary: window.__CONVERSATION_SUMMARY__ || "",
-          },
-        }),
-      }
-    );
-
-    if (!res.ok) {
-      throw new Error(`Director cognitive HTTP ${res.status}`);
-    }
-
-    const data = await res.json();
-
-    // fala do diretor (somente cognitivo)
-    if (data?.reply && typeof directorSay === "function") {
-      directorSay(data.reply);
-      window.__LAST_DIRECTOR_REPLY__ = data.reply;
-    }
-
-    // 🧠 decisão explícita → libera botão (NÃO executa)
-    if (
-      data?.decision?.type === "browser_execute_ready" &&
-      data?.suggested_plan
-    ) {
-      updatePanelState({
-        approved_browser_plan: data.suggested_plan,
-      });
-
-      renderBrowserExecuteButton();
-    }
-
-    // armazena plano sugerido (read-only)
-    if (data?.suggested_plan) {
-      window.__PENDING_BROWSER_PLAN__ = data.suggested_plan;
-      window.__AWAITING_CONFIRMATION__ = !!data.needs_confirmation;
-    }
-  } catch (err) {
-    console.error("Erro Director Cognitivo:", err);
-    directorSay?.("Tive um problema técnico agora. Tenta novamente.");
-  }
+  console.warn(
+    "Director executor indisponível — aguardando cognitivo"
+  );
 }
 
 /* ============================================================
@@ -965,7 +980,3 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
-
-
-
-
