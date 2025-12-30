@@ -358,28 +358,17 @@ function directorReportApi(label, result) {
 /* ============================================================
    BROWSER EXECUTOR — FIO DO BOTÃO (CANAL SEPARADO)
 ============================================================ */
+// O painel NÃO fala com o adapter.
+// O painel fala SOMENTE com o próprio worker.
 function getBrowserRunUrl() {
-  const raw =
-    (localStorage.getItem(LS.BROWSER_RUN_URL) ||
-     DEFAULTS.browser_run_url ||
-     "https://run.nv-imoveis.com"
-    ).trim();
-
-  return raw.replace(/\/+$/, "");
+  return "/engine/browser/run";
 }
 
 window.getBrowserRunUrl = getBrowserRunUrl;
 
-function normalizeBrowserRunUrl(url) {
-  if (!url) return "";
-  return url.endsWith("/run") ? url : url.replace(/\/+$/, "") + "/run";
-}
-
 async function runBrowserPlan(plan) {
-  const runUrl = normalizeBrowserRunUrl(getBrowserRunUrl());
-  if (!runUrl) throw new Error("browser_run_url ausente (LS nv_browser_run_url).");
+  const runUrl = getBrowserRunUrl();
 
-  // mínimo necessário para /run
   const payload = {
     execution_id: getExecutionId() || `browser-${Date.now()}`,
     plan: {
@@ -392,7 +381,7 @@ async function runBrowserPlan(plan) {
     },
   };
 
-  console.debug("[BROWSER_ADAPTER → RUN]", runUrl, payload);
+  console.debug("[BROWSER → WORKER]", runUrl, payload);
 
   const res = await fetch(runUrl, {
     method: "POST",
@@ -408,6 +397,9 @@ async function runBrowserPlan(plan) {
     const msg = data?.error || data?.message || txt || `HTTP_${res.status}`;
     throw new Error(msg);
   }
+
+  return data;
+}
 
   // retorno técnico → Director (não renderiza no chat)
   handleBrowserExecutorResult({
@@ -1028,6 +1020,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
