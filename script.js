@@ -783,16 +783,16 @@ window.__NV_CHAT_WRITE__ = function (text) {
 async function routeDirector(text) {
   const USE_COGNITIVE_DIRECTOR = true;
 
-   // 🚫 Se existir plano aprovado, NÃO chama executor automaticamente
-// Cognitivo continua livre
-if (getPanelState()?.approved_browser_plan) {
-  // não executa, não fala, só deixa o botão disponível
-}
+  // 🚫 Se existir plano aprovado, NÃO chama executor automaticamente
+  // Cognitivo continua livre
+  if (getPanelState()?.approved_browser_plan) {
+    // não executa, não fala, só deixa o botão disponível
+  }
 
   if (USE_COGNITIVE_DIRECTOR) {
     try {
       const res = await fetch(
-        "https://run.nv-imoveis.com/director/cognitive",
+        "https://nv-enavia.brunovasque.workers.dev/director/cognitive",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -801,8 +801,10 @@ if (getPanelState()?.approved_browser_plan) {
             context: {
               last_director_reply: window.__LAST_DIRECTOR_REPLY__ || null,
               pending_plan: window.__PENDING_BROWSER_PLAN__ || null,
-              awaiting_confirmation: window.__AWAITING_CONFIRMATION__ || false,
-              conversation_summary: window.__CONVERSATION_SUMMARY__ || "",
+              awaiting_confirmation:
+                window.__AWAITING_CONFIRMATION__ || false,
+              conversation_summary:
+                window.__CONVERSATION_SUMMARY__ || "",
             },
           }),
         }
@@ -977,5 +979,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
