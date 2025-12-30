@@ -942,6 +942,19 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+// ============================================
+// LISTENER CANÔNICO — PLANO DE BROWSER APROVADO
+// ============================================
+document.addEventListener("browser-plan-approved", (e) => {
+  const plan = e.detail;
+
+  if (!plan || !Array.isArray(plan.steps)) return;
+
+  console.log("✅ Plano aprovado recebido pelo painel", plan);
+
+  renderBrowserExecuteButton(plan);
+});
+
 /* ============================================================
    STATUS DO BROWSER — READ ONLY (SAFE)
    (DESATIVADO — fase futura)
