@@ -432,7 +432,14 @@ function renderBrowserExecuteButton() {
     return;
   }
 
-  window.__NV_DIRECTOR_CHAT_EXECUTE__({ plan });
+  const normalizedPlan = {
+  execution_id: plan.execution_id || `exec-${Date.now()}`,
+  version: plan.version || "plan.v1",
+  source: plan.source || "nv-control",
+  steps: Array.isArray(plan.steps) ? plan.steps : [],
+};
+
+window.__NV_DIRECTOR_CHAT_EXECUTE__({ plan: normalizedPlan });
 
   // limpeza canônica (estado ÚNICO)
   updatePanelState({
@@ -947,6 +954,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
