@@ -358,9 +358,13 @@ function directorReportApi(label, result) {
 /* ============================================================
    BROWSER EXECUTOR — FIO DO BOTÃO (CANAL SEPARADO)
 ============================================================ */
+
 function getBrowserRunUrl() {
-  // 🔒 CANÔNICO: painel fala APENAS com o próprio worker
-  return "/engine/browser/run";
+  // 🔒 CANÔNICO: endpoint definido por storage (ou fallback absoluto)
+  return (
+    localStorage.getItem("nv_browser_run_url") ||
+    "https://run.nv-imoveis.com/browser/run"
+  );
 }
 
 window.getBrowserRunUrl = getBrowserRunUrl;
@@ -954,6 +958,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
