@@ -807,7 +807,7 @@ async function routeDirector(text) {
   const USE_COGNITIVE_DIRECTOR = true;
 
   // 🔒 Se já existe plano aprovado, cognitivo NÃO executa nada
-  if (getPanelState()?.approved_browser_plan) {
+  if (window.__APPROVED_BROWSER_PLAN__) {
     return;
   }
 
@@ -1028,3 +1028,4 @@ console.groupEnd();
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
