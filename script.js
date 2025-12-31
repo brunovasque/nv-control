@@ -449,8 +449,7 @@ function renderBrowserExecuteButton() {
   btn.style.cursor = "pointer";
 
   btn.onclick = async () => {
-    const st = getPanelState();
-    const plan = st?.approved_browser_plan;
+    const plan = window.__APPROVED_BROWSER_PLAN__;
 
     if (!plan) {
       console.warn("Browser Execute: plano inexistente no state");
@@ -1006,3 +1005,4 @@ document.addEventListener("browser-plan-approved", (e) => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
