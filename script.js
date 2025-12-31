@@ -368,16 +368,11 @@ function getTargetRequired() {
 function getPatchRequired() {
   const u = ui();
 
-  // 1️⃣ tenta campo técnico (se existir)
-  let content = String(u.patchTextarea?.value || "").trim();
-
-  // 2️⃣ fallback: usa input do chat (SEM afetar a conversa)
-  if (!content) {
-    content = String(u.chatInput?.value || "").trim();
-  }
+  // ✅ SOMENTE campo técnico de patch (nunca usar chatInput)
+  const content = String(u.patchTextarea?.value || "").trim();
 
   if (!content) {
-    throw new Error("patch.content obrigatório (cole o patch no painel).");
+    throw new Error("patch.content obrigatório (cole o patch no campo de PATCH do painel).");
   }
 
   return {
@@ -664,22 +659,22 @@ function bindChatSend() {
   };
 
   const send = () => {
-    const el = pickChatEl();
-    if (!el) return;
+  const el = pickChatEl();
+  if (!el) return;
 
-    const text = String(el.value || "").trim();
-    if (!text) return;
+  const text = String(el.value || "").trim();
+  if (!text) return;
 
-    addChatMessage({ role: "user", text });
+  addChatMessage({ role: "user", text });
 
-    // 🔑 LINHA CRÍTICA — PATCH ENTRA NO STATE CANÔNICO
-    updatePanelState({ patch: text });
+  // ✅ NÃO encostar em patch state aqui (chat não é deploy)
+  // updatePanelState({ patch: text });
 
-    el.value = "";
+  el.value = "";
 
-    // Director — roteamento (cognitivo vs operacional)
-    routeDirector(text);
-  };
+  // Director — roteamento (cognitivo vs operacional)
+  routeDirector(text);
+};
 
   // 1) Blindagem contra submit em qualquer form que contenha o chatInput real
   const u0 = ui();
@@ -1028,4 +1023,5 @@ console.groupEnd();
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
