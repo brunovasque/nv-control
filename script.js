@@ -960,11 +960,19 @@ document.addEventListener("DOMContentLoaded", () => {
 document.addEventListener("browser-plan-approved", (e) => {
   const plan = e.detail;
 
-  if (!plan || !Array.isArray(plan.steps)) return;
+  if (!plan || !Array.isArray(plan.steps)) {
+    console.warn("Plano aprovado inválido", plan);
+    return;
+  }
 
-  console.log("✅ Plano aprovado recebido pelo painel", plan);
+  // ✅ FONTE ÚNICA DO BOTÃO
+  window.__APPROVED_BROWSER_PLAN__ = plan;
 
-  renderBrowserExecuteButton(plan);
+  console.log("✅ Plano aprovado armazenado:", plan);
+
+  if (typeof window.__renderBrowserExecuteButton === "function") {
+    window.__renderBrowserExecuteButton();
+  }
 });
 
 /* ============================================================
@@ -1005,4 +1013,5 @@ document.addEventListener("browser-plan-approved", (e) => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
