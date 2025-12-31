@@ -431,6 +431,12 @@ function renderBrowserExecuteButton() {
   const existing = document.getElementById("browser-execute-btn");
   if (existing) return;
 
+  console.group("🖱️ RENDER BROWSER EXECUTE BUTTON");
+  console.log("Já existe botão?", !!existing);
+  console.log("Plano disponível:", window.__APPROVED_BROWSER_PLAN__);
+  console.trace("Stack render");
+  console.groupEnd();
+
   const container =
     document.querySelector(".chat-input-container") ||
     document.querySelector(".chat-input") ||
@@ -448,16 +454,23 @@ function renderBrowserExecuteButton() {
   btn.style.padding = "8px 12px";
   btn.style.cursor = "pointer";
 
+  // 🔘 CLICK = EXECUÇÃO
   btn.onclick = async () => {
+    console.group("🚀 CLICK EXECUTAR BROWSER");
+
     const plan = window.__APPROVED_BROWSER_PLAN__;
+    console.log("Plano bruto:", plan);
 
     if (!plan) {
-      console.warn("Browser Execute: plano inexistente no state");
+      console.error("❌ Browser Execute: plano inexistente no state");
+      console.trace("Click sem plano");
+      console.groupEnd();
       return;
     }
 
     if (typeof runBrowserPlan !== "function") {
-      console.error("Browser Execute: runBrowserPlan não está disponível");
+      console.error("❌ Browser Execute: runBrowserPlan não está disponível");
+      console.groupEnd();
       return;
     }
 
@@ -468,31 +481,27 @@ function renderBrowserExecuteButton() {
       steps: Array.isArray(plan.steps) ? plan.steps : [],
     };
 
+    console.log("Plano normalizado:", normalizedPlan);
+
     try {
-      console.log("🚀 Executando Browser Plan:", normalizedPlan);
       await runBrowserPlan(normalizedPlan);
+      console.log("✅ Execução enviada com sucesso");
     } catch (err) {
-      console.error("Browser execution failed:", err);
+      console.error("❌ Browser execution failed:", err);
+      console.groupEnd();
       return;
     }
 
-    // limpeza canônica
-    updatePanelState({
-      approved_browser_plan: null,
-    });
-
+    // 🧹 limpeza canônica
+    window.__APPROVED_BROWSER_PLAN__ = null;
     btn.remove();
+
+    console.log("🧹 Estado limpo e botão removido");
+    console.groupEnd();
   };
 
   container.appendChild(btn);
 }
-
-function removeBrowserExecuteButton() {
-  const btn = document.getElementById("browser-execute-btn");
-  if (btn) btn.remove();
-}
-
-window.__renderBrowserExecuteButton = renderBrowserExecuteButton;
 
 /* ============================================================
    API ADAPTER (payloads corretos + relatórios humanos)
@@ -960,6 +969,12 @@ document.addEventListener("DOMContentLoaded", () => {
 document.addEventListener("browser-plan-approved", (e) => {
   const plan = e.detail;
 
+console.group("🧠 BROWSER PLAN APPROVED EVENT");
+console.log("Event detail:", e.detail);
+console.log("Steps:", e.detail?.steps);
+console.trace("Origem do evento");
+console.groupEnd();
+
   if (!plan || !Array.isArray(plan.steps)) {
     console.warn("Plano aprovado inválido", plan);
     return;
@@ -1013,5 +1028,6 @@ document.addEventListener("browser-plan-approved", (e) => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
