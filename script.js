@@ -503,6 +503,9 @@ function renderBrowserExecuteButton() {
   container.appendChild(btn);
 }
 
+// 👇 ADICIONE IMEDIATAMENTE APÓS A FUNÇÃO
+window.__renderBrowserExecuteButton = renderBrowserExecuteButton;
+
 /* ============================================================
    API ADAPTER (payloads corretos + relatórios humanos)
 ============================================================ */
@@ -844,15 +847,12 @@ async function routeDirector(text) {
 
       // ✅ Diretor liberou execução
       if (
-        data?.decision?.type === "browser_execute_ready" &&
-        data?.suggested_plan
-      ) {
-        updatePanelState({
-          approved_browser_plan: data.suggested_plan,
-        });
-
-        renderBrowserExecuteButton();
-      }
+  data?.decision?.type === "browser_execute_ready" &&
+  data?.suggested_plan
+) {
+  window.__APPROVED_BROWSER_PLAN__ = data.suggested_plan;
+  renderBrowserExecuteButton();
+}
 
       // 🧠 Plano sugerido (não executa)
       if (data?.suggested_plan) {
@@ -1028,6 +1028,3 @@ console.groupEnd();
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
-
-
-
