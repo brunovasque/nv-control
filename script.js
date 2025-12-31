@@ -436,6 +436,11 @@ function renderBrowserExecuteButton() {
     document.querySelector(".chat-input") ||
     document.body;
 
+  if (!container) {
+    console.warn("Browser Execute: container não encontrado");
+    return;
+  }
+
   const btn = document.createElement("button");
   btn.id = "browser-execute-btn";
   btn.textContent = "Executar Browser";
@@ -443,34 +448,42 @@ function renderBrowserExecuteButton() {
   btn.style.padding = "8px 12px";
   btn.style.cursor = "pointer";
 
-  btn.onclick = () => {
-  const st = getPanelState();
-  const plan = st?.approved_browser_plan;
+  btn.onclick = async () => {
+    const st = getPanelState();
+    const plan = st?.approved_browser_plan;
 
-  if (!plan) {
-    console.warn("Browser Execute: plano inexistente no state");
-    return;
-  }
+    if (!plan) {
+      console.warn("Browser Execute: plano inexistente no state");
+      return;
+    }
 
-  const normalizedPlan = {
-    execution_id: plan.execution_id || `exec-${Date.now()}`,
-    version: plan.version || "plan.v1",
-    source: plan.source || "nv-control",
-    steps: Array.isArray(plan.steps) ? plan.steps : [],
+    if (typeof runBrowserPlan !== "function") {
+      console.error("Browser Execute: runBrowserPlan não está disponível");
+      return;
+    }
+
+    const normalizedPlan = {
+      execution_id: plan.execution_id || `exec-${Date.now()}`,
+      version: plan.version || "plan.v1",
+      source: plan.source || "nv-control",
+      steps: Array.isArray(plan.steps) ? plan.steps : [],
+    };
+
+    try {
+      console.log("🚀 Executando Browser Plan:", normalizedPlan);
+      await runBrowserPlan(normalizedPlan);
+    } catch (err) {
+      console.error("Browser execution failed:", err);
+      return;
+    }
+
+    // limpeza canônica
+    updatePanelState({
+      approved_browser_plan: null,
+    });
+
+    btn.remove();
   };
-
-  // ✅ EXECUÇÃO DIRETA NO WORKER (SEM PASSAR PELO EXECUTOR GENÉRICO)
-  runBrowserPlan(normalizedPlan).catch(err => {
-    console.error("Browser execution failed:", err);
-  });
-
-  // limpeza canônica
-  updatePanelState({
-    approved_browser_plan: null,
-  });
-
-  btn.remove();
-};
 
   container.appendChild(btn);
 }
