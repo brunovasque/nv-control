@@ -849,15 +849,17 @@ async function routeDirector(text) {
 
  // 🔒 Render após o chat estabilizar o DOM
 setTimeout(() => {
-    if (window.__APPROVED_BROWSER_PLAN__) {
-      document.dispatchEvent(
-        new CustomEvent("browser-plan-approved", {
-          detail: window.__APPROVED_BROWSER_PLAN__
-        })
-      );
-    }
-  }, 0);
-} // ✅ FECHA O IF CORRETAMENTE
+  if (window.__APPROVED_BROWSER_PLAN__) {
+    document.dispatchEvent(
+      new CustomEvent("browser-plan-approved", {
+        detail: window.__APPROVED_BROWSER_PLAN__
+      })
+    );
+  }
+}, 0);
+
+// ⚠️ FECHA A FUNÇÃO PAI (ex: handleDirectorMessage / send / routeDirector)
+}
 
       // 🧠 Plano sugerido (não executa)
       if (data?.suggested_plan) {
@@ -1033,5 +1035,6 @@ console.groupEnd();
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
