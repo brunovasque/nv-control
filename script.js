@@ -846,7 +846,11 @@ async function routeDirector(text) {
   data?.suggested_plan
 ) {
   window.__APPROVED_BROWSER_PLAN__ = data.suggested_plan;
-  renderBrowserExecuteButton();
+
+  // 🔒 Render após o chat estabilizar o DOM
+  setTimeout(() => {
+    renderBrowserExecuteButton();
+  }, 0);
 }
 
       // 🧠 Plano sugerido (não executa)
@@ -1023,5 +1027,3 @@ console.groupEnd();
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
-
-
