@@ -801,32 +801,26 @@ window.__NV_CHAT_WRITE__ = function (text) {
 async function routeDirector(text) {
   const USE_COGNITIVE_DIRECTOR = true;
 
-  // 🔒 Se já existe plano aprovado, cognitivo NÃO executa nada
-  if (window.__APPROVED_BROWSER_PLAN__) {
-    return;
-  }
+  // 🔒 Se já existe plano aprovado, cognitivo NÃO executa nada (só ignora nova aprovação)
+  const hasApprovedPlan = !!window.__APPROVED_BROWSER_PLAN__;
 
   if (USE_COGNITIVE_DIRECTOR) {
     try {
       // ⚠️ SEMPRE via proxy do seu domínio (CSP-safe)
-      const res = await fetch(
-        "https://run.nv-imoveis.com/director/cognitive",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message: text,
-            context: {
-              last_director_reply: window.__LAST_DIRECTOR_REPLY__ || null,
-              pending_plan: window.__PENDING_BROWSER_PLAN__ || null,
-              awaiting_confirmation:
-                window.__AWAITING_CONFIRMATION__ || false,
-              conversation_summary:
-                window.__CONVERSATION_SUMMARY__ || "",
-            },
-          }),
-        }
-      );
+      const res = await fetch("https://run.nv-imoveis.com/director/cognitive", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: text,
+          context: {
+            last_director_reply: window.__LAST_DIRECTOR_REPLY__ || null,
+            pending_plan: window.__PENDING_BROWSER_PLAN__ || null,
+            awaiting_confirmation: window.__AWAITING_CONFIRMATION__ || false,
+            conversation_summary: window.__CONVERSATION_SUMMARY__ || "",
+            has_approved_plan: hasApprovedPlan,
+          },
+        }),
+      });
 
       if (!res.ok) {
         throw new Error(`Director cognitivo HTTP ${res.status}`);
@@ -840,26 +834,32 @@ async function routeDirector(text) {
         window.__LAST_DIRECTOR_REPLY__ = data.reply;
       }
 
-      // ✅ Diretor liberou execução
-      if (
-  data?.decision?.type === "browser_execute_ready" &&
-  data?.suggested_plan
-) {
-  window.__APPROVED_BROWSER_PLAN__ = data.suggested_plan;
+      // ✅ Diretor liberou execução (gera plano aprovado e dispara UI do botão)
+      if (!hasApprovedPlan && data?.decision?.type === "browser_execute_ready" && data?.suggested_plan) {
+        // Normaliza contrato canônico do Browser Executor: { plan: { steps: [...] } }
+        const sp = data.suggested_plan;
+        const steps =
+          Array.isArray(sp?.plan?.steps) ? sp.plan.steps :
+          Array.isArray(sp?.steps) ? sp.steps :
+          [];
 
- // 🔒 Render após o chat estabilizar o DOM
-setTimeout(() => {
-  if (window.__APPROVED_BROWSER_PLAN__) {
-    document.dispatchEvent(
-      new CustomEvent("browser-plan-approved", {
-        detail: window.__APPROVED_BROWSER_PLAN__
-      })
-    );
-  }
-}, 0);
+        if (steps.length) {
+          window.__APPROVED_BROWSER_PLAN__ = { plan: { steps } };
+          window.__PENDING_BROWSER_PLAN__ = null;
+          window.__AWAITING_CONFIRMATION__ = false;
 
-// ⚠️ FECHA A FUNÇÃO PAI (ex: handleDirectorMessage / send / routeDirector)
-}
+          // Atualiza UI do botão (preferência: função; fallback: evento)
+          if (typeof renderBrowserExecuteButton === "function") {
+            renderBrowserExecuteButton();
+          } else {
+            document.dispatchEvent(
+              new CustomEvent("browser-plan-approved", {
+                detail: window.__APPROVED_BROWSER_PLAN__,
+              })
+            );
+          }
+        }
+      }
 
       // 🧠 Plano sugerido (não executa)
       if (data?.suggested_plan) {
@@ -883,9 +883,7 @@ setTimeout(() => {
     return;
   }
 
-  console.warn(
-    "Director executor indisponível — aguardando cognitivo"
-  );
+  console.warn("Director executor indisponível — aguardando cognitivo");
 }
 
 /* ============================================================
@@ -1035,6 +1033,7 @@ console.groupEnd();
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
