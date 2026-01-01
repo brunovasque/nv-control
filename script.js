@@ -469,12 +469,17 @@ function renderBrowserExecuteButton() {
       return;
     }
 
-    const normalizedPlan = {
-      execution_id: plan.execution_id || `exec-${Date.now()}`,
-      version: plan.version || "plan.v1",
-      source: plan.source || "nv-control",
-      steps: Array.isArray(plan.steps) ? plan.steps : [],
-    };
+    const steps =
+  Array.isArray(plan?.plan?.steps) ? plan.plan.steps :
+  Array.isArray(plan?.steps) ? plan.steps :
+  [];
+
+const normalizedPlan = {
+  execution_id: plan.execution_id || `exec-${Date.now()}`,
+  version: plan.version || "plan.v1",
+  source: plan.source || "nv-control",
+  steps,
+};
 
     console.log("Plano normalizado:", normalizedPlan);
 
@@ -1033,6 +1038,7 @@ console.groupEnd();
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
