@@ -812,12 +812,11 @@ window.__NV_CHAT_WRITE__ = function (text) {
 async function routeDirector(text) {
   const USE_COGNITIVE_DIRECTOR = true;
 
-  // 🔒 Se já existe plano aprovado, cognitivo NÃO executa nada (só ignora nova aprovação)
+  // 🔒 Se já existe plano aprovado, cognitivo NÃO executa nada
   const hasApprovedPlan = !!window.__APPROVED_BROWSER_PLAN__;
 
   if (USE_COGNITIVE_DIRECTOR) {
     try {
-      // ⚠️ SEMPRE via proxy do seu domínio (CSP-safe)
       const res = await fetch("https://run.nv-imoveis.com/director/cognitive", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -845,33 +844,33 @@ async function routeDirector(text) {
         window.__LAST_DIRECTOR_REPLY__ = data.reply;
       }
 
-      // ✅ Diretor liberou execução (gera plano aprovado e dispara UI do botão)
+      // ✅ Diretor liberou execução (PLANO FINAL)
       if (
-  !hasApprovedPlan &&
-  data?.decision?.type === "browser_execute_ready" &&
-  data?.suggested_plan &&
-  data?.needs_confirmation === false
-) {
+        !hasApprovedPlan &&
+        data?.decision?.type === "browser_execute_ready" &&
+        data?.suggested_plan &&
+        data?.needs_confirmation === false
+      ) {
+        const plan = data.suggested_plan;
 
-// ✅ guarda o PLANO COMPLETO, sem embrulhar
-if (sp && Array.isArray(sp.steps) && sp.steps.length) {
-  window.__APPROVED_BROWSER_PLAN__ = data.suggested_plan;
-  window.__PENDING_BROWSER_PLAN__ = null;
-  window.__AWAITING_CONFIRMATION__ = false;
+        if (Array.isArray(plan.steps) && plan.steps.length) {
+          window.__APPROVED_BROWSER_PLAN__ = plan;
+          window.__PENDING_BROWSER_PLAN__ = null;
+          window.__AWAITING_CONFIRMATION__ = false;
 
-  if (typeof renderBrowserExecuteButton === "function") {
-    renderBrowserExecuteButton();
-  } else {
-    document.dispatchEvent(
-      new CustomEvent("browser-plan-approved", {
-        detail: sp,
+          if (typeof renderBrowserExecuteButton === "function") {
+            renderBrowserExecuteButton();
+          } else {
+            document.dispatchEvent(
+              new CustomEvent("browser-plan-approved", {
+                detail: plan,
               })
             );
           }
         }
       }
 
-      // 🧠 Plano sugerido (não executa)
+      // 🧠 Plano sugerido (ainda interpretável, NÃO executa)
       if (data?.suggested_plan) {
         window.__PENDING_BROWSER_PLAN__ = data.suggested_plan;
         window.__AWAITING_CONFIRMATION__ = !!data.needs_confirmation;
@@ -887,7 +886,7 @@ if (sp && Array.isArray(sp.steps) && sp.steps.length) {
     }
   }
 
-  // 🔧 Diretor executor (botões)
+  // 🔧 Diretor executor (fallback / botões)
   if (typeof window.__NV_DIRECTOR_CHAT_EXECUTE__ === "function") {
     window.__NV_DIRECTOR_CHAT_EXECUTE__(text);
     return;
@@ -1043,5 +1042,6 @@ console.groupEnd();
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
