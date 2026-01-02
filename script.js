@@ -78,16 +78,20 @@ async function runBrowserPlan(plan) {
   }
 
   const payload = {
-    execution_id: getExecutionId() || `browser-${Date.now()}`,
-    plan: {
-      steps: plan.steps,
-    },
-    meta: {
-      source: "NV-CONTROL",
-      channel: "BROWSER",
-      ts: Date.now(),
-    },
-  };
+  execution_id: plan.execution_id || getExecutionId() || `browser-${Date.now()}`,
+  plan: {
+    execution_id: plan.execution_id,
+    version: plan.version,
+    source: plan.source,
+    type: plan.type,
+    steps: plan.steps,
+  },
+  meta: {
+    source: "NV-CONTROL",
+    channel: "BROWSER",
+    ts: Date.now(),
+  },
+};
 
   console.debug("[BROWSER → WORKER PAYLOAD]", payload);
 
@@ -1036,9 +1040,3 @@ console.groupEnd();
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
-
-
-
-
-
-
