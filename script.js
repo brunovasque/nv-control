@@ -846,11 +846,12 @@ async function routeDirector(text) {
         directorSay(data.reply);
       }
 
-      // 🟡 Apenas SUGESTÃO de plano (NUNCA executa)
-      if (data?.suggested_plan) {
-        window.__PENDING_BROWSER_PLAN__ = data.suggested_plan;
-        return;
-      }
+      // 🟡 Plano sugerido pelo Director (aceita suggested_plan OU pending_plan)
+if (data?.suggested_plan || data?.pending_plan) {
+  window.__PENDING_BROWSER_PLAN__ =
+    data.suggested_plan || data.pending_plan;
+  return;
+}
 
       // 🔴 NÃO libera execução sem confirmação humana
       if (
@@ -1039,6 +1040,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
