@@ -809,11 +809,14 @@ window.__NV_CHAT_WRITE__ = function (text) {
    - Cognitivo: via proxy (run.nv-imoveis.com)
    - Operacional: executor local (botões)
 ============================================================ */
+// 🔒 CONFIRMAÇÃO HUMANA EXPLÍCITA (fonte única)
+window.__HUMAN_EXECUTION_CONFIRMED__ = false;
+
 async function routeDirector(text) {
   const USE_COGNITIVE_DIRECTOR = true;
 
-  // 🔒 Se já existe plano aprovado, não gerar outro automaticamente
   const hasApprovedPlan = !!window.__APPROVED_BROWSER_PLAN__;
+  const humanConfirmed = window.__HUMAN_EXECUTION_CONFIRMED__ === true;
 
   if (USE_COGNITIVE_DIRECTOR) {
     try {
@@ -823,11 +826,9 @@ async function routeDirector(text) {
         body: JSON.stringify({
           message: text,
           context: {
-            last_director_reply: window.__LAST_DIRECTOR_REPLY__ || null,
             pending_plan: window.__PENDING_BROWSER_PLAN__ || null,
-            awaiting_confirmation: window.__AWAITING_CONFIRMATION__ || false,
-            conversation_summary: window.__CONVERSATION_SUMMARY__ || "",
             has_approved_plan: hasApprovedPlan,
+            human_confirmed: humanConfirmed,
           },
         }),
       });
@@ -838,48 +839,42 @@ async function routeDirector(text) {
 
       const data = await res.json();
 
-      // 🗣️ Resposta verbal do Diretor
+      // 🧠 Fala do diretor
       if (typeof directorSay === "function" && data?.reply) {
         directorSay(data.reply);
-        window.__LAST_DIRECTOR_REPLY__ = data.reply;
       }
 
-      /**
-       * 🧠 CASO 1 — Diretor apenas sugeriu plano (NÃO EXECUTA)
-       */
-      if (data?.suggested_plan && data.needs_confirmation !== false) {
+      // 🟡 Apenas SUGESTÃO de plano (NUNCA executa)
+      if (data?.suggested_plan) {
         window.__PENDING_BROWSER_PLAN__ = data.suggested_plan;
-        window.__AWAITING_CONFIRMATION__ = true;
         return;
       }
 
-      /**
-       * ✅ CASO 2 — Diretor LIBEROU execução explicitamente
-       * 👉 Só aqui o botão pode aparecer
-       */
+      // 🔴 NÃO libera execução sem confirmação humana
       if (
-        !hasApprovedPlan &&
         data?.decision?.type === "browser_execute_ready" &&
-        data?.suggested_plan &&
-        data?.needs_confirmation === false
+        humanConfirmed !== true
       ) {
-        window.__APPROVED_BROWSER_PLAN__ = data.suggested_plan;
+        // Apenas orienta verbalmente
+        return;
+      }
+
+      // ✅ Liberação FINAL — SOMENTE com confirmação humana
+      if (
+        data?.decision?.type === "browser_execute_ready" &&
+        humanConfirmed === true &&
+        window.__PENDING_BROWSER_PLAN__
+      ) {
+        window.__APPROVED_BROWSER_PLAN__ = window.__PENDING_BROWSER_PLAN__;
         window.__PENDING_BROWSER_PLAN__ = null;
-        window.__AWAITING_CONFIRMATION__ = false;
 
         if (typeof renderBrowserExecuteButton === "function") {
           renderBrowserExecuteButton();
-        } else {
-          document.dispatchEvent(
-            new CustomEvent("browser-plan-approved", {
-              detail: data.suggested_plan,
-            })
-          );
         }
+
         return;
       }
 
-      return;
     } catch (e) {
       console.error("Erro Director Cognitivo:", e);
       if (typeof directorSay === "function") {
@@ -889,13 +884,10 @@ async function routeDirector(text) {
     }
   }
 
-  // 🔧 Fallback executor (não cognitivo)
+  // 🔧 Diretor executor (botão)
   if (typeof window.__NV_DIRECTOR_CHAT_EXECUTE__ === "function") {
     window.__NV_DIRECTOR_CHAT_EXECUTE__(text);
-    return;
   }
-
-  console.warn("Director executor indisponível — aguardando cognitivo");
 }
 
 /* ============================================================
@@ -983,29 +975,29 @@ document.addEventListener("DOMContentLoaded", () => {
 // ============================================
 // LISTENER CANÔNICO — PLANO DE BROWSER APROVADO
 // ============================================
-document.addEventListener("browser-plan-approved", (e) => {
-  const plan = e.detail;
+// document.addEventListener("browser-plan-approved", (e) => {
+  // const plan = e.detail;
 
-console.group("🧠 BROWSER PLAN APPROVED EVENT");
-console.log("Event detail:", e.detail);
-console.log("Steps:", e.detail?.steps);
-console.trace("Origem do evento");
-console.groupEnd();
+// console.group("🧠 BROWSER PLAN APPROVED EVENT");
+// console.log("Event detail:", e.detail);
+// console.log("Steps:", e.detail?.steps);
+// console.trace("Origem do evento");
+// console.groupEnd();
 
-  if (!plan || !Array.isArray(plan.steps)) {
-    console.warn("Plano aprovado inválido", plan);
-    return;
-  }
+  // if (!plan || !Array.isArray(plan.steps)) {
+    // console.warn("Plano aprovado inválido", plan);
+   // return;
+ // }
 
   // ✅ FONTE ÚNICA DO BOTÃO
-  window.__APPROVED_BROWSER_PLAN__ = plan;
+ // window.__APPROVED_BROWSER_PLAN__ = plan;
 
-  console.log("✅ Plano aprovado armazenado:", plan);
+ // console.log("✅ Plano aprovado armazenado:", plan);
 
-  if (typeof window.__renderBrowserExecuteButton === "function") {
-    window.__renderBrowserExecuteButton();
-  }
-});
+ // if (typeof window.__renderBrowserExecuteButton === "function") {
+  //  window.__renderBrowserExecuteButton();
+ // }
+// });
 
 /* ============================================================
    STATUS DO BROWSER — READ ONLY (SAFE)
@@ -1045,6 +1037,7 @@ console.groupEnd();
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
