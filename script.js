@@ -469,22 +469,24 @@ function renderBrowserExecuteButton() {
       return;
     }
 
-    const steps =
-  Array.isArray(plan?.plan?.steps) ? plan.plan.steps :
-  Array.isArray(plan?.steps) ? plan.steps :
-  [];
+    const { execution_id, version, source, steps } = plan;
 
-const normalizedPlan = {
-  execution_id: plan.execution_id || `exec-${Date.now()}`,
-  version: plan.version || "plan.v1",
-  source: plan.source || "nv-control",
-  steps,
-};
+if (!execution_id || !Array.isArray(steps) || !steps.length) {
+  console.error("❌ Plano inválido para execução no browser:", plan);
+  console.groupEnd();
+  return;
+}
 
-    console.log("Plano normalizado:", normalizedPlan);
+console.log("Plano enviado ao Browser:", plan);
 
-    try {
-      await runBrowserPlan(normalizedPlan);
+try {
+  await runBrowserPlan({
+    execution_id,
+    version,
+    source,
+    steps,
+  });
+
       console.log("✅ Execução enviada com sucesso");
     } catch (err) {
       console.error("❌ Browser execution failed:", err);
@@ -843,23 +845,19 @@ async function routeDirector(text) {
       if (!hasApprovedPlan && data?.decision?.type === "browser_execute_ready" && data?.suggested_plan) {
         // Normaliza contrato canônico do Browser Executor: { plan: { steps: [...] } }
         const sp = data.suggested_plan;
-        const steps =
-          Array.isArray(sp?.plan?.steps) ? sp.plan.steps :
-          Array.isArray(sp?.steps) ? sp.steps :
-          [];
 
-        if (steps.length) {
-          window.__APPROVED_BROWSER_PLAN__ = { plan: { steps } };
-          window.__PENDING_BROWSER_PLAN__ = null;
-          window.__AWAITING_CONFIRMATION__ = false;
+// ✅ guarda o PLANO COMPLETO, sem embrulhar
+if (sp && Array.isArray(sp.steps) && sp.steps.length) {
+  window.__APPROVED_BROWSER_PLAN__ = sp;
+  window.__PENDING_BROWSER_PLAN__ = null;
+  window.__AWAITING_CONFIRMATION__ = false;
 
-          // Atualiza UI do botão (preferência: função; fallback: evento)
-          if (typeof renderBrowserExecuteButton === "function") {
-            renderBrowserExecuteButton();
-          } else {
-            document.dispatchEvent(
-              new CustomEvent("browser-plan-approved", {
-                detail: window.__APPROVED_BROWSER_PLAN__,
+  if (typeof renderBrowserExecuteButton === "function") {
+    renderBrowserExecuteButton();
+  } else {
+    document.dispatchEvent(
+      new CustomEvent("browser-plan-approved", {
+        detail: sp,
               })
             );
           }
@@ -1038,6 +1036,7 @@ console.groupEnd();
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
