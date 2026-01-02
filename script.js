@@ -846,9 +846,12 @@ async function routeDirector(text) {
       }
 
       // ✅ Diretor liberou execução (gera plano aprovado e dispara UI do botão)
-      if (!hasApprovedPlan && data?.decision?.type === "browser_execute_ready" && data?.suggested_plan) {
-        // Normaliza contrato canônico do Browser Executor: { plan: { steps: [...] } }
-        const sp = data.suggested_plan;
+      if (
+  !hasApprovedPlan &&
+  data?.decision?.type === "browser_execute_ready" &&
+  data?.suggested_plan &&
+  data?.needs_confirmation === false
+) {
 
 // ✅ guarda o PLANO COMPLETO, sem embrulhar
 if (sp && Array.isArray(sp.steps) && sp.steps.length) {
@@ -1040,3 +1043,4 @@ console.groupEnd();
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
