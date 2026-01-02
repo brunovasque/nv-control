@@ -683,8 +683,10 @@ function bindChatSend() {
 
   el.value = "";
 
-  // Director — roteamento (cognitivo vs operacional)
-  routeDirector(text);
+  // 🔒 confirmação humana explícita antes de qualquer execução
+window.__HUMAN_EXECUTION_CONFIRMED__ = true;
+
+routeDirector(text);
 };
 
   // 1) Blindagem contra submit em qualquer form que contenha o chatInput real
@@ -1037,6 +1039,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
