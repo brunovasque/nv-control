@@ -812,7 +812,6 @@ window.__NV_CHAT_WRITE__ = function (text) {
 async function routeDirector(text) {
   const USE_COGNITIVE_DIRECTOR = true;
 
-  // 🔒 Se já existe plano aprovado, cognitivo NÃO executa nada
   const hasApprovedPlan = !!window.__APPROVED_BROWSER_PLAN__;
 
   if (USE_COGNITIVE_DIRECTOR) {
@@ -838,13 +837,13 @@ async function routeDirector(text) {
 
       const data = await res.json();
 
-      // 🧠 Resposta verbal do diretor
+      // 🧠 Resposta verbal
       if (typeof directorSay === "function" && data?.reply) {
         directorSay(data.reply);
         window.__LAST_DIRECTOR_REPLY__ = data.reply;
       }
 
-      // ✅ Diretor liberou execução (PLANO FINAL)
+      // 🧠 Diretor APROVOU execução (libera botão)
       if (
         !hasApprovedPlan &&
         data?.decision?.type === "browser_execute_ready" &&
@@ -853,7 +852,7 @@ async function routeDirector(text) {
       ) {
         const plan = data.suggested_plan;
 
-        if (Array.isArray(plan.steps) && plan.steps.length) {
+        if (Array.isArray(plan.steps) && plan.steps.length > 0) {
           window.__APPROVED_BROWSER_PLAN__ = plan;
           window.__PENDING_BROWSER_PLAN__ = null;
           window.__AWAITING_CONFIRMATION__ = false;
@@ -868,9 +867,11 @@ async function routeDirector(text) {
             );
           }
         }
+
+        return;
       }
 
-      // 🧠 Plano sugerido (ainda interpretável, NÃO executa)
+      // 🧠 Diretor apenas SUGERIU plano (não libera botão)
       if (data?.suggested_plan) {
         window.__PENDING_BROWSER_PLAN__ = data.suggested_plan;
         window.__AWAITING_CONFIRMATION__ = !!data.needs_confirmation;
@@ -886,7 +887,7 @@ async function routeDirector(text) {
     }
   }
 
-  // 🔧 Diretor executor (fallback / botões)
+  // 🔧 fallback executor (botões manuais)
   if (typeof window.__NV_DIRECTOR_CHAT_EXECUTE__ === "function") {
     window.__NV_DIRECTOR_CHAT_EXECUTE__(text);
     return;
@@ -1042,6 +1043,7 @@ console.groupEnd();
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
