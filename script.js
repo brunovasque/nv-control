@@ -855,7 +855,7 @@ async function routeDirector(text) {
 
 // ✅ guarda o PLANO COMPLETO, sem embrulhar
 if (sp && Array.isArray(sp.steps) && sp.steps.length) {
-  window.__APPROVED_BROWSER_PLAN__ = sp;
+  window.__APPROVED_BROWSER_PLAN__ = data.suggested_plan;
   window.__PENDING_BROWSER_PLAN__ = null;
   window.__AWAITING_CONFIRMATION__ = false;
 
@@ -1043,4 +1043,5 @@ console.groupEnd();
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
