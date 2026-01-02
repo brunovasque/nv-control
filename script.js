@@ -887,9 +887,9 @@ async function routeDirector(text) {
   }
 
   // 🔧 Diretor executor (botão)
-  if (typeof window.__NV_DIRECTOR_CHAT_EXECUTE__ === "function") {
-    window.__NV_DIRECTOR_CHAT_EXECUTE__(text);
-  }
+// if (typeof window.__NV_DIRECTOR_CHAT_EXECUTE__ === "function") {
+//   window.__NV_DIRECTOR_CHAT_EXECUTE__(text);
+// }
 }
 
 /* ============================================================
@@ -1039,6 +1039,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
