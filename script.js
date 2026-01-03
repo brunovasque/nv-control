@@ -814,11 +814,38 @@ window.__NV_CHAT_WRITE__ = function (text) {
 // 🔒 CONFIRMAÇÃO HUMANA EXPLÍCITA (fonte única)
 window.__HUMAN_EXECUTION_CONFIRMED__ = false;
 
+// ✅ guarda o último objetivo real (não-confirmatório) do humano
+window.__LAST_DIRECTOR_OBJECTIVE__ = window.__LAST_DIRECTOR_OBJECTIVE__ || null;
+
 async function routeDirector(text) {
   const USE_COGNITIVE_DIRECTOR = true;
 
   const hasApprovedPlan = !!window.__APPROVED_BROWSER_PLAN__;
+
+  // ✅ confirmação curta (ok/segue/sim/pode/manda/ver etc.)
+  const normalized = String(text || "").trim().toLowerCase();
+  const isShortConfirm =
+    /^(ok|okay|sim|segue|pode|manda|manda ver|vai|bora|fechado|show|blz|beleza|demorou)$/i.test(
+      normalized
+    );
+
+  // ✅ fonte única da confirmação: o próprio texto do humano
+  if (isShortConfirm) {
+    window.__HUMAN_EXECUTION_CONFIRMED__ = true;
+  } else {
+    // quando é pedido real, atualiza objetivo e reseta confirmação
+    window.__LAST_DIRECTOR_OBJECTIVE__ = text;
+    window.__HUMAN_EXECUTION_CONFIRMED__ = false;
+  }
+
   const humanConfirmed = window.__HUMAN_EXECUTION_CONFIRMED__ === true;
+
+  // ✅ se o humano só disse "ok", mas o objetivo real existe, manda o objetivo junto
+  // (human_confirmed vai no context; isso permite o Director promover sem perder o alvo)
+  const messageToSend =
+    isShortConfirm && window.__LAST_DIRECTOR_OBJECTIVE__
+      ? window.__LAST_DIRECTOR_OBJECTIVE__
+      : text;
 
   if (USE_COGNITIVE_DIRECTOR) {
     try {
@@ -826,7 +853,7 @@ async function routeDirector(text) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: text,
+          message: messageToSend,
           context: {
             pending_plan: window.__PENDING_BROWSER_PLAN__ || null,
             has_approved_plan: hasApprovedPlan,
@@ -847,17 +874,13 @@ async function routeDirector(text) {
       }
 
       // 🟡 Plano sugerido pelo Director (aceita suggested_plan OU pending_plan)
+      // ⚠️ NÃO retorna aqui — salva e continua para processar decision
       if (data?.suggested_plan || data?.pending_plan) {
-        window.__PENDING_BROWSER_PLAN__ =
-          data.suggested_plan || data.pending_plan;
-        return;
+        window.__PENDING_BROWSER_PLAN__ = data.suggested_plan || data.pending_plan;
       }
 
       // 🔴 NÃO libera execução sem confirmação humana
-      if (
-        data?.decision?.type === "browser_execute_ready" &&
-        humanConfirmed !== true
-      ) {
+      if (data?.decision?.type === "browser_execute_ready" && humanConfirmed !== true) {
         return;
       }
 
@@ -880,12 +903,14 @@ async function routeDirector(text) {
         ) {
           console.error("❌ Plano inválido: URL não resolvida", plan);
 
+          // mantém pending_plan e reseta confirmação (evita loop de “ok”)
+          window.__HUMAN_EXECUTION_CONFIRMED__ = false;
+
           if (typeof directorSay === "function") {
             directorSay(
-              "O plano ainda não tem um site definido para abrir. Vou resolver isso antes de executar."
+              "O plano ainda não tem um site definido pra abrir. Vou resolver o alvo e te devolvo pronto pra executar."
             );
           }
-
           return;
         }
 
@@ -898,7 +923,6 @@ async function routeDirector(text) {
 
         return;
       }
-
     } catch (e) {
       console.error("Erro Director Cognitivo:", e);
       if (typeof directorSay === "function") {
@@ -1061,4 +1085,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
