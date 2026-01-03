@@ -823,11 +823,22 @@ async function routeDirector(text) {
   const hasApprovedPlan = !!window.__APPROVED_BROWSER_PLAN__;
 
   // ✅ confirmação curta (ok/segue/sim/pode/manda/ver etc.)
-  const normalized = String(text || "").trim().toLowerCase();
-  const isShortConfirm =
-    /^(ok|okay|sim|segue|pode|manda|manda ver|vai|bora|fechado|show|blz|beleza|demorou)$/i.test(
-      normalized
-    );
+  const normalized = String(text || "")
+  .trim()
+  .toLowerCase()
+  .replace(/[^\p{L}\p{N}\s]+/gu, " ")  // remove pontuação (vírgula, !, etc.)
+  .replace(/\s+/g, " ")
+  .trim();
+
+const tokens = normalized.split(" ").filter(Boolean);
+const confirmWords = new Set([
+  "ok","okay","sim","segue","pode","manda","vai","bora","fechado","show","blz","beleza","demorou","ver"
+]);
+
+const isShortConfirm =
+  tokens.length > 0 &&
+  tokens.length <= 3 &&                 // “sim ok”, “ok manda ver”
+  tokens.every(t => confirmWords.has(t));
 
   // ✅ fonte única da confirmação: o próprio texto do humano
   if (isShortConfirm) {
@@ -930,9 +941,11 @@ if (data?.suggested_plan && data?.decision?.type === "browser_execute_ready") {
         window.__APPROVED_BROWSER_PLAN__ = plan;
         window.__PENDING_BROWSER_PLAN__ = null;
 
-        if (typeof renderBrowserExecuteButton === "function") {
-          renderBrowserExecuteButton();
-        }
+        if (typeof window.__renderBrowserExecuteButton === "function") {
+  window.__renderBrowserExecuteButton();
+} else if (typeof renderBrowserExecuteButton === "function") {
+  renderBrowserExecuteButton();
+}
 
         return;
       }
@@ -1098,3 +1111,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
