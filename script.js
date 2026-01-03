@@ -847,18 +847,17 @@ async function routeDirector(text) {
       }
 
       // 🟡 Plano sugerido pelo Director (aceita suggested_plan OU pending_plan)
-if (data?.suggested_plan || data?.pending_plan) {
-  window.__PENDING_BROWSER_PLAN__ =
-    data.suggested_plan || data.pending_plan;
-  return;
-}
+      if (data?.suggested_plan || data?.pending_plan) {
+        window.__PENDING_BROWSER_PLAN__ =
+          data.suggested_plan || data.pending_plan;
+        return;
+      }
 
       // 🔴 NÃO libera execução sem confirmação humana
       if (
         data?.decision?.type === "browser_execute_ready" &&
         humanConfirmed !== true
       ) {
-        // Apenas orienta verbalmente
         return;
       }
 
@@ -868,7 +867,29 @@ if (data?.suggested_plan || data?.pending_plan) {
         humanConfirmed === true &&
         window.__PENDING_BROWSER_PLAN__
       ) {
-        window.__APPROVED_BROWSER_PLAN__ = window.__PENDING_BROWSER_PLAN__;
+        const plan = window.__PENDING_BROWSER_PLAN__;
+        const firstStep = plan?.steps?.[0];
+        const url = firstStep?.url;
+
+        // 🚨 VALIDAÇÃO CANÔNICA — NUNCA EXECUTAR PLANO SEM URL RESOLVIDA
+        if (
+          !firstStep ||
+          firstStep.type !== "open" ||
+          typeof url !== "string" ||
+          !url.startsWith("http")
+        ) {
+          console.error("❌ Plano inválido: URL não resolvida", plan);
+
+          if (typeof directorSay === "function") {
+            directorSay(
+              "O plano ainda não tem um site definido para abrir. Vou resolver isso antes de executar."
+            );
+          }
+
+          return;
+        }
+
+        window.__APPROVED_BROWSER_PLAN__ = plan;
         window.__PENDING_BROWSER_PLAN__ = null;
 
         if (typeof renderBrowserExecuteButton === "function") {
@@ -886,6 +907,7 @@ if (data?.suggested_plan || data?.pending_plan) {
       return;
     }
   }
+}
 
   // 🔧 Diretor executor (botão)
 // if (typeof window.__NV_DIRECTOR_CHAT_EXECUTE__ === "function") {
@@ -1040,12 +1062,3 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
-
-
-
-
-
-
-
-
-
