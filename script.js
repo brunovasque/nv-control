@@ -507,31 +507,31 @@ function renderBrowserExecuteButton() {
       } catch (_) {}
 
       console.log("🧹 Estado limpo e botão removido (rearmado)");
-      // 🔁 EXECUTION REPORT — fecha o loop com o Director
-      try {
-        const executionReport = {
-          execution_id: execution_id,
-          status: "completed", // ou "failed" se cair no catch
-          timestamp: Date.now(),
-          steps_executed: steps,
-        };
+// 🔁 EXECUTION REPORT — fecha o loop com o Director (sempre, no finally)
+try {
+  const executionReport = {
+    execution_id: execution_id,
+    status: "completed", // depois a gente melhora isso (1 passo por vez)
+    timestamp: Date.now(),
+    steps_executed: steps,
+  };
 
-        await fetch("https://run.nv-imoveis.com/director/cognitive", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message: "__execution_report__",
-            context: {
-              execution_report: executionReport,
-              last_objective: window.__LAST_DIRECTOR_OBJECTIVE__ || null,
-            },
-          }),
-        });
+  await fetch("https://run.nv-imoveis.com/director/cognitive", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: "__execution_report__",
+      context: {
+        execution_report: executionReport,
+        last_objective: window.__LAST_DIRECTOR_OBJECTIVE__ || null,
+      },
+    }),
+  });
 
-        console.log("🔁 ExecutionReport enviado ao Director");
-      } catch (err) {
-        console.error("❌ Falha ao enviar ExecutionReport ao Director", err);
-      }
+  console.log("🔁 ExecutionReport enviado ao Director");
+} catch (err) {
+  console.error("❌ Falha ao enviar ExecutionReport ao Director", err);
+}
 
       console.groupEnd();
     }
@@ -1084,6 +1084,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
