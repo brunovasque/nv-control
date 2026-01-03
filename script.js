@@ -453,7 +453,7 @@ function renderBrowserExecuteButton() {
   btn.style.padding = "8px 12px";
   btn.style.cursor = "pointer";
 
-  // 🔘 CLICK = EXECUÇÃO
+    // 🔘 CLICK = EXECUÇÃO
   btn.onclick = async () => {
     console.group("🚀 CLICK EXECUTAR BROWSER");
 
@@ -475,35 +475,40 @@ function renderBrowserExecuteButton() {
 
     const { execution_id, version, source, steps } = plan;
 
-if (!execution_id || !Array.isArray(steps) || !steps.length) {
-  console.error("❌ Plano inválido para execução no browser:", plan);
-  console.groupEnd();
-  return;
-}
-
-console.log("Plano enviado ao Browser:", plan);
-
-try {
-  await runBrowserPlan({
-    execution_id,
-    version,
-    source,
-    steps,
-  });
-
-      console.log("✅ Execução enviada com sucesso");
-    } catch (err) {
-      console.error("❌ Browser execution failed:", err);
+    if (!execution_id || !Array.isArray(steps) || !steps.length) {
+      console.error("❌ Plano inválido para execução no browser:", plan);
       console.groupEnd();
       return;
     }
 
-    // 🧹 limpeza canônica
-    window.__APPROVED_BROWSER_PLAN__ = null;
-    btn.remove();
+    console.log("Plano enviado ao Browser:", plan);
 
-    console.log("🧹 Estado limpo e botão removido");
-    console.groupEnd();
+    try {
+      await runBrowserPlan({
+        execution_id,
+        version,
+        source,
+        steps,
+      });
+
+      console.log("✅ Execução enviada com sucesso");
+    } catch (err) {
+      console.error("❌ Browser execution failed:", err);
+
+      if (typeof directorSay === "function") {
+        directorSay("⚠️ A execução do Browser falhou. Vou deixar rearmado pra você tentar de novo / refazer o pedido.");
+      }
+    } finally {
+      // 🧹 REARME CANÔNICO — sempre limpa (sucesso OU falha)
+      window.__APPROVED_BROWSER_PLAN__ = null;
+
+      try {
+        btn.remove();
+      } catch (_) {}
+
+      console.log("🧹 Estado limpo e botão removido (rearmado)");
+      console.groupEnd();
+    }
   };
 
   container.appendChild(btn);
@@ -1053,6 +1058,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
