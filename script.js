@@ -868,6 +868,19 @@ async function routeDirector(text) {
 
       const data = await res.json();
 
+       // 🔒 Persistência canônica do retorno do Director
+window.__LAST_DIRECTOR_REPLY__ = data;
+
+// Persistência de planos (fonte única)
+if (data?.pending_plan) {
+  window.__PENDING_BROWSER_PLAN__ = data.pending_plan;
+}
+
+if (data?.suggested_plan && data?.decision?.type === "browser_execute_ready") {
+  window.__APPROVED_BROWSER_PLAN__ = data.suggested_plan;
+  window.__PENDING_BROWSER_PLAN__ = null;
+}
+
       // 🧠 Fala do diretor
       if (typeof directorSay === "function" && data?.reply) {
         directorSay(data.reply);
@@ -1085,5 +1098,3 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
-
-
