@@ -806,15 +806,13 @@ window.__NV_CHAT_WRITE__ = function (text) {
   }
 };
 
-/* ============================================================
-   DIRECTOR — ROTEAMENTO (CANÔNICO)
-   - Cognitivo: via proxy (run.nv-imoveis.com)
-   - Operacional: executor local (botões)
-============================================================ */
-// 🔒 CONFIRMAÇÃO HUMANA EXPLÍCITA (fonte única)
-window.__HUMAN_EXECUTION_CONFIRMED__ = false;
+// ============================================================
+// DIRECTOR — ROTEAMENTO (ALINHADO AO CONTRATO CANÔNICO)
+// Painel NÃO pensa, NÃO confirma, NÃO reavalia.
+// Painel apenas OBSERVA estado do Director.
+// ============================================================
 
-// ✅ guarda o último objetivo real (não-confirmatório) do humano
+// Estado informativo apenas (não decisório)
 window.__LAST_DIRECTOR_OBJECTIVE__ = window.__LAST_DIRECTOR_OBJECTIVE__ || null;
 
 async function routeDirector(text) {
@@ -822,141 +820,90 @@ async function routeDirector(text) {
 
   const hasApprovedPlan = !!window.__APPROVED_BROWSER_PLAN__;
 
-  // ✅ confirmação curta (ok/segue/sim/pode/manda/ver etc.)
-  const normalized = String(text || "")
-  .trim()
-  .toLowerCase()
-  .replace(/[^\p{L}\p{N}\s]+/gu, " ")  // remove pontuação (vírgula, !, etc.)
-  .replace(/\s+/g, " ")
-  .trim();
-
-const tokens = normalized.split(" ").filter(Boolean);
-const confirmWords = new Set([
-  "ok","okay","sim","segue","pode","manda","vai","bora","fechado","show","blz","beleza","demorou","ver"
-]);
-
-const isShortConfirm =
-  tokens.length > 0 &&
-  tokens.length <= 3 &&                 // “sim ok”, “ok manda ver”
-  tokens.every(t => confirmWords.has(t));
-
-  // ✅ fonte única da confirmação: o próprio texto do humano
-  if (isShortConfirm) {
-    window.__HUMAN_EXECUTION_CONFIRMED__ = true;
-  } else {
-    // quando é pedido real, atualiza objetivo e reseta confirmação
+  // guarda último objetivo humano (apenas informativo)
+  if (text && typeof text === "string") {
     window.__LAST_DIRECTOR_OBJECTIVE__ = text;
-    window.__HUMAN_EXECUTION_CONFIRMED__ = false;
   }
 
-  const humanConfirmed = window.__HUMAN_EXECUTION_CONFIRMED__ === true;
+  if (!USE_COGNITIVE_DIRECTOR) return;
 
-  // ✅ se o humano só disse "ok", mas o objetivo real existe, manda o objetivo junto
-  // (human_confirmed vai no context; isso permite o Director promover sem perder o alvo)
-  const messageToSend =
-    isShortConfirm && window.__LAST_DIRECTOR_OBJECTIVE__
-      ? window.__LAST_DIRECTOR_OBJECTIVE__
-      : text;
+  try {
+    const res = await fetch("https://run.nv-imoveis.com/director/cognitive", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: text,
+        context: {
+          has_approved_plan: hasApprovedPlan,
+        },
+      }),
+    });
 
-  if (USE_COGNITIVE_DIRECTOR) {
-    try {
-      const res = await fetch("https://run.nv-imoveis.com/director/cognitive", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: messageToSend,
-          context: {
-            pending_plan: window.__PENDING_BROWSER_PLAN__ || null,
-            has_approved_plan: hasApprovedPlan,
-            human_confirmed: humanConfirmed,
-          },
-        }),
-      });
+    if (!res.ok) {
+      throw new Error(`Director cognitivo HTTP ${res.status}`);
+    }
 
-      if (!res.ok) {
-        throw new Error(`Director cognitivo HTTP ${res.status}`);
-      }
+    const data = await res.json();
 
-      const data = await res.json();
+    // ==============================
+    // Persistência CANÔNICA do retorno
+    // ==============================
+    window.__LAST_DIRECTOR_REPLY__ = data;
 
-       // 🔒 Persistência canônica do retorno do Director
-window.__LAST_DIRECTOR_REPLY__ = data;
+    // 🧠 Fala do Director (conversa livre)
+    if (typeof directorSay === "function" && data?.reply) {
+      directorSay(data.reply);
+    }
 
-// Persistência de planos (fonte única)
-if (data?.pending_plan) {
-  window.__PENDING_BROWSER_PLAN__ = data.pending_plan;
-}
+    // ==============================
+    // 🔑 FASE 4 — READY TO EXECUTE
+    // Fonte ÚNICA:
+    // decision === browser_execute_ready
+    // suggested_plan presente
+    // ==============================
+    if (
+      data?.decision?.type === "browser_execute_ready" &&
+      data?.suggested_plan
+    ) {
+      const plan = data.suggested_plan;
+      const firstStep = plan?.steps?.[0];
+      const url = firstStep?.url;
 
-if (data?.suggested_plan && data?.decision?.type === "browser_execute_ready") {
-  window.__APPROVED_BROWSER_PLAN__ = data.suggested_plan;
-  window.__PENDING_BROWSER_PLAN__ = null;
-}
-
-      // 🧠 Fala do diretor
-      if (typeof directorSay === "function" && data?.reply) {
-        directorSay(data.reply);
-      }
-
-      // 🟡 Plano sugerido pelo Director (aceita suggested_plan OU pending_plan)
-      // ⚠️ NÃO retorna aqui — salva e continua para processar decision
-      if (data?.suggested_plan || data?.pending_plan) {
-        window.__PENDING_BROWSER_PLAN__ = data.suggested_plan || data.pending_plan;
-      }
-
-      // 🔴 NÃO libera execução sem confirmação humana
-      if (data?.decision?.type === "browser_execute_ready" && humanConfirmed !== true) {
-        return;
-      }
-
-      // ✅ Liberação FINAL — SOMENTE com confirmação humana
+      // 🚨 Validação mínima e objetiva
       if (
-        data?.decision?.type === "browser_execute_ready" &&
-        humanConfirmed === true &&
-        window.__PENDING_BROWSER_PLAN__
+        !firstStep ||
+        firstStep.type !== "open" ||
+        typeof url !== "string" ||
+        !url.startsWith("http")
       ) {
-        const plan = window.__PENDING_BROWSER_PLAN__;
-        const firstStep = plan?.steps?.[0];
-        const url = firstStep?.url;
-
-        // 🚨 VALIDAÇÃO CANÔNICA — NUNCA EXECUTAR PLANO SEM URL RESOLVIDA
-        if (
-          !firstStep ||
-          firstStep.type !== "open" ||
-          typeof url !== "string" ||
-          !url.startsWith("http")
-        ) {
-          console.error("❌ Plano inválido: URL não resolvida", plan);
-
-          // mantém pending_plan e reseta confirmação (evita loop de “ok”)
-          window.__HUMAN_EXECUTION_CONFIRMED__ = false;
-
-          if (typeof directorSay === "function") {
-            directorSay(
-              "O plano ainda não tem um site definido pra abrir. Vou resolver o alvo e te devolvo pronto pra executar."
-            );
-          }
-          return;
-        }
-
-        window.__APPROVED_BROWSER_PLAN__ = plan;
-        window.__PENDING_BROWSER_PLAN__ = null;
-
-        if (typeof window.__renderBrowserExecuteButton === "function") {
-  window.__renderBrowserExecuteButton();
-} else if (typeof renderBrowserExecuteButton === "function") {
-  renderBrowserExecuteButton();
-}
-
+        console.error("❌ Plano inválido recebido do Director", plan);
         return;
       }
-    } catch (e) {
-      console.error("Erro Director Cognitivo:", e);
-      if (typeof directorSay === "function") {
-        directorSay("Tive um problema técnico agora. Tenta novamente.");
+
+      // ✅ Persistência FINAL (fonte única observada pelo painel)
+      window.__APPROVED_BROWSER_PLAN__ = plan;
+
+      // 🖱️ Render do botão (reação do painel)
+      if (typeof window.__renderBrowserExecuteButton === "function") {
+        window.__renderBrowserExecuteButton();
+      } else if (typeof renderBrowserExecuteButton === "function") {
+        renderBrowserExecuteButton();
       }
+
       return;
     }
+
+    // Qualquer outro caso: conversa normal, sem efeitos colaterais
+    return;
+
+  } catch (e) {
+    console.error("Erro Director Cognitivo:", e);
+    if (typeof directorSay === "function") {
+      directorSay("Tive um problema técnico agora. Tenta novamente.");
+    }
+    return;
   }
+}
 
   // 🔧 Diretor executor (botão)
 // if (typeof window.__NV_DIRECTOR_CHAT_EXECUTE__ === "function") {
@@ -1111,4 +1058,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
