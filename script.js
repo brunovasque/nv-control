@@ -813,7 +813,8 @@ window.__NV_CHAT_WRITE__ = function (text) {
 // ============================================================
 
 // Estado informativo apenas (não decisório)
-window.__LAST_DIRECTOR_OBJECTIVE__ = window.__LAST_DIRECTOR_OBJECTIVE__ || null;
+window.__LAST_DIRECTOR_OBJECTIVE__ =
+  window.__LAST_DIRECTOR_OBJECTIVE__ || null;
 
 async function routeDirector(text) {
   const USE_COGNITIVE_DIRECTOR = true;
@@ -893,7 +894,7 @@ async function routeDirector(text) {
       return;
     }
 
-    // Qualquer outro caso: conversa normal, sem efeitos colaterais
+    // Conversa normal — nenhum efeito colateral
     return;
 
   } catch (e) {
@@ -1058,5 +1059,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
