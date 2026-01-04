@@ -54,7 +54,7 @@ function on(el, evt, fn) { if (el) el.addEventListener(evt, fn); }
 ============================================================ */
 
 async function runBrowserPlan(plan) {
-  const runUrl = getBrowserRunUrl();
+  const runUrl = window.getBrowserRunUrl();
 
   console.debug("[BROWSER EXECUTOR] usando URL:", runUrl);
 
@@ -1071,5 +1071,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
