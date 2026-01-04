@@ -54,7 +54,9 @@ function on(el, evt, fn) { if (el) el.addEventListener(evt, fn); }
 ============================================================ */
 
 async function runBrowserPlan(plan) {
-  const runUrl = window.getBrowserRunUrl();
+  const runUrl =
+    localStorage.getItem("nv_browser_run_url") ||
+    "https://run.nv-imoveis.com/browser/run";
 
   console.debug("[BROWSER EXECUTOR] usando URL:", runUrl);
 
@@ -1071,6 +1073,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
