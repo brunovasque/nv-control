@@ -95,6 +95,25 @@ async function runBrowserPlan(plan) {
 
   console.debug("[BROWSER → WORKER PAYLOAD]", payload);
 
+     const execId = plan.execution_id || getExecutionId() || `browser-${Date.now()}`;
+
+  const payload = {
+    executor_action: "run_browser_plan",
+    execution_id: execId,
+    plan: {
+      execution_id: execId,
+      version: plan.version || "plan.v1",
+      source: plan.source || "director",
+      type: plan.type || "approved",
+      steps: plan.steps,
+    },
+    meta: {
+      source: "NV-CONTROL",
+      channel: "BROWSER",
+      ts: Date.now(),
+    },
+  };
+
   const res = await fetch(runUrl, {
     method: "POST",
     headers: {
@@ -1084,3 +1103,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
