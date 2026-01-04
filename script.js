@@ -496,32 +496,6 @@ function renderBrowserExecuteButton() {
       } catch (_) {}
 
       console.log("🧹 Estado limpo e botão removido (rearmado)");
-// 🔁 EXECUTION REPORT — evento de DISPARO (NÃO finaliza loop)
-// ❗ Painel NÃO decide conclusão. Director é a única autoridade.
-try {
-  const executionReport = {
-    execution_id: execution_id,
-    event: "browser_execution_dispatched",
-    timestamp: Date.now(),
-    steps_planned: steps,
-  };
-
-  await fetch("https://run.nv-imoveis.com/director/cognitive", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      message: "__execution_event__",
-      context: {
-        execution_report: executionReport,
-        last_objective: window.__LAST_DIRECTOR_OBJECTIVE__ || null,
-      },
-    }),
-  });
-
-  console.log("🔁 Execution event enviado ao Director (loop mantido)");
-} catch (err) {
-  console.error("❌ Falha ao enviar execution event ao Director", err);
-}
 
       console.groupEnd();
     }
@@ -1074,3 +1048,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
