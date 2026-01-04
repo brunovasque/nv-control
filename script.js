@@ -53,21 +53,6 @@ function on(el, evt, fn) { if (el) el.addEventListener(evt, fn); }
    ⚠️ DEVE FICAR ANTES DE QUALQUER USO
 ============================================================ */
 
-function getBrowserRunUrl() {
-  const stored = localStorage.getItem("nv_browser_run_url");
-
-  // Log defensivo para diagnóstico (pode remover depois)
-  console.debug("[BROWSER RUN URL]", stored);
-
-  return (
-    stored ||
-    "https://run.nv-imoveis.com/browser/run"
-  );
-}
-
-// expõe explicitamente para evitar shadow / override
-window.getBrowserRunUrl = getBrowserRunUrl;
-
 async function runBrowserPlan(plan) {
   const runUrl = getBrowserRunUrl();
 
@@ -77,25 +62,7 @@ async function runBrowserPlan(plan) {
     throw new Error("Plano inválido para execução no browser.");
   }
 
-  const payload = {
-  execution_id: plan.execution_id || getExecutionId() || `browser-${Date.now()}`,
-  plan: {
-    execution_id: plan.execution_id,
-    version: plan.version,
-    source: plan.source,
-    type: plan.type,
-    steps: plan.steps,
-  },
-  meta: {
-    source: "NV-CONTROL",
-    channel: "BROWSER",
-    ts: Date.now(),
-  },
-};
-
-  console.debug("[BROWSER → WORKER PAYLOAD]", payload);
-
-     const execId = plan.execution_id || getExecutionId() || `browser-${Date.now()}`;
+  const execId = plan.execution_id || getExecutionId() || `browser-${Date.now()}`;
 
   const payload = {
     executor_action: "run_browser_plan",
@@ -113,6 +80,8 @@ async function runBrowserPlan(plan) {
       ts: Date.now(),
     },
   };
+
+  console.debug("[BROWSER → WORKER PAYLOAD]", payload);
 
   const res = await fetch(runUrl, {
     method: "POST",
@@ -136,7 +105,6 @@ async function runBrowserPlan(plan) {
   return data || { ok: true };
 }
 
-// expõe explicitamente para evitar binding antigo
 window.runBrowserPlan = runBrowserPlan;
 
 /* ============================================================
@@ -1103,4 +1071,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
