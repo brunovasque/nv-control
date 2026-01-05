@@ -846,14 +846,16 @@ async function routeDirector(text) {
 // ==============================
 if (
   data?.decision?.type === "browser_execute_ready" &&
-  data?.suggested_plan
+  (data?.plan || data?.suggested_plan)
 ) {
+  const approvedPlan = data.plan || data.suggested_plan;
+
   console.group("🧠 PLANO DE BROWSER APROVADO (DIRECTOR)");
-  console.log("Plano recebido:", data.suggested_plan);
+  console.log("Plano recebido:", approvedPlan);
   console.groupEnd();
 
   // 🔒 Fonte ÚNICA da execução
-  window.__APPROVED_BROWSER_PLAN__ = data.suggested_plan;
+  window.__APPROVED_BROWSER_PLAN__ = approvedPlan;
 
   // 🖱️ Painel reage (não decide)
   if (typeof window.__renderBrowserExecuteButton === "function") {
@@ -1070,6 +1072,3 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
-
-
-
