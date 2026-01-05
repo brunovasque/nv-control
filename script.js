@@ -842,6 +842,20 @@ async function routeDirector(text) {
     const data = await res.json();
 
     // ==============================
+    // Promoção canônica do plano (somente após autorização)
+    // ==============================
+    if (
+      data?.decision?.type === "browser_execute_ready" &&
+      data?.suggested_plan
+    ) {
+      window.__APPROVED_BROWSER_PLAN__ = data.suggested_plan;
+
+      if (typeof window.__renderBrowserExecuteButton === "function") {
+        window.__renderBrowserExecuteButton();
+      }
+    }
+
+    // ==============================
     // Persistência CANÔNICA do retorno
     // ==============================
     window.__LAST_DIRECTOR_REPLY__ = data;
@@ -1048,4 +1062,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
