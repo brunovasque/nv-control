@@ -1152,7 +1152,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!liveBtn) return;
 
   liveBtn.addEventListener("click", () => {
-    const liveUrl = "https://browser.nv-imoveis.com/novnc";
+    const liveUrl = "https://browser.nv-imoveis.com/novnc/vnc.html?autoconnect=1";
 
     window.open(
       liveUrl,
@@ -1227,6 +1227,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
