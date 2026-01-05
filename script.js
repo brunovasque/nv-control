@@ -508,6 +508,98 @@ function renderBrowserExecuteButton() {
 window.__renderBrowserExecuteButton = renderBrowserExecuteButton;
 
 /* ============================================================
+   🧠 DIRETOR HUMANO — BOTÃO ISOLADO (MODO B)
+   - NÃO usa chat
+   - NÃO envia message
+   - NÃO envia histórico
+   - Apenas sinaliza decisão humana explícita
+============================================================ */
+
+function renderHumanDirectorButton() {
+  const existing = document.getElementById("human-director-btn");
+  if (existing) return;
+
+  const container =
+    document.querySelector(".chat-input-container") ||
+    document.querySelector(".chat-input") ||
+    document.body;
+
+  if (!container) {
+    console.warn("Human Director: container não encontrado");
+    return;
+  }
+
+  const btn = document.createElement("button");
+  btn.id = "human-director-btn";
+  btn.textContent = "🧠 Diretor Humano — Aceitar Plano";
+  btn.style.marginLeft = "8px";
+  btn.style.padding = "8px 12px";
+  btn.style.cursor = "pointer";
+  btn.style.background = "#2c2c2c";
+  btn.style.color = "#fff";
+  btn.style.border = "1px solid #555";
+
+  btn.onclick = async () => {
+    console.group("🧠 CLICK DIRETOR HUMANO");
+
+    const payload = {
+      action: "accept_plan",
+      source: "human",
+      intent: {
+        objective: window.__LAST_DIRECTOR_OBJECTIVE__ || "decisão humana explícita",
+        notes: "painel NV-CONTROL",
+      },
+    };
+
+    console.log("Payload enviado ao Director:", payload);
+
+    try {
+      const res = await fetch("https://run.nv-imoveis.com/director/cognitive", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      console.log("Resposta do Director:", data);
+
+      if (data?.decision?.type === "browser_execute_ready") {
+        console.log("✅ Diretor humano aceito. Browser pronto.");
+
+        // painel apenas REAGE
+        if (typeof window.__renderBrowserExecuteButton === "function") {
+          window.__renderBrowserExecuteButton();
+        }
+      } else {
+        console.warn("Resposta inesperada do Director:", data);
+      }
+
+    } catch (err) {
+      console.error("❌ Erro no Diretor Humano:", err);
+      if (typeof directorSay === "function") {
+        directorSay("⚠️ Falha ao sinalizar decisão humana. Veja o console.");
+      }
+    } finally {
+      console.groupEnd();
+    }
+  };
+
+  container.appendChild(btn);
+}
+
+// 🔓 Exposição canônica
+window.__renderHumanDirectorButton = renderHumanDirectorButton;
+
+// Render imediato (UX)
+try {
+  window.__renderHumanDirectorButton();
+} catch (_) {}
+
+/* ============================================================
    API ADAPTER (payloads corretos + relatórios humanos)
 ============================================================ */
 function buildApiAdapter(api) {
@@ -1072,3 +1164,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
