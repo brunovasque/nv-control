@@ -576,53 +576,80 @@ function renderHumanDirectorButton() {
   btn.style.border = "1px solid #555";
 
   btn.onclick = async () => {
-    console.group("🧠 CLICK DIRETOR HUMANO");
+  console.group("🧠 CLICK DIRETOR HUMANO");
 
-    const payload = {
-      action: "accept_plan",
-      source: "human",
-      intent: {
-        objective: window.__LAST_DIRECTOR_OBJECTIVE__ || "decisão humana explícita",
-        notes: "painel NV-CONTROL",
-      },
-    };
+  let humanPlan = null;
 
-    console.log("Payload enviado ao Director:", payload);
-
-    try {
-      const res = await fetch("https://run.nv-imoveis.com/director/cognitive", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
-
-      const data = await res.json();
-      console.log("Resposta do Director:", data);
-
-      if (data?.decision?.type === "browser_execute_ready") {
-        console.log("✅ Diretor humano aceito. Browser pronto.");
-
-        // painel apenas REAGE
-        if (typeof window.__renderBrowserExecuteButton === "function") {
-          window.__renderBrowserExecuteButton();
-        }
-      } else {
-        console.warn("Resposta inesperada do Director:", data);
-      }
-
-    } catch (err) {
-      console.error("❌ Erro no Diretor Humano:", err);
-      if (typeof directorSay === "function") {
-        directorSay("⚠️ Falha ao sinalizar decisão humana. Veja o console.");
-      }
-    } finally {
-      console.groupEnd();
+  try {
+    if (typeof getHumanBrowserPlan === "function") {
+      humanPlan = getHumanBrowserPlan();
     }
+  } catch (err) {
+    console.error("❌ Plano humano inválido:", err);
+    if (typeof directorSay === "function") {
+      directorSay("❌ Plano Browser inválido. Corrija o JSON antes de prosseguir.");
+    }
+    console.groupEnd();
+    return;
+  }
+
+  if (!humanPlan) {
+    if (typeof directorSay === "function") {
+      directorSay("⚠️ Nenhum plano browser encontrado. Cole o plano no campo correto.");
+    }
+    console.groupEnd();
+    return;
+  }
+
+  // 🔒 FONTE ÚNICA DO PLANO
+  window.__APPROVED_BROWSER_PLAN__ = humanPlan;
+
+  const payload = {
+    action: "accept_plan",
+    source: "human",
+    intent: {
+      objective:
+        humanPlan?.steps?.[0]?.url ||
+        window.__LAST_DIRECTOR_OBJECTIVE__ ||
+        "decisão humana explícita",
+      notes: "plano browser humano injetado via painel",
+    },
   };
+
+  console.log("Payload enviado ao Director:", payload);
+
+  try {
+    const res = await fetch("https://run.nv-imoveis.com/director/cognitive", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    console.log("Resposta do Director:", data);
+
+    if (data?.decision?.type === "browser_execute_ready") {
+      console.log("✅ Diretor humano aceito. Browser pronto.");
+
+      if (typeof window.__renderBrowserExecuteButton === "function") {
+        window.__renderBrowserExecuteButton();
+      }
+    } else {
+      console.warn("Resposta inesperada do Director:", data);
+    }
+  } catch (err) {
+    console.error("❌ Erro no Diretor Humano:", err);
+    if (typeof directorSay === "function") {
+      directorSay("⚠️ Falha ao sinalizar decisão humana. Veja o console.");
+    }
+  } finally {
+    console.groupEnd();
+  }
+};
 
   container.appendChild(btn);
 }
@@ -1200,5 +1227,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
