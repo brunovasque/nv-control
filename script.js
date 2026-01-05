@@ -493,13 +493,13 @@ function renderBrowserExecuteButton() {
       return;
     }
 
-    const { execution_id, version, source, steps } = plan;
+    const { version, steps } = plan;
 
-    if (!execution_id || !Array.isArray(steps) || !steps.length) {
-      console.error("❌ Plano inválido para execução no browser:", plan);
-      console.groupEnd();
-      return;
-    }
+if (version !== "plan.v1" || !Array.isArray(steps) || !steps.length) {
+  console.error("❌ Plano inválido para execução no browser:", plan);
+  console.groupEnd();
+  return;
+}
 
     console.log("Plano enviado ao Browser:", plan);
 
@@ -1222,3 +1222,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
