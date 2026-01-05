@@ -169,6 +169,42 @@ function ui() {
 }
 
 /* ============================================================
+   🧠 PLANO BROWSER — INPUT HUMANO (CANÔNICO)
+   - JSON puro
+   - Nenhuma interpretação
+   - Nenhuma heurística
+============================================================ */
+
+function getHumanBrowserPlan() {
+  const textarea =
+    document.querySelector("#humanBrowserPlan") ||
+    document.querySelector("textarea[data-field='human-browser-plan']");
+
+  if (!textarea) return null;
+
+  const raw = String(textarea.value || "").trim();
+  if (!raw) return null;
+
+  let plan;
+  try {
+    plan = JSON.parse(raw);
+  } catch (err) {
+    throw new Error("Plano Browser inválido: JSON malformado.");
+  }
+
+  // validação mínima (contrato)
+  if (
+    plan.version !== "plan.v1" ||
+    !Array.isArray(plan.steps) ||
+    !plan.steps.length
+  ) {
+    throw new Error("Plano Browser inválido: estrutura incompatível com plan.v1.");
+  }
+
+  return plan;
+}
+
+/* ============================================================
    INIT BOOTSTRAP
 ============================================================ */
 if (document.readyState === "loading") {
@@ -1164,4 +1200,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
