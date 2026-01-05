@@ -60,26 +60,21 @@ async function runBrowserPlan(plan) {
 
   console.debug("[BROWSER EXECUTOR] usando URL:", runUrl);
 
-  if (!plan || !Array.isArray(plan.steps)) {
+  // validação mínima e objetiva (contrato)
+  if (
+    !plan ||
+    plan.version !== "plan.v1" ||
+    !Array.isArray(plan.steps) ||
+    !plan.steps.length
+  ) {
     throw new Error("Plano inválido para execução no browser.");
   }
 
-  const execId = plan.execution_id || getExecutionId() || `browser-${Date.now()}`;
-
+  // ⚠️ PAYLOAD CANÔNICO — IGUAL AO CURL
   const payload = {
-    executor_action: "run_browser_plan",
-    execution_id: execId,
     plan: {
-      execution_id: execId,
-      version: plan.version || "plan.v1",
-      source: plan.source || "director",
-      type: plan.type || "approved",
+      version: "plan.v1",
       steps: plan.steps,
-    },
-    meta: {
-      source: "NV-CONTROL",
-      channel: "BROWSER",
-      ts: Date.now(),
     },
   };
 
@@ -1227,7 +1222,3 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
-
-
-
-
