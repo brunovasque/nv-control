@@ -504,16 +504,14 @@ if (version !== "plan.v1" || !Array.isArray(steps) || !steps.length) {
     console.log("Plano enviado ao Browser:", plan);
 
     try {
-      await runBrowserPlan({
-        execution_id,
-        version,
-        source,
-        steps,
-      });
+  await runBrowserPlan({
+    version,
+    steps,
+  });
 
-      console.log("✅ Execução enviada com sucesso");
-    } catch (err) {
-      console.error("❌ Browser execution failed:", err);
+  console.log("✅ Execução enviada com sucesso");
+} catch (err) {
+  console.error("❌ Browser execution failed:", err);
 
       if (typeof directorSay === "function") {
         directorSay("⚠️ A execução do Browser falhou. Vou deixar rearmado pra você tentar de novo / refazer o pedido.");
@@ -1222,4 +1220,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
