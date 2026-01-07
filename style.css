@@ -87,6 +87,19 @@ html, body {
 }
 
 /* ============================================================
+   CHAT MODES (SIDEBAR)
+============================================================ */
+.mode-btn {
+  margin-top: 4px;
+}
+
+.mode-btn.active {
+  background: #2a3146;
+  border-left: 3px solid #4da3ff;
+  color: #ffffff;
+}
+
+/* ============================================================
    MAIN AREA
 ============================================================ */
 .main-area {
@@ -349,3 +362,4 @@ html, body {
 .action-btn.live-btn:hover {
   background: rgba(255, 59, 59, 0.18);
 }
+
