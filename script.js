@@ -1155,8 +1155,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-});
-
 // ============================================================
 // CHAT MODE TOGGLE — CANÔNICO (Director ↔ Manual)
 // ============================================================
@@ -1259,3 +1257,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
