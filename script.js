@@ -1166,6 +1166,87 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (!chatContainer || !manualPlan || !modeButtons.length) return;
 
+     // 1) Desativa o botão legado (não faz mais sentido com modos)
+  const legacyHumanBtn = document.getElementById("human-director-btn");
+  if (legacyHumanBtn) legacyHumanBtn.style.display = "none";
+
+  // 2) Reusa EXATAMENTE o caminho já implantado: accept_plan → /director/cognitive
+  async function acceptHumanPlanViaExistingFlow() {
+    console.group("✍️ ENTER MODO MANUAL → ACCEPT_PLAN (reuso canônico)");
+
+    let humanPlan = null;
+    try {
+      if (typeof getHumanBrowserPlan === "function") {
+        humanPlan = getHumanBrowserPlan();
+      }
+    } catch (err) {
+      console.error("❌ Plano humano inválido:", err);
+      if (typeof directorSay === "function") {
+        directorSay("❌ Plano Browser inválido. Corrija o JSON antes de prosseguir.");
+      }
+      console.groupEnd();
+      return;
+    }
+
+    if (!humanPlan) {
+      if (typeof directorSay === "function") {
+        directorSay("⚠️ Nenhum plano browser encontrado. Cole o plano no campo correto.");
+      }
+      console.groupEnd();
+      return;
+    }
+
+    const payload = {
+      action: "accept_plan",
+      source: "human",
+      intent: {
+        objective:
+          humanPlan?.steps?.[0]?.url ||
+          window.__LAST_DIRECTOR_OBJECTIVE__ ||
+          "decisão humana explícita",
+        notes: "plano browser humano enviado via Modo Manual (Enter)",
+      },
+    };
+
+    try {
+      const res = await fetch("https://run.nv-imoveis.com/director/cognitive", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const data = await res.json();
+      console.log("Resposta do Director:", data);
+
+      if (data?.decision?.type === "browser_execute_ready") {
+        console.log("✅ Plano humano aceito. Browser pronto.");
+        if (typeof window.__renderBrowserExecuteButton === "function") {
+          window.__renderBrowserExecuteButton();
+        }
+      } else {
+        console.warn("Resposta inesperada do Director:", data);
+      }
+    } catch (err) {
+      console.error("❌ Erro no envio manual:", err);
+      if (typeof directorSay === "function") {
+        directorSay("⚠️ Falha ao sinalizar decisão humana. Veja o console.");
+      }
+    } finally {
+      console.groupEnd();
+    }
+  }
+
+  // 3) Enter envia / Shift+Enter quebra linha (somente no Modo Manual)
+  manualPlan.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      acceptHumanPlanViaExistingFlow();
+    }
+  });
+
+
   function setMode(mode) {
     modeButtons.forEach(btn =>
       btn.classList.toggle("active", btn.dataset.chatMode === mode)
@@ -1257,4 +1338,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
