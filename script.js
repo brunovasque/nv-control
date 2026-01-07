@@ -1155,6 +1155,45 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+});
+
+// ============================================================
+// CHAT MODE TOGGLE — CANÔNICO (Director ↔ Manual)
+// ============================================================
+
+(function initChatModeToggle() {
+  const chatContainer = document.querySelector(".chat-container");
+  const manualPlan = document.getElementById("humanBrowserPlan");
+  const modeButtons = document.querySelectorAll("[data-chat-mode]");
+
+  if (!chatContainer || !manualPlan || !modeButtons.length) return;
+
+  function setMode(mode) {
+    modeButtons.forEach(btn =>
+      btn.classList.toggle("active", btn.dataset.chatMode === mode)
+    );
+
+    if (mode === "director") {
+      chatContainer.style.display = "flex";
+      manualPlan.style.display = "none";
+    }
+
+    if (mode === "manual") {
+      chatContainer.style.display = "none";
+      manualPlan.style.display = "block";
+    }
+  }
+
+  modeButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      setMode(btn.dataset.chatMode);
+    });
+  });
+
+  // modo inicial
+  setMode("director");
+})();
+
 // ============================================
 // LISTENER CANÔNICO — PLANO DE BROWSER APROVADO
 // ============================================
@@ -1220,5 +1259,3 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
-
-
