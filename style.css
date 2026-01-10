@@ -363,3 +363,55 @@ html, body {
   background: rgba(255, 59, 59, 0.18);
 }
 
+/* ============================================================
+   EXECUTOR DE CÓDIGO — BOTÕES (VISUAL PREMIUM)
+============================================================ */
+
+.executor-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.executor-actions button {
+  background: linear-gradient(180deg, #141824, #0f121a);
+  border: 1px solid #1e2230;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #e8eaed;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.executor-actions button:hover:not(:disabled) {
+  background: linear-gradient(180deg, #1a1f2e, #131826);
+  border-color: #2a3042;
+}
+
+.executor-actions button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* Disabled */
+.executor-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Apply (ação forte) */
+#codeApplyBtn {
+  background: linear-gradient(180deg, #12302a, #0e241f);
+  border-color: #1e6b5c;
+}
+
+/* Rollback (perigo) */
+#codeRollbackBtn {
+  background: linear-gradient(180deg, #2a1214, #1e0e10);
+  border-color: #6b1e25;
+}
+
+#codeRollbackBtn:hover:not(:disabled) {
+  background: linear-gradient(180deg, #35171a, #241013);
+}
