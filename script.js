@@ -791,6 +791,15 @@ async function callCodeExecutor(action, extra = {}) {
     throw new Error(data?.error || "Erro no Code Executor");
   }
 
+  addCodeTelemetry({
+  ts: Date.now(),
+  action,
+  ok: true,
+  run_id: data?.run_id,
+  snapshot_id: data?.snapshot_id,
+  http_status: res.status,
+});
+
   return data;
 }
 
@@ -1670,6 +1679,7 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
