@@ -744,6 +744,36 @@ function renderCodeHistory() {
     .join("<br>");
 }
 
+// ============================================================
+// 📡 TELEMETRIA — CODE EXECUTOR (FASE VI)
+// ============================================================
+
+const CODE_TELEMETRY_KEY = "nv_code_executor_telemetry";
+const CODE_TELEMETRY_LIMIT = 200;
+
+function loadCodeTelemetry() {
+  try {
+    return JSON.parse(localStorage.getItem(CODE_TELEMETRY_KEY)) || [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function saveCodeTelemetry(list) {
+  try {
+    localStorage.setItem(
+      CODE_TELEMETRY_KEY,
+      JSON.stringify(list.slice(0, CODE_TELEMETRY_LIMIT))
+    );
+  } catch (_) {}
+}
+
+function addCodeTelemetry(event) {
+  const telemetry = loadCodeTelemetry();
+  telemetry.unshift(event);
+  saveCodeTelemetry(telemetry);
+}
+
 async function callCodeExecutor(action, extra = {}) {
   const res = await fetch("https://run.nv-imoveis.com/code-executor/v1", {
     method: "POST",
@@ -1640,6 +1670,7 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
