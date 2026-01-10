@@ -1544,6 +1544,24 @@ document.addEventListener("DOMContentLoaded", () => {
     chatContainer.style.display = "none";
     manualPlan.style.display = "block";
     if (executorCard) executorCard.style.display = "block";
+
+     // 📜 Histórico — Code Executor (FASE VI)
+  let historyBox = document.getElementById("codeHistoryBox");
+  if (!historyBox) {
+    historyBox = document.createElement("pre");
+    historyBox.id = "codeHistoryBox";
+    historyBox.style.marginTop = "12px";
+    historyBox.style.padding = "10px";
+    historyBox.style.background = "#111";
+    historyBox.style.color = "#0f0";
+    historyBox.style.fontSize = "12px";
+    historyBox.style.maxHeight = "200px";
+    historyBox.style.overflow = "auto";
+    historyBox.textContent = "Sem histórico ainda.";
+
+    executorCard?.appendChild(historyBox);
+  }
+  renderCodeHistory();
   }
 }
 
@@ -1622,5 +1640,6 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
