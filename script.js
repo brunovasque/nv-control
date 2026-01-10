@@ -1463,7 +1463,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
   function setMode(mode) {
-  // estado visual dos botões
   modeButtons.forEach(btn =>
     btn.classList.toggle("active", btn.dataset.chatMode === mode)
   );
@@ -1471,14 +1470,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const executorCard = document.getElementById("codeExecutorCard");
 
   if (mode === "director") {
-    if (chatContainer) chatContainer.style.display = "flex";
-    if (manualPlan) manualPlan.style.display = "none";
+    chatContainer.style.display = "flex";
+    manualPlan.style.display = "none";
     if (executorCard) executorCard.style.display = "none";
   }
 
   if (mode === "manual") {
-    if (chatContainer) chatContainer.style.display = "none";
-    if (manualPlan) manualPlan.style.display = "block";
+    chatContainer.style.display = "none";
+    manualPlan.style.display = "block";
     if (executorCard) executorCard.style.display = "block";
   }
 }
@@ -1491,6 +1490,7 @@ modeButtons.forEach(btn => {
 
 // modo inicial
 setMode("director");
+})();
 
 // ============================================
 // LISTENER CANÔNICO — PLANO DE BROWSER APROVADO
@@ -1557,6 +1557,7 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
