@@ -135,23 +135,69 @@
 
         </div>
 
-        <!-- 🧠 PLANO BROWSER (HUMANO) -->
-<textarea
-  id="humanBrowserPlan"
-  data-field="human-browser-plan"
-  placeholder="Cole aqui o PLANO BROWSER (plan.v1)"
+        <!-- =========================
+     EXECUTOR DE CÓDIGO (MODO MANUAL)
+========================== -->
+<div
+  id="codeExecutorCard"
   style="
-    width: 100%;
-    min-height: 160px;
-    margin-top: 8px;
-    background: #0f0f0f;
-    color: #ffffff;
-    border: 1px solid #333;
-    padding: 10px;
-    font-family: monospace;
-    font-size: 12px;
+    display: none;
+    flex: 1;
+    padding: 24px;
+    background: #0f1115;
   "
-></textarea>
+>
+
+  <div
+    style="
+      border: 1px solid #1e2230;
+      border-radius: 12px;
+      background: #12151c;
+      padding: 20px;
+      max-width: 900px;
+      margin: 0 auto;
+    "
+  >
+
+    <div style="margin-bottom: 12px;">
+      <div style="font-size: 16px; font-weight: 600;">
+        🧪 Executor de Código — Modo Diagnóstico
+      </div>
+      <div style="font-size: 13px; color: #9aa0a6; margin-top: 4px;">
+        Somente leitura, diagnose e dry-run. Nenhuma ação será aplicada.
+      </div>
+    </div>
+
+    <textarea
+      id="humanBrowserPlan"
+      data-field="human-browser-plan"
+      placeholder="Cole aqui o patch ou instrução técnica para diagnose / dry-run"
+      style="
+        width: 100%;
+        min-height: 220px;
+        background: #0f1115;
+        color: #ffffff;
+        border: 1px solid #1e2230;
+        border-radius: 10px;
+        padding: 14px;
+        font-family: monospace;
+        font-size: 13px;
+        line-height: 1.5;
+      "
+    ></textarea>
+
+    <div
+      style="
+        margin-top: 10px;
+        font-size: 12px;
+        color: #6f7785;
+      "
+    >
+      Este canal não executa código, não aplica patch e não realiza deploy.
+    </div>
+
+  </div>
+</div>
 
         <!-- =========================
              PAINEL DE BOTÕES (DIREITA)
@@ -237,6 +283,7 @@
 
 </body>
 </html>
+
 
 
 
