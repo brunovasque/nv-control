@@ -781,7 +781,14 @@ async function callCodeExecutor(action, extra = {}) {
     body: JSON.stringify({ action, ...extra }),
   });
 
-  const data = await res.json();
+const raw = await res.text();
+let data = null;
+
+try {
+  data = raw ? JSON.parse(raw) : {};
+} catch (_) {
+  data = { raw };
+}
 
   if (codeExecutorOutput) {
     codeExecutorOutput.textContent = JSON.stringify(data, null, 2);
@@ -1679,6 +1686,7 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
