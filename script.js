@@ -1134,6 +1134,66 @@ async function askEnaviaAnalysis(intentText) {
 }
 
 /* ============================================================
+   AO VIVO — OVERLAY noVNC (CANÔNICO)
+   - Apenas visualização
+   - Não executa plano
+   - Não altera estado
+============================================================ */
+
+function openLiveOverlay() {
+  // evita duplicação
+  if (document.getElementById("nv-live-overlay")) return;
+
+  const overlay = document.createElement("div");
+  overlay.id = "nv-live-overlay";
+  overlay.style.position = "fixed";
+  overlay.style.top = "0";
+  overlay.style.left = "0";
+  overlay.style.width = "100vw";
+  overlay.style.height = "100vh";
+  overlay.style.background = "rgba(0,0,0,0.85)";
+  overlay.style.zIndex = "99999";
+  overlay.style.display = "flex";
+  overlay.style.flexDirection = "column";
+
+  const header = document.createElement("div");
+  header.style.display = "flex";
+  header.style.justifyContent = "space-between";
+  header.style.alignItems = "center";
+  header.style.padding = "8px 12px";
+  header.style.background = "#111";
+  header.style.color = "#fff";
+  header.style.fontSize = "14px";
+
+  header.textContent = "AO VIVO — Browser Executor";
+
+  const closeBtn = document.createElement("button");
+  closeBtn.textContent = "✖ Fechar";
+  closeBtn.style.cursor = "pointer";
+  closeBtn.style.background = "#222";
+  closeBtn.style.color = "#fff";
+  closeBtn.style.border = "1px solid #444";
+  closeBtn.style.padding = "4px 8px";
+
+  closeBtn.onclick = () => {
+    try { overlay.remove(); } catch (_) {}
+  };
+
+  header.appendChild(closeBtn);
+
+  const iframe = document.createElement("iframe");
+  iframe.src = "https://browser.nv-imoveis.com/novnc/vnc.html?autoconnect=1";
+  iframe.style.border = "0";
+  iframe.style.width = "100%";
+  iframe.style.flex = "1";
+
+  overlay.appendChild(header);
+  overlay.appendChild(iframe);
+
+  document.body.appendChild(overlay);
+}
+
+/* ============================================================
    AO VIVO — noVNC (VISUALIZAÇÃO DO BROWSER)
    - NÃO executa
    - NÃO dispara plano
@@ -1145,14 +1205,14 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!liveBtn) return;
 
   liveBtn.addEventListener("click", () => {
+  try {
+    openLiveOverlay();
+  } catch (err) {
+    console.warn("Overlay falhou, abrindo em nova aba:", err);
     const liveUrl = "https://browser.nv-imoveis.com/novnc/vnc.html?autoconnect=1";
-
-    window.open(
-      liveUrl,
-      "_blank",
-      "noopener,noreferrer"
-    );
-  });
+    window.open(liveUrl, "_blank", "noopener,noreferrer");
+  }
+});
 });
 
 // ============================================================
@@ -1338,5 +1398,3 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
-
-
