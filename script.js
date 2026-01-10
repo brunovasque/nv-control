@@ -656,6 +656,94 @@ try {
 } catch (_) {}
 
 /* ============================================================
+   FASE V — CODE EXECUTOR (APPLY / ROLLBACK)
+   - Usa UI já existente
+   - Não interfere em Worker / Browser
+============================================================ */
+
+const __CODE_EXECUTOR_STATE__ = {
+  lastDryRunId: null,
+  lastSnapshotId: null,
+};
+
+const codeDiagnoseBtn = document.getElementById("codeDiagnoseBtn");
+const codeDryRunBtn = document.getElementById("codeDryRunBtn");
+const codeApplyBtn = document.getElementById("codeApplyBtn");
+const codeRollbackBtn = document.getElementById("codeRollbackBtn");
+const codeExecutorOutput = document.getElementById("codeExecutorOutput");
+
+function renderCodeExecutorState() {
+  if (codeApplyBtn)
+    codeApplyBtn.disabled = !__CODE_EXECUTOR_STATE__.lastDryRunId;
+
+  if (codeRollbackBtn)
+    codeRollbackBtn.disabled = !__CODE_EXECUTOR_STATE__.lastSnapshotId;
+}
+
+async function callCodeExecutor(action, extra = {}) {
+  const res = await fetch("https://run.nv-imoveis.com/code-executor/v1", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action, ...extra }),
+  });
+
+  const data = await res.json();
+
+  if (codeExecutorOutput) {
+    codeExecutorOutput.textContent = JSON.stringify(data, null, 2);
+  }
+
+  if (!res.ok) {
+    throw new Error(data?.error || "Erro no Code Executor");
+  }
+
+  return data;
+}
+
+if (codeDiagnoseBtn) {
+  codeDiagnoseBtn.onclick = async () => {
+    await callCodeExecutor("diagnose");
+  };
+}
+
+if (codeDryRunBtn) {
+  codeDryRunBtn.onclick = async () => {
+    const r = await callCodeExecutor("dry_run");
+
+    if (r?.run_id) {
+      __CODE_EXECUTOR_STATE__.lastDryRunId = r.run_id;
+      renderCodeExecutorState();
+    }
+  };
+}
+
+if (codeApplyBtn) {
+  codeApplyBtn.onclick = async () => {
+    if (!__CODE_EXECUTOR_STATE__.lastDryRunId) return;
+
+    const r = await callCodeExecutor("apply", {
+      run_id: __CODE_EXECUTOR_STATE__.lastDryRunId,
+      confirm: "YES_APPLY", // confirmação humana via clique
+    });
+
+    if (r?.snapshot_id) {
+      __CODE_EXECUTOR_STATE__.lastSnapshotId = r.snapshot_id;
+      renderCodeExecutorState();
+    }
+  };
+}
+
+if (codeRollbackBtn) {
+  codeRollbackBtn.onclick = async () => {
+    if (!__CODE_EXECUTOR_STATE__.lastSnapshotId) return;
+
+    await callCodeExecutor("rollback", {
+      snapshot_id: __CODE_EXECUTOR_STATE__.lastSnapshotId,
+    });
+  };
+}
+
+/* ============================================================
    API ADAPTER (payloads corretos + relatórios humanos)
 ============================================================ */
 function buildApiAdapter(api) {
@@ -1469,5 +1557,6 @@ modeButtons.forEach(btn => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
