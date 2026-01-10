@@ -415,3 +415,32 @@ html, body {
 #codeRollbackBtn:hover:not(:disabled) {
   background: linear-gradient(180deg, #35171a, #241013);
 }
+
+/* ============================================================
+   EXECUTOR DE CÓDIGO — BOTÕES SECUNDÁRIOS (HISTÓRICO / TELEMETRIA)
+============================================================ */
+
+.executor-actions-secondary {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+  opacity: 0.85;
+}
+
+.executor-btn-secondary {
+  background: linear-gradient(180deg, #12151c, #0f1115);
+  border: 1px solid #1e2230;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #9aa0a6;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.executor-btn-secondary:hover {
+  background: linear-gradient(180deg, #1a1f2e, #131826);
+  border-color: #2a3042;
+  color: #e6e8eb;
+}
