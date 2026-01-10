@@ -680,6 +680,19 @@ function renderCodeExecutorState() {
     codeRollbackBtn.disabled = !__CODE_EXECUTOR_STATE__.lastSnapshotId;
 }
 
+// 🔒 Persistência canônica — Fase V
+(function hydrateCodeExecutorState() {
+  try {
+    const dryRunId = localStorage.getItem("nv_code_last_dry_run");
+    const snapshotId = localStorage.getItem("nv_code_last_snapshot");
+
+    if (dryRunId) __CODE_EXECUTOR_STATE__.lastDryRunId = dryRunId;
+    if (snapshotId) __CODE_EXECUTOR_STATE__.lastSnapshotId = snapshotId;
+  } catch (_) {}
+
+  renderCodeExecutorState();
+})();
+
 async function callCodeExecutor(action, extra = {}) {
   const res = await fetch("https://run.nv-imoveis.com/code-executor/v1", {
     method: "POST",
@@ -727,9 +740,10 @@ if (codeApplyBtn) {
     });
 
     if (r?.snapshot_id) {
-      __CODE_EXECUTOR_STATE__.lastSnapshotId = r.snapshot_id;
-      renderCodeExecutorState();
-    }
+  __CODE_EXECUTOR_STATE__.lastSnapshotId = r.snapshot_id;
+  localStorage.setItem("nv_code_last_snapshot", r.snapshot_id);
+  renderCodeExecutorState();
+}
   };
 }
 
@@ -1557,3 +1571,4 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
