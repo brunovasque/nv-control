@@ -693,6 +693,57 @@ function renderCodeExecutorState() {
   renderCodeExecutorState();
 })();
 
+// ============================================================
+// 📜 HISTÓRICO — CODE EXECUTOR (FASE VI)
+// ============================================================
+
+const CODE_HISTORY_KEY = "nv_code_executor_history";
+const CODE_HISTORY_LIMIT = 50;
+
+function loadCodeHistory() {
+  try {
+    return JSON.parse(localStorage.getItem(CODE_HISTORY_KEY)) || [];
+  } catch (_) {
+    return [];
+  }
+}
+
+function saveCodeHistory(list) {
+  try {
+    localStorage.setItem(
+      CODE_HISTORY_KEY,
+      JSON.stringify(list.slice(0, CODE_HISTORY_LIMIT))
+    );
+  } catch (_) {}
+}
+
+function addCodeHistory(entry) {
+  const history = loadCodeHistory();
+  history.unshift(entry);
+  saveCodeHistory(history);
+  renderCodeHistory();
+}
+
+function renderCodeHistory() {
+  const box = document.getElementById("codeHistoryBox");
+  if (!box) return;
+
+  const history = loadCodeHistory();
+  if (!history.length) {
+    box.textContent = "Sem histórico ainda.";
+    return;
+  }
+
+  box.innerHTML = history
+    .map((h) => {
+      const status = h.ok ? "OK" : "FAIL";
+      const err = h.error ? ` — ${h.error}` : "";
+      const rid = h.run_id ? ` | run: ${h.run_id}` : "";
+      return `[${new Date(h.ts).toLocaleString()}] ${h.action} — ${status}${rid}${err}`;
+    })
+    .join("<br>");
+}
+
 async function callCodeExecutor(action, extra = {}) {
   const res = await fetch("https://run.nv-imoveis.com/code-executor/v1", {
     method: "POST",
@@ -1571,4 +1622,5 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
