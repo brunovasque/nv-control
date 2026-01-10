@@ -775,39 +775,50 @@ function addCodeTelemetry(event) {
 }
 
 async function callCodeExecutor(action, extra = {}) {
-  const res = await fetch("https://run.nv-imoveis.com/code-executor/v1", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action, ...extra }),
-  });
+  try {
+    const res = await fetch("https://run.nv-imoveis.com/code-executor/v1", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, ...extra }),
+    });
 
-const raw = await res.text();
-let data = null;
+    const raw = await res.text();
+    let data = null;
 
-try {
-  data = raw ? JSON.parse(raw) : {};
-} catch (_) {
-  data = { raw };
-}
+    try {
+      data = raw ? JSON.parse(raw) : {};
+    } catch (_) {
+      data = { raw };
+    }
 
-  if (codeExecutorOutput) {
-    codeExecutorOutput.textContent = JSON.stringify(data, null, 2);
+    if (codeExecutorOutput) {
+      codeExecutorOutput.textContent = JSON.stringify(data, null, 2);
+    }
+
+    if (!res.ok) {
+      throw new Error(data?.error || "Erro no Code Executor");
+    }
+
+    addCodeTelemetry({
+      ts: Date.now(),
+      action,
+      ok: true,
+      run_id: data?.run_id,
+      snapshot_id: data?.snapshot_id,
+      http_status: res.status,
+    });
+
+    return data;
+
+  } catch (err) {
+    addCodeTelemetry({
+      ts: Date.now(),
+      action,
+      ok: false,
+      error: err?.message || String(err),
+    });
+    throw err;
   }
-
-  if (!res.ok) {
-    throw new Error(data?.error || "Erro no Code Executor");
-  }
-
-  addCodeTelemetry({
-  ts: Date.now(),
-  action,
-  ok: true,
-  run_id: data?.run_id,
-  snapshot_id: data?.snapshot_id,
-  http_status: res.status,
-});
-
-  return data;
 }
 
 if (codeDiagnoseBtn) {
@@ -837,10 +848,10 @@ if (codeApplyBtn) {
     });
 
     if (r?.snapshot_id) {
-  __CODE_EXECUTOR_STATE__.lastSnapshotId = r.snapshot_id;
-  localStorage.setItem("nv_code_last_snapshot", r.snapshot_id);
-  renderCodeExecutorState();
-}
+      __CODE_EXECUTOR_STATE__.lastSnapshotId = r.snapshot_id;
+      localStorage.setItem("nv_code_last_snapshot", r.snapshot_id);
+      renderCodeExecutorState();
+    }
   };
 }
 
@@ -1686,6 +1697,7 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
