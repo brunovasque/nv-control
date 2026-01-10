@@ -1375,26 +1375,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
   function setMode(mode) {
-    modeButtons.forEach(btn =>
-      btn.classList.toggle("active", btn.dataset.chatMode === mode)
-    );
+  modeButtons.forEach(btn =>
+    btn.classList.toggle("active", btn.dataset.chatMode === mode)
+  );
 
-    if (mode === "director") {
-      chatContainer.style.display = "flex";
-      manualPlan.style.display = "none";
-    }
+  const executorCard = document.getElementById("codeExecutorCard");
 
-    if (mode === "manual") {
-      chatContainer.style.display = "none";
-      manualPlan.style.display = "block";
-    }
+  if (mode === "director") {
+    chatContainer.style.display = "flex";
+    manualPlan.style.display = "none";
+    if (executorCard) executorCard.style.display = "none";
   }
 
-  modeButtons.forEach(btn => {
-    btn.addEventListener("click", () => {
-      setMode(btn.dataset.chatMode);
-    });
+  if (mode === "manual") {
+    chatContainer.style.display = "none";
+    manualPlan.style.display = "block";
+    if (executorCard) executorCard.style.display = "block";
+  }
+}
+
+modeButtons.forEach(btn => {
+  btn.addEventListener("click", () => {
+    setMode(btn.dataset.chatMode);
   });
+});
 
   // modo inicial
   setMode("director");
@@ -1465,4 +1469,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
