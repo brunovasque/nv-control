@@ -1194,6 +1194,73 @@ function openLiveOverlay() {
 }
 
 /* ============================================================
+   COCKPIT — BROWSER EXECUTOR (READ ONLY)
+   - Status
+   - Heartbeat
+   - Nenhuma ação
+============================================================ */
+
+let __BROWSER_STATUS__ = {
+  online: null,
+  lastSeen: null,
+};
+
+function renderBrowserStatusPill() {
+  let pill = document.getElementById("browser-status-pill");
+  if (!pill) {
+    pill = document.createElement("div");
+    pill.id = "browser-status-pill";
+    pill.style.position = "fixed";
+    pill.style.bottom = "12px";
+    pill.style.right = "12px";
+    pill.style.padding = "6px 10px";
+    pill.style.borderRadius = "12px";
+    pill.style.fontSize = "12px";
+    pill.style.fontFamily = "monospace";
+    pill.style.zIndex = "99999";
+    pill.style.background = "#333";
+    pill.style.color = "#fff";
+    document.body.appendChild(pill);
+  }
+
+  if (__BROWSER_STATUS__.online === true) {
+    pill.textContent = "🟢 Browser ONLINE";
+    pill.style.background = "#1f7a1f";
+  } else if (__BROWSER_STATUS__.online === false) {
+    pill.textContent = "🔴 Browser OFFLINE";
+    pill.style.background = "#7a1f1f";
+  } else {
+    pill.textContent = "⚪ Browser desconhecido";
+    pill.style.background = "#555";
+  }
+}
+
+async function pollBrowserHealth() {
+  const url = "https://browser.nv-imoveis.com/health";
+
+  try {
+    const res = await fetch(url, { method: "GET" });
+    if (!res.ok) throw new Error("health_not_ok");
+
+    const data = await res.json();
+    if (data?.ok === true) {
+      __BROWSER_STATUS__.online = true;
+      __BROWSER_STATUS__.lastSeen = Date.now();
+    } else {
+      throw new Error("health_invalid");
+    }
+  } catch (_) {
+    __BROWSER_STATUS__.online = false;
+  }
+
+  renderBrowserStatusPill();
+}
+
+// start polling leve (read-only)
+setInterval(pollBrowserHealth, 5000);
+setTimeout(pollBrowserHealth, 1000);
+
+/* ============================================================
    AO VIVO — noVNC (VISUALIZAÇÃO DO BROWSER)
    - NÃO executa
    - NÃO dispara plano
@@ -1398,3 +1465,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
