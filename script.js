@@ -1494,17 +1494,34 @@ setTimeout(pollBrowserHealth, 1000);
 
 document.addEventListener("DOMContentLoaded", () => {
   const liveBtn = document.getElementById("liveViewBtn");
-  if (!liveBtn) return;
-
-  liveBtn.addEventListener("click", () => {
-  try {
-    openLiveOverlay();
-  } catch (err) {
-    console.warn("Overlay falhou, abrindo em nova aba:", err);
-    const liveUrl = "https://browser.nv-imoveis.com/novnc/vnc.html?autoconnect=1";
-    window.open(liveUrl, "_blank", "noopener,noreferrer");
+  if (liveBtn) {
+    liveBtn.addEventListener("click", () => {
+      try {
+        openLiveOverlay();
+      } catch (err) {
+        console.warn("Overlay falhou, abrindo em nova aba:", err);
+        const liveUrl = "https://browser.nv-imoveis.com/novnc/vnc.html?autoconnect=1";
+        window.open(liveUrl, "_blank", "noopener,noreferrer");
+      }
+    });
   }
-});
+
+  // ============================================================
+  // EXECUTAR BROWSER — botão fixo (A1)
+  // ============================================================
+  const browserExecuteBtn = document.getElementById("browser-execute-btn");
+
+  if (browserExecuteBtn) {
+    browserExecuteBtn.addEventListener("click", () => {
+      if (!window.__APPROVED_BROWSER_PLAN__) {
+        console.warn("⚠️ Nenhum plano aprovado para execução do Browser.");
+        return;
+      }
+
+      console.log("▶️ Executando Browser com plano aprovado...");
+      runBrowserPlan(window.__APPROVED_BROWSER_PLAN__);
+    });
+  }
 });
 
 // ============================================================
@@ -1718,5 +1735,6 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
