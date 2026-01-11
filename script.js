@@ -631,9 +631,13 @@ function renderHumanDirectorButton() {
        // 🔒 Fonte única do plano (FIX)
   window.__APPROVED_BROWSER_PLAN__ = humanPlan;
 
-      if (typeof window.__renderBrowserExecuteButton === "function") {
-        window.__renderBrowserExecuteButton();
-      }
+// 🔁 garante próximo tick (estado já propagado)
+setTimeout(() => {
+  if (typeof window.__renderBrowserExecuteButton === "function") {
+    window.__renderBrowserExecuteButton();
+  }
+}, 0);
+
     } else {
       console.warn("Resposta inesperada do Director:", data);
     }
@@ -1700,6 +1704,7 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
