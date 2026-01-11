@@ -1220,20 +1220,20 @@ if (
   console.log("Plano recebido:", approvedPlan);
   console.groupEnd();
 
-  // 🔒 Fonte ÚNICA da execução
-  window.__APPROVED_BROWSER_PLAN__ = approvedPlan;
+ // 🔒 Fonte ÚNICA da execução
+window.__APPROVED_BROWSER_PLAN__ = approvedPlan;
 
-  // 🔁 FORÇA MODO MANUAL (FIX CANÔNICO)
-  if (typeof setMode === "function") {
-    setMode("manual");
+// 🔁 FORÇA MODO MANUAL (FIX CANÔNICO)
+if (typeof setMode === "function") {
+  setMode("manual");
+}
+
+// 🖱️ Render no próximo tick visual
+requestAnimationFrame(() => {
+  if (typeof window.__renderBrowserExecuteButton === "function") {
+    window.__renderBrowserExecuteButton();
   }
-
-  // 🖱️ Render no próximo tick visual
-  requestAnimationFrame(() => {
-    if (typeof window.__renderBrowserExecuteButton === "function") {
-      window.__renderBrowserExecuteButton();
-    }
-  });
+});
 
   // ⚠️ NÃO retornar aqui — ainda pode haver reply textual
 }
@@ -1716,3 +1716,4 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
