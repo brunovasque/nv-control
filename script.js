@@ -1566,6 +1566,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (data?.decision?.type === "browser_execute_ready") {
         console.log("✅ Plano humano aceito. Browser pronto.");
+
+         // 🔒 FONTE ÚNICA DO PLANO (CANÔNICO)
+        window.__APPROVED_BROWSER_PLAN__ = humanPlan;
+         
         if (typeof window.__renderBrowserExecuteButton === "function") {
           window.__renderBrowserExecuteButton();
         }
@@ -1704,6 +1708,7 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
