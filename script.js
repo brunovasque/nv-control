@@ -1223,10 +1223,17 @@ if (
   // 🔒 Fonte ÚNICA da execução
   window.__APPROVED_BROWSER_PLAN__ = approvedPlan;
 
-  // 🖱️ Painel reage (não decide)
-  if (typeof window.__renderBrowserExecuteButton === "function") {
-    window.__renderBrowserExecuteButton();
+  // 🔁 FORÇA MODO MANUAL (FIX CANÔNICO)
+  if (typeof setMode === "function") {
+    setMode("manual");
   }
+
+  // 🖱️ Render no próximo tick visual
+  requestAnimationFrame(() => {
+    if (typeof window.__renderBrowserExecuteButton === "function") {
+      window.__renderBrowserExecuteButton();
+    }
+  });
 
   // ⚠️ NÃO retornar aqui — ainda pode haver reply textual
 }
