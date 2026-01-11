@@ -504,6 +504,7 @@ if (version !== "plan.v1" || !Array.isArray(steps) || !steps.length) {
     console.log("Plano enviado ao Browser:", plan);
 
     try {
+  openLiveOverlay(); // 👁️ ABRE VISUAL AO VIVO (CANÔNICO)
   await runBrowserPlan({
     version,
     steps,
@@ -1735,6 +1736,7 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
