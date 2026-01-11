@@ -457,15 +457,14 @@ function renderBrowserExecuteButton() {
   console.groupEnd();
 
   const container =
-  document.querySelector("#codeExecutorCard") || // 🎯 MODO MANUAL (VISÍVEL)
-  document.querySelector(".chat-input-container") ||
-  document.querySelector(".chat-input") ||
-  document.body;
+  document.querySelector(".executor-actions.executor-actions-secondary") ||
+  document.querySelector(".executor-actions") ||
+  document.querySelector("#codeExecutorCard");
 
   if (!container) {
-    console.warn("Browser Execute: container não encontrado");
-    return;
-  }
+  console.warn("Browser Execute: container de ações não encontrado");
+  return;
+}
 
   const btn = document.createElement("button");
   btn.id = "browser-execute-btn";
@@ -1710,9 +1709,3 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
-
-
-
-
-
-
