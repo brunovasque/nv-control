@@ -457,9 +457,10 @@ function renderBrowserExecuteButton() {
   console.groupEnd();
 
   const container =
-    document.querySelector(".chat-input-container") ||
-    document.querySelector(".chat-input") ||
-    document.body;
+  document.querySelector("#codeExecutorCard") || // 🎯 MODO MANUAL (VISÍVEL)
+  document.querySelector(".chat-input-container") ||
+  document.querySelector(".chat-input") ||
+  document.body;
 
   if (!container) {
     console.warn("Browser Execute: container não encontrado");
@@ -549,9 +550,10 @@ function renderHumanDirectorButton() {
   if (existing) return;
 
   const container =
-    document.querySelector(".chat-input-container") ||
-    document.querySelector(".chat-input") ||
-    document.body;
+  document.querySelector("#codeExecutorCard") || // 🎯 MODO MANUAL (VISÍVEL)
+  document.querySelector(".chat-input-container") ||
+  document.querySelector(".chat-input") ||
+  document.body;
 
   if (!container) {
     console.warn("Human Director: container não encontrado");
@@ -1708,6 +1710,7 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
