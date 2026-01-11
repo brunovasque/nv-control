@@ -628,6 +628,9 @@ function renderHumanDirectorButton() {
     if (data?.decision?.type === "browser_execute_ready") {
       console.log("✅ Diretor humano aceito. Browser pronto.");
 
+       // 🔒 Fonte única do plano (FIX)
+  window.__APPROVED_BROWSER_PLAN__ = humanPlan;
+
       if (typeof window.__renderBrowserExecuteButton === "function") {
         window.__renderBrowserExecuteButton();
       }
@@ -1697,5 +1700,6 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
