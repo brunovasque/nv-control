@@ -42,7 +42,7 @@ const DEFAULTS = {
   approved_by: "VASQUES",
 
   // ✅ default do fio do botão (pode sobrescrever via localStorage)
-  browser_run_url: "https://run.nv-imoveis.com/browser/run",
+  browser_run_url: "https://run.nv-imoveis.com/execute",
 };
 
 function qs(sel) { return document.querySelector(sel); }
@@ -56,7 +56,7 @@ function on(el, evt, fn) { if (el) el.addEventListener(evt, fn); }
 async function runBrowserPlan(plan) {
   const runUrl =
     localStorage.getItem("nv_browser_run_url") ||
-    "https://run.nv-imoveis.com/browser/run";
+    "https://run.nv-imoveis.com/execute";
 
   console.debug("[BROWSER EXECUTOR] usando URL:", runUrl);
 
@@ -505,7 +505,7 @@ if (version !== "plan.v1" || !Array.isArray(steps) || !steps.length) {
 
     try {
   openLiveOverlay(); // 👁️ ABRE VISUAL AO VIVO (CANÔNICO)
-  await runBrowserPlan({
+    await runBrowserPlan({
     version,
     steps,
   });
@@ -1736,6 +1736,7 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
