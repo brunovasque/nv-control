@@ -1577,9 +1577,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
          // 🔒 FONTE ÚNICA DO PLANO (CANÔNICO)
         window.__APPROVED_BROWSER_PLAN__ = humanPlan;
-         
-        if (typeof window.__renderBrowserExecuteButton === "function") {
-          window.__renderBrowserExecuteButton();
+
+        // 🔓 HABILITA BOTÃO FIXO "EXECUTAR BROWSER"
+        const browserBtn = document.getElementById("browser-execute-btn");
+        if (browserBtn) {
+          browserBtn.disabled = false;
         }
       } else {
         console.warn("Resposta inesperada do Director:", data);
@@ -1716,4 +1718,5 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
