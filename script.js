@@ -1509,7 +1509,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 2) Reusa EXATAMENTE o caminho já implantado: accept_plan → /director/cognitive
   async function acceptHumanPlanViaExistingFlow() {
-    console.group("✍️ ENTER MODO MANUAL → ACCEPT_PLAN (reuso canônico)");
+    console.group("✍️ ENTER MODO MANUAL BROWSER → ACCEPT_PLAN (reuso canônico)");
 
     let humanPlan = null;
     try {
@@ -1697,3 +1697,4 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
