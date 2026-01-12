@@ -475,62 +475,63 @@ function renderBrowserExecuteButton() {
 
     // 🔘 CLICK = EXECUÇÃO
   btn.onclick = async () => {
-    console.group("🚀 CLICK EXECUTAR BROWSER");
+  console.group("🚀 CLICK EXECUTAR BROWSER");
 
-    const plan = window.__APPROVED_BROWSER_PLAN__;
-    console.log("Plano bruto:", plan);
+  const plan = window.__APPROVED_BROWSER_PLAN__;
+  console.log("Plano bruto:", plan);
 
-    if (!plan) {
-      console.error("❌ Browser Execute: plano inexistente no state");
-      console.trace("Click sem plano");
-      console.groupEnd();
-      return;
-    }
+  if (!plan) {
+    console.error("❌ Browser Execute: plano inexistente no state");
+    console.trace("Click sem plano");
+    console.groupEnd();
+    return;
+  }
 
-    if (typeof runBrowserPlan !== "function") {
-      console.error("❌ Browser Execute: runBrowserPlan não está disponível");
-      console.groupEnd();
-      return;
-    }
+  if (typeof runBrowserPlan !== "function") {
+    console.error("❌ Browser Execute: runBrowserPlan não está disponível");
+    console.groupEnd();
+    return;
+  }
 
-    const { version, steps } = plan;
+  const { version, steps } = plan;
 
-if (version !== "plan.v1" || !Array.isArray(steps) || !steps.length) {
-  console.error("❌ Plano inválido para execução no browser:", plan);
-  console.groupEnd();
-  return;
-}
+  if (version !== "plan.v1" || !Array.isArray(steps) || !steps.length) {
+    console.error("❌ Plano inválido para execução no browser:", plan);
+    console.groupEnd();
+    return;
+  }
 
-    console.log("Plano enviado ao Browser:", plan);
+  console.log("Plano enviado ao Browser:", plan);
 
-    try {
-  openLiveOverlay(); // 👁️ ABRE VISUAL AO VIVO (CANÔNICO)
-    await runBrowserPlan({
-    version,
-    steps,
-  });
-
-  console.log("✅ Execução enviada com sucesso");
-} catch (err) {
-  console.error("❌ Browser execution failed:", err);
-
-      if (typeof directorSay === "function") {
-        directorSay("⚠️ A execução do Browser falhou. Vou deixar rearmado pra você tentar de novo / refazer o pedido.");
-      }
-    finally {
-  // 🧹 REARME SOMENTE DO BOTÃO (estado do plano é responsabilidade do executor)
   try {
-    btn.remove();
-  } catch (_) {}
+    openLiveOverlay(); // 👁️ ABRE VISUAL AO VIVO (CANÔNICO)
 
-  console.log("🧹 Botão removido. Plano mantido até execução real.");
+    await runBrowserPlan({
+      version,
+      steps,
+    });
 
-  console.groupEnd();
-}
+    console.log("✅ Execução enviada com sucesso");
+  } catch (err) {
+    console.error("❌ Browser execution failed:", err);
 
-  };
+    if (typeof directorSay === "function") {
+      directorSay(
+        "⚠️ A execução do Browser falhou. Vou deixar rearmado pra você tentar de novo / refazer o pedido."
+      );
+    }
+  } finally {
+    // 🧹 REARME SOMENTE DO BOTÃO (estado do plano é responsabilidade do executor)
+    try {
+      btn.remove();
+    } catch (_) {}
 
-  container.appendChild(btn);
+    console.log("🧹 Botão removido. Plano mantido até execução real.");
+    console.groupEnd();
+  }
+};
+
+container.appendChild(btn);
 }
 
 // 👇 ADICIONE IMEDIATAMENTE APÓS A FUNÇÃO
@@ -1735,4 +1736,5 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
