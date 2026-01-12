@@ -517,18 +517,17 @@ if (version !== "plan.v1" || !Array.isArray(steps) || !steps.length) {
       if (typeof directorSay === "function") {
         directorSay("⚠️ A execução do Browser falhou. Vou deixar rearmado pra você tentar de novo / refazer o pedido.");
       }
-    } finally {
-      // 🧹 REARME CANÔNICO — sempre limpa (sucesso OU falha)
-      window.__APPROVED_BROWSER_PLAN__ = null;
+    finally {
+  // 🧹 REARME SOMENTE DO BOTÃO (estado do plano é responsabilidade do executor)
+  try {
+    btn.remove();
+  } catch (_) {}
 
-      try {
-        btn.remove();
-      } catch (_) {}
+  console.log("🧹 Botão removido. Plano mantido até execução real.");
 
-      console.log("🧹 Estado limpo e botão removido (rearmado)");
+  console.groupEnd();
+}
 
-      console.groupEnd();
-    }
   };
 
   container.appendChild(btn);
@@ -1736,3 +1735,4 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
