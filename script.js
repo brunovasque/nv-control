@@ -70,13 +70,14 @@ async function runBrowserPlan(plan) {
     throw new Error("Plano inválido para execução no browser.");
   }
 
-  // ⚠️ PAYLOAD CANÔNICO — IGUAL AO CURL
-  const payload = {
-    plan: {
-      version: "plan.v1",
-      steps: plan.steps,
-    },
-  };
+    // ⚠️ PAYLOAD CANÔNICO
+  // - /execute  => body = { version, steps }  (igual ao curl)
+  // - /browser/run (legado) => body = { plan: { version, steps } }
+  const isExecute = /\/execute(\?|$)/.test(runUrl);
+
+  const payload = isExecute
+    ? { version: "plan.v1", steps: plan.steps }
+    : { plan: { version: "plan.v1", steps: plan.steps } };
 
   console.debug("[BROWSER → WORKER PAYLOAD]", payload);
 
@@ -1736,5 +1737,6 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
