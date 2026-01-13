@@ -55,8 +55,8 @@ function on(el, evt, fn) { if (el) el.addEventListener(evt, fn); }
 
 async function runBrowserPlan(plan) {
   const runUrl =
-    localStorage.getItem("nv_browser_run_url") ||
-    "https://run.nv-imoveis.com/execute";
+  localStorage.getItem("nv_browser_run_url") ||
+  "https://run.nv-imoveis.com/browser/run";
 
   console.debug("[BROWSER EXECUTOR] usando URL:", runUrl);
 
@@ -1737,6 +1737,3 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
-
-
-
