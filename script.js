@@ -1540,6 +1540,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+if (!__DISABLE_LEGACY_BROWSER__) {
 // ============================================================
 // CHAT MODE TOGGLE — CANÔNICO (Director ↔ Manual)
 // ============================================================
@@ -1686,6 +1687,8 @@ modeButtons.forEach(btn => {
 setMode("director");
 })();
 
+}
+   
 // ============================================
 // LISTENER CANÔNICO — PLANO DE BROWSER APROVADO
 // ============================================
@@ -1751,6 +1754,7 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
