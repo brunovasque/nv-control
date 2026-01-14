@@ -14,6 +14,8 @@ import { createApiClient } from "./api-client.js";
 import { addChatMessage, initChatRenderer } from "./chat-renderer.js";
 import { setChatMode, CHAT_MODES } from "./chat-modes.js";
 
+const __DISABLE_LEGACY_BROWSER__ = true;
+
 /* ============================================================
    DIRECTOR ⇄ ENAVIA (API CANÔNICA — READ ONLY)
 ============================================================ */
@@ -1749,5 +1751,6 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
