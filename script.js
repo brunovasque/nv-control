@@ -1441,6 +1441,17 @@ document.addEventListener("DOMContentLoaded", () => {
   liveBtn.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
+
+// ===============================
+// FIX CANÔNICO — executar plano ao entrar AO VIVO
+// ===============================
+if (window.__APPROVED_BROWSER_PLAN__ && typeof runBrowserPlan === "function") {
+  console.log("[AO VIVO] Executando plano aprovado antes de abrir VNC");
+  runBrowserPlan(window.__APPROVED_BROWSER_PLAN__);
+} else {
+  console.warn("[AO VIVO] Plano não encontrado ou runBrowserPlan indisponível");
+}
+
     try {
       openLiveOverlay(); // 👁️ apenas visualização
     } catch (err) {
@@ -1811,5 +1822,6 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
