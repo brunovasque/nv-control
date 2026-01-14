@@ -1515,14 +1515,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (browserExecuteBtn) {
     browserExecuteBtn.addEventListener("click", () => {
-      if (!window.__APPROVED_BROWSER_PLAN__) {
-        console.warn("⚠️ Nenhum plano aprovado para execução do Browser.");
-        return;
-      }
+  const raw = document.querySelector("textarea")?.value;
 
-      console.log("▶️ Executando Browser com plano aprovado...");
-      runBrowserPlan(window.__APPROVED_BROWSER_PLAN__);
-    });
+  let plan;
+  try {
+    plan = raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    alert("Plano inválido (JSON).");
+    return;
+  }
+
+  if (!plan || !Array.isArray(plan)) {
+    alert("Nenhum plano válido para executar no Browser.");
+    return;
+  }
+
+  runBrowserPlan({ steps: plan });
+});
   }
 });
 
@@ -1737,3 +1746,4 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
