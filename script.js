@@ -1688,6 +1688,34 @@ setMode("director");
 })();
 
 }
+
+// ============================================================
+// 🔁 FIX TEMPORÁRIO — ATIVA MODO MANUAL (ISOLADO)
+// NÃO interfere em Browser nem Director
+// ============================================================
+document.querySelectorAll(".mode-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const mode = btn.dataset.chatMode;
+
+    document.querySelectorAll(".mode-btn").forEach(b =>
+      b.classList.remove("active")
+    );
+    btn.classList.add("active");
+
+    const codeCard = document.getElementById("codeExecutorCard");
+    const chat = document.querySelector(".chat-container");
+
+    if (mode === "manual") {
+      if (chat) chat.style.display = "none";
+      if (codeCard) codeCard.style.display = "block";
+    } else {
+      if (chat) chat.style.display = "block";
+      if (codeCard) codeCard.style.display = "none";
+    }
+
+    console.log("[MODE FIX] Modo ativado:", mode);
+  });
+});
    
 // ============================================
 // LISTENER CANÔNICO — PLANO DE BROWSER APROVADO
@@ -1754,7 +1782,3 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
-
-
-
-
