@@ -1499,46 +1499,46 @@ setTimeout(pollBrowserHealth, 1000);
    - Apenas entra na sala
 ============================================================ */
 
-document.addEventListener("DOMContentLoaded", () => {
-  const liveBtn = document.getElementById("liveViewBtn");
-  if (liveBtn) {
-    liveBtn.addEventListener("click", () => {
-      try {
-        openLiveOverlay();
-      } catch (err) {
-        console.warn("Overlay falhou, abrindo em nova aba:", err);
-        const liveUrl = "https://browser.nv-imoveis.com/novnc/vnc.html?autoconnect=1";
-        window.open(liveUrl, "_blank", "noopener,noreferrer");
-      }
-    });
-  }
+//document.addEventListener("DOMContentLoaded", () => {
+  //const liveBtn = document.getElementById("liveViewBtn");
+  //if (liveBtn) {
+    //liveBtn.addEventListener("click", () => {
+      //try {
+        //openLiveOverlay();
+      //} catch (err) {
+        //console.warn("Overlay falhou, abrindo em nova aba:", err);
+        //const liveUrl = "https://browser.nv-imoveis.com/novnc/vnc.html?autoconnect=1";
+        //window.open(liveUrl, "_blank", "noopener,noreferrer");
+      //}
+    //});
+  //}
 
   // ============================================================
   // EXECUTAR BROWSER — botão fixo (A1)
   // ============================================================
-  const browserExecuteBtn = document.getElementById("browser-execute-btn");
+  //const browserExecuteBtn = document.getElementById("browser-execute-btn");
 
-  if (browserExecuteBtn) {
-    browserExecuteBtn.addEventListener("click", () => {
-  const raw = document.querySelector("textarea")?.value;
+  //if (browserExecuteBtn) {
+    //browserExecuteBtn.addEventListener("click", () => {
+  //const raw = document.querySelector("textarea")?.value;
 
-  let plan;
-  try {
-    plan = raw ? JSON.parse(raw) : null;
-  } catch (e) {
-    alert("Plano inválido (JSON).");
-    return;
-  }
+  //let plan;
+  //try {
+    //plan = raw ? JSON.parse(raw) : null;
+  //} catch (e) {
+    //alert("Plano inválido (JSON).");
+    //return;
+  //}
 
-  if (!plan || !Array.isArray(plan)) {
-    alert("Nenhum plano válido para executar no Browser.");
-    return;
-  }
+  //if (!plan || !Array.isArray(plan)) {
+    //alert("Nenhum plano válido para executar no Browser.");
+    //return;
+  //}
 
-  runBrowserPlan({ steps: plan });
-});
-  }
-});
+  //runBrowserPlan({ steps: plan });
+//});
+  //}
+//});
 
 if (!__DISABLE_LEGACY_BROWSER__) {
 // ============================================================
@@ -1782,3 +1782,4 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
