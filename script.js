@@ -443,7 +443,8 @@ function directorReportApi(label, result) {
   return directorSay(`⚠️ ${label}: falhou (${err}). Veja detalhes na telemetria.`);
 }
 
-// ============================================================
+if (!__DISABLE_LEGACY_BROWSER__) {
+/*/ ============================================================
 // 🌐 BROWSER EXECUTOR — BOTÃO EXCLUSIVO (VIA ISOLADA)
 // ============================================================
 
@@ -664,6 +665,8 @@ window.__renderHumanDirectorButton = renderHumanDirectorButton;
 try {
   window.__renderHumanDirectorButton();
 } catch (_) {}
+
+} // ⬅️⬅️⬅️ FECHA AQUI O if (!__DISABLE_LEGACY_BROWSER__)
 
 /* ============================================================
    FASE V — CODE EXECUTOR (APPLY / ROLLBACK)
@@ -1746,4 +1749,5 @@ setMode("director");
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
