@@ -1425,6 +1425,35 @@ function openLiveOverlay() {
   document.body.appendChild(overlay);
 }
 
+// ============================================================
+// AO VIVO — BOTÃO (VISUALIZAÇÃO APENAS, CANAL ISOLADO)
+// ============================================================
+document.addEventListener("DOMContentLoaded", () => {
+  const liveBtn =
+    document.getElementById("liveViewBtn") ||
+    document.querySelector("[data-action='live-view']");
+
+  if (!liveBtn) {
+    console.warn("[AO VIVO] Botão não encontrado");
+    return;
+  }
+
+  liveBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      openLiveOverlay(); // 👁️ apenas visualização
+    } catch (err) {
+      console.warn("AO VIVO falhou, abrindo em nova aba:", err);
+      window.open(
+        "https://browser.nv-imoveis.com/novnc/vnc.html?autoconnect=1",
+        "_blank",
+        "noopener,noreferrer"
+      );
+    }
+  });
+});
+
 /* ============================================================
    COCKPIT — BROWSER EXECUTOR (READ ONLY)
    - Status
@@ -1782,4 +1811,5 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
