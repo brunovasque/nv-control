@@ -274,6 +274,29 @@
             Fluxo de Deploy
           </div>
 
+          <!-- =========================
+               DEPLOY INPUTS (CANÔNICO)
+               ✅ exclusivo do fluxo de deploy
+               ❌ não tem nada a ver com browser executor
+          ========================== -->
+          <div style="margin: 12px 0; padding: 12px; border: 1px solid #1e2230; border-radius: 10px; background:#0c0f15;">
+            <div style="font-size: 12px; color:#9aa0a6; margin-bottom:8px;">
+              Deploy — Patch + Target
+            </div>
+
+            <input
+              id="targetWorkerIdInput"
+              placeholder="target.workerId (ex: nv-enavia)"
+              style="width:100%; padding:10px; border-radius:10px; border:1px solid #1e2230; background:#0f1115; color:#fff; margin-bottom:10px; font-family: monospace; font-size: 13px;"
+            />
+
+            <textarea
+              id="patchTextarea"
+              placeholder="PATCH (DEPLOY) — cole aqui o patch"
+              style="width:100%; min-height:140px; padding:12px; border-radius:10px; border:1px solid #1e2230; background:#0f1115; color:#fff; font-family:monospace; font-size:13px; line-height:1.5;"
+            ></textarea>
+          </div>
+
           <button class="action-btn disabled" data-action="audit">
             AUDIT
           </button>
@@ -351,9 +374,3 @@
 
 </body>
 </html>
-
-
-
-
-
-
