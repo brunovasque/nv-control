@@ -294,6 +294,7 @@ export async function handlePanelAction(action) {
       try {
         const state = getPanelState?.() || {};
 
+        // ✅ garante patch canônico antes do apiAdapter.audit() rodar
         const patchText =
           typeof state.patch === "string" && state.patch.trim()
             ? state.patch
@@ -301,10 +302,11 @@ export async function handlePanelAction(action) {
             ? state.last_message
             : "// noop patch — test handshake";
 
-        // ✅ CRÍTICO: garante patch no estado canônico (porque o apiAdapter lê do estado)
+        // CRÍTICO: seu window.api.audit (wrapper) aparentemente lê do estado/DOM.
+        // Então colocamos o patch no estado explicitamente.
         updatePanelState({ patch: patchText });
 
-        // ✅ compatível com seu apiAdapter atual: ele só precisa do propose:true
+        // ✅ chama o wrapper mesmo (ele não aceita args, mas não atrapalha)
         const res = await api.audit({ propose: true });
 
         console.log("[ENAVIA PROPOSE RESPONSE]", res);
