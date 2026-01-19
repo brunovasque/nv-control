@@ -302,10 +302,9 @@ export async function handlePanelAction(action) {
             ? state.last_message
             : "// noop patch — test handshake";
 
-        // ✅ chama o método correto do api-client (gera payload com propose=true)
+        // ✅ usa o método correto do api-client (propose -> /audit com flag)
         const res = await api.propose({ patch: patchText });
 
-        // prova no console (simples e útil)
         console.log("[ENAVIA PROPOSE RESPONSE]", res);
 
         if (res && res.ok === false) {
