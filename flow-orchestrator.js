@@ -292,7 +292,21 @@ export async function handlePanelAction(action) {
       });
 
       try {
-        const res = await api.audit({ propose: true });
+        const state = getPanelState();
+
+        // 🔒 Garante patch como STRING (mesma regra do AUDIT)
+        const patchText =
+          typeof state.patch === "string"
+            ? state.patch
+            : typeof state.last_message === "string"
+            ? state.last_message
+            : "// noop patch — test handshake";
+
+        // ✅ chama o método correto do api-client (gera payload com propose=true)
+        const res = await api.propose({ patch: patchText });
+
+        // prova no console (simples e útil)
+        console.log("[ENAVIA PROPOSE RESPONSE]", res);
 
         if (res && res.ok === false) {
           updatePanelState({
