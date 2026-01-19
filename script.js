@@ -1314,13 +1314,6 @@ let pendingEnaviaIntent = null; // guarda intenção aguardando confirmação
    ENAVIA — CONSULTA READ-ONLY (AUDIT)
 ============================================================ */
 async function askEnaviaAnalysis(intentText) {
-  if (!window.api) {
-    directorSay(
-      "A ENAVIA ainda não está conectada. Configure as URLs para que eu possa consultar a análise técnica."
-    );
-    return;
-  }
-
   // Log técnico (canal Director ⇄ ENAVIA)
   addChatMessage({
     role: "director_enavia",
@@ -1328,22 +1321,85 @@ async function askEnaviaAnalysis(intentText) {
   });
 
   try {
-    // ✅ BYPASS CANÔNICO: read-only SEM execution_id/target/patch
-    // Isso precisa bater com o /audit do worker (ask_suggestions + constraints)
-    const payload = {
-      mode: "enavia_audit",
-      source: "NV-CONTROL",
-      ask_suggestions: true,
-      constraints: {
-        read_only: true,
-        no_auto_apply: true,
-      },
-      context: {
-        director_intent: String(intentText || ""),
-      },
+    // ✅ IMPORTANTE:
+    // - o api-client exige patch (buildAuditPayload), então este "bypass" NÃO pode usar window.api.audit()
+    // - fazemos fetch direto no /audit da ENAVIA (read-only), com patch mínimo e target resolvido
+
+    const baseUrlRaw = String(localStorage.getItem("nv_enavia_url") || "").trim();
+    const baseUrl = baseUrlRaw.replace(/\/$/, "");
+
+    if (!baseUrl) {
+      directorSay(
+        "A URL da ENAVIA não está configurada (nv_enavia_url). Configure para eu consultar a análise técnica."
+      );
+      return;
+    }
+
+    // resolve workerId (mesma lógica: nv_worker_test/nv_worker_real ou input)
+    const envMode = String(localStorage.getItem("nv_env") || "test").trim().toLowerCase();
+    const lsTest = String(localStorage.getItem("nv_worker_test") || "").trim();
+    const lsProd = String(localStorage.getItem("nv_worker_real") || "").trim();
+    const inputVal = String(document.getElementById("targetWorkerIdInput")?.value || "").trim();
+
+    const rawWorker = envMode === "prod" ? (lsProd || inputVal) : (lsTest || inputVal);
+
+    const normalizeWorkerId = (v) => {
+      let s = String(v || "").trim();
+      if (!s) return "";
+      s = s.replace(/^https?:\/\//i, "");
+      s = s.split("/")[0].split("?")[0].split("#")[0];
+      if (s.includes(".")) s = s.split(".")[0];
+      return s.trim();
     };
 
-    const result = await window.api.audit(payload);
+    const resolvedWorkerId = normalizeWorkerId(rawWorker);
+
+    if (!resolvedWorkerId) {
+      directorSay(
+        "Não consegui definir o worker alvo. Configure nv_worker_test/nv_worker_real ou preencha o campo Target."
+      );
+      return;
+    }
+
+    const execution_id = `exec-${Date.now()}`;
+
+    const payload = {
+      mode: "enavia_audit",
+      source: "nv-control",
+      execution_id,
+      target: { system: "enavia", workerId: resolvedWorkerId },
+
+      // patch mínimo só para satisfazer o contrato do /audit
+      patch: {
+        type: "patch_text",
+        content: `// director_intent:\n// ${String(intentText || "").trim() || "(vazio)"}\n`,
+      },
+
+      // read-only canônico
+      constraints: { read_only: true, no_auto_apply: true },
+
+      // sem aplicar nada: apenas pedir sugestões/insights
+      ask_suggestions: true,
+      propose: true,
+
+      timestamp: Date.now(),
+    };
+
+    const res = await fetch(`${baseUrl}/audit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const text = await res.text().catch(() => "");
+    let data = null;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = { raw: text };
+    }
+
+    const result = { ok: res.ok, http_status: res.status, data };
 
     addChatMessage({
       role: "director_enavia",
@@ -1356,7 +1412,7 @@ async function askEnaviaAnalysis(intentText) {
   } catch (err) {
     addChatMessage({
       role: "director_enavia",
-      text: "[ENAVIA → DIRECTOR] ERRO: " + err.message,
+      text: "[ENAVIA → DIRECTOR] ERRO: " + (err?.message || String(err)),
     });
 
     directorSay(
@@ -1812,6 +1868,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
