@@ -292,17 +292,15 @@ export async function handlePanelAction(action) {
       });
 
       try {
-        const state = getPanelState();
+        const state = getPanelState?.();
 
-        // 🔒 patch como STRING (mesma regra do AUDIT)
         const patchText =
-          typeof state.patch === "string"
+          typeof state?.patch === "string"
             ? state.patch
-            : typeof state.last_message === "string"
+            : typeof state?.last_message === "string"
             ? state.last_message
             : "// noop patch — test handshake";
 
-        // ✅ compat: usa propose() se existir; senão cai no audit() com flag
         const res =
           typeof api?.propose === "function"
             ? await api.propose({ patch: patchText })
