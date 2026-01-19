@@ -102,6 +102,42 @@ function buildAuditPayload({ patch, propose = false }) {
     throw new Error("API_CLIENT_ERROR: patch vazio após normalização.");
   }
 
+  // ✅ resolve target.workerId por ambiente (TEST/PROD) + fallback no input
+  const envMode = String(localStorage.getItem("nv_env") || "test").trim().toLowerCase(); // "test" | "prod"
+  const lsTest = String(localStorage.getItem("nv_worker_test") || "").trim();
+  const lsProd = String(localStorage.getItem("nv_worker_real") || "").trim();
+  const inputVal = String(document.getElementById("targetWorkerIdInput")?.value || "").trim();
+
+  const rawWorker =
+    envMode === "prod"
+      ? (lsProd || inputVal)
+      : (lsTest || inputVal);
+
+  // normaliza: aceita scriptName OU URL/domain e extrai o "nome do worker"
+  const normalizeWorkerId = (v) => {
+    let s = String(v || "").trim();
+    if (!s) return "";
+
+    // remove protocolo
+    s = s.replace(/^https?:\/\//i, "");
+
+    // corta path/query
+    s = s.split("/")[0].split("?")[0].split("#")[0];
+
+    // se for domínio, pega a 1a parte (nv-enavia.brunovasque.workers.dev -> nv-enavia)
+    if (s.includes(".")) s = s.split(".")[0];
+
+    return s.trim();
+  };
+
+  const resolvedWorkerId = normalizeWorkerId(rawWorker);
+
+  if (!resolvedWorkerId) {
+    throw new Error(
+      "API_CLIENT_ERROR: target.workerId ausente. Defina nv_worker_test/nv_worker_real ou preencha o targetWorkerIdInput."
+    );
+  }
+
   return {
     execution_id,
     source: "nv-control",
@@ -111,7 +147,7 @@ function buildAuditPayload({ patch, propose = false }) {
 
     target: {
       system: "enavia",
-      workerId: "enavia-worker-teste",
+      workerId: resolvedWorkerId,
     },
 
     patch: {
