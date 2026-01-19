@@ -292,19 +292,20 @@ export async function handlePanelAction(action) {
       });
 
       try {
-        const state = getPanelState?.();
+        const state = getPanelState?.() || {};
 
         const patchText =
-          typeof state?.patch === "string"
+          typeof state.patch === "string" && state.patch.trim()
             ? state.patch
-            : typeof state?.last_message === "string"
+            : typeof state.last_message === "string" && state.last_message.trim()
             ? state.last_message
             : "// noop patch — test handshake";
 
-        const res =
-          typeof api?.propose === "function"
-            ? await api.propose({ patch: patchText })
-            : await api.audit({ patch: patchText, propose: true });
+        // ✅ CRÍTICO: garante patch no estado canônico (porque o apiAdapter lê do estado)
+        updatePanelState({ patch: patchText });
+
+        // ✅ compatível com seu apiAdapter atual: ele só precisa do propose:true
+        const res = await api.audit({ propose: true });
 
         console.log("[ENAVIA PROPOSE RESPONSE]", res);
 
