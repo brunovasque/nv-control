@@ -292,9 +292,9 @@ export async function handlePanelAction(action) {
       });
 
       try {
-        const state = getPanelState?.() || {};
+        const state = getPanelState();
 
-        // ✅ garante patch canônico antes do apiAdapter.audit() rodar
+        // 🔒 Garante patch como STRING (igual ao AUDIT)
         const patchText =
           typeof state.patch === "string" && state.patch.trim()
             ? state.patch
@@ -302,29 +302,47 @@ export async function handlePanelAction(action) {
             ? state.last_message
             : "// noop patch — test handshake";
 
-        // CRÍTICO: seu window.api.audit (wrapper) aparentemente lê do estado/DOM.
-        // Então colocamos o patch no estado explicitamente.
-        updatePanelState({ patch: patchText });
-
-        // ✅ chama o wrapper mesmo (ele não aceita args, mas não atrapalha)
-        const res = await api.audit({ propose: true });
+        // ✅ PROPOSE canônico (api-client monta propose:true + patch)
+        const res = await api.propose({ patch: patchText });
 
         console.log("[ENAVIA PROPOSE RESPONSE]", res);
+
+        // opcional: expõe pra debug
+        if (typeof window !== "undefined") {
+          window.__LAST_PROPOSE_RESPONSE__ = res;
+        }
 
         if (res && res.ok === false) {
           updatePanelState({
             last_error: res.error || "Falha no propose.",
           });
+          addChatMessage({
+            role: "enavia",
+            text: "Falha no PROPOSE: " + (res.error || "erro desconhecido"),
+          });
           return;
         }
+
+        // ✅ mostra retorno no chat
+        addChatMessage({
+          role: "enavia",
+          text: "[PROPOSE RESULT]\n" + JSON.stringify(res, null, 2),
+        });
 
         updatePanelState({
           patch_status: PATCH_STATUSES.PROPOSED,
           last_error: null,
         });
       } catch (err) {
+        console.error("[PROPOSE FLOW ERROR]", err);
+
         updatePanelState({
           last_error: err?.message || "Erro inesperado durante propose.",
+        });
+
+        addChatMessage({
+          role: "enavia",
+          text: "Erro no PROPOSE: " + (err?.message || "erro inesperado"),
         });
       }
       break;
