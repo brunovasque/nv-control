@@ -132,6 +132,11 @@ export async function handlePanelAction(action) {
 
         const res = await api.audit({ patch: patchText });
 
+         // salva o último audit response pra inspeção no DevTools
+         if (typeof window !== "undefined") {
+           window.__LAST_AUDIT_RESPONSE__ = res;
+         }
+
         console.log("[ENAVIA AUDIT RESPONSE]", res);
 
         if (!res || res.ok === false) {
