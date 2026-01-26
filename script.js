@@ -377,8 +377,14 @@ function getTargetRequired() {
     throw new Error("target.workerId obrigatório.");
   }
 
+  // default canônico: mantém o que já funciona
+  // opcional: override via localStorage "nv_target_system"
+  const system =
+    String(localStorage.getItem("nv_target_system") || "TARGET_WORKER").trim() ||
+    "TARGET_WORKER";
+
   const target = {
-    system: "TARGET_WORKER",
+    system,
     workerId,
   };
 
@@ -1868,6 +1874,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
