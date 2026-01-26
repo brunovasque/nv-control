@@ -919,31 +919,33 @@ function buildApiAdapter(api) {
       let r;
 
       if (isPropose) {
-        // PROPOSE: só roda quando houver um pedido real (objetivo).
+        // PROPOSE canônico: só executa quando houver um pedido explícito do usuário.
         payload.target = getTargetRequired();
 
-        // Usa o texto do chat como "objetivo". Se estiver vazio, não dispara PROPOSE.
         const u = ui();
+
+        // 1) objetivo vem do chat (pedido explícito)
         const objective = (u?.chatInput?.value || "").trim();
 
         if (!objective) {
           if (typeof directorSay === "function") {
             directorSay(
-              "PROPOSE não executado: escreva no chat exatamente o que você quer que eu sugira sobre esse worker (ex.: 'criar /__internal__/routes', 'otimizar leitura X', 'corrigir bug Y')."
+              "PROPOSE não executado: escreva no chat exatamente o que você quer que eu sugira sobre esse worker (ex.: 'criar /__internal__/routes', 'criar /__internal__/capabilities', 'otimizar X', 'corrigir bug Y')."
             );
           }
           return { ok: false, skipped: true, reason: "missing_objective" };
         }
 
+        // 2) PROPOSE não manda patch (isso é AUDIT)
         r = await api.propose({
           ...payload,
           ask_suggestions: true,
-          objective, // <-- pedido real
+          objective,
         });
 
         directorReportApi("PROPOSE (ENAVIA)", r);
 
-        // Autofill do PATCH com o patch_text sugerido (tolerante a resposta aninhada)
+        // Autofill do PATCH com o patch_text sugerido
         try {
           const d = r?.data?.data ? r.data.data : r?.data;
 
@@ -969,7 +971,7 @@ function buildApiAdapter(api) {
           } else {
             if (typeof directorSay === "function") {
               directorSay(
-                "PROPOSE retornou sem patch_text detectável. Veja a telemetria e copie o patch manualmente."
+                "PROPOSE executado, mas não detectei patch_text no retorno. Veja a telemetria e copie o patch manualmente."
               );
             }
           }
@@ -1935,6 +1937,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
