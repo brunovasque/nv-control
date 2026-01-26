@@ -893,7 +893,19 @@ function buildApiAdapter(api) {
   return {
     async audit(opts = {}) {
       const isPropose = opts.propose === true;
-      const execution_id = isPropose ? (`preview-${Date.now()}`) : getExecutionIdRequired();
+
+      // PROPOSE REAL: se não tiver execution_id, gera um exec-... e persiste no painel
+      let execution_id = isPropose ? getExecutionId() : getExecutionIdRequired();
+
+      if (isPropose && !execution_id) {
+        execution_id = `exec-${Date.now()}`;
+
+        updatePanelState({ execution_id });
+        localStorage.setItem(LS.LAST_EXECUTION_ID, execution_id);
+
+        const u = ui();
+        if (u.executionIdInput) u.executionIdInput.value = execution_id;
+      }
 
       const payload = {
         execution_id,
@@ -907,13 +919,46 @@ function buildApiAdapter(api) {
       let r;
 
       if (isPropose) {
-        // PROPOSE: não exige patch nem target
+        // PROPOSE: ENGINEER MODE REAL (exige target para leitura live do worker-alvo)
+        payload.target = getTargetRequired();
+
         r = await api.propose({
           ...payload,
           ask_suggestions: true,
         });
 
         directorReportApi("PROPOSE (ENAVIA)", r);
+
+        // Autofill do PATCH com o patch_text sugerido
+        try {
+          const patchText =
+            r?.data?.patch_text ||
+            r?.data?.patchText ||
+            r?.data?.patch?.content ||
+            r?.data?.patch?.patch_text ||
+            null;
+
+          if (patchText) {
+            const u = ui();
+            if (u.patchTextarea) {
+              u.patchTextarea.value = String(patchText).trim();
+              u.patchTextarea.dispatchEvent(new Event("input", { bubbles: true }));
+              u.patchTextarea.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+
+            if (typeof directorSay === "function") {
+              directorSay(
+                "Patch sugerido preenchido no campo PATCH. Agora rode AUDIT com o MESMO execution_id para carimbar no Deploy Worker."
+              );
+            }
+          } else {
+            if (typeof directorSay === "function") {
+              directorSay(
+                "PROPOSE retornou sem patch_text detectável. Veja a telemetria e copie o patch manualmente."
+              );
+            }
+          }
+        } catch (_) {}
       } else {
         // AUDIT: exige patch e target
         payload.target = getTargetRequired();
@@ -1874,6 +1919,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
