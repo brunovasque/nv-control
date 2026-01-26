@@ -949,20 +949,23 @@ function buildApiAdapter(api) {
         const enaviaBaseUrl = mustGetEnaviaUrl();
         const token = getTokenOrNull();
 
-        const res = await fetch(`${enaviaBaseUrl}/propose`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({
-            ...payload,
-            ask_suggestions: true,
-            // redundância intencional (compat)
-            message: objective,
-            intent: { objective },
-          }),
-        });
+        const u = ui(); // <-- adiciona isso antes do autofill também
+
+const res = await fetch(`${enaviaBaseUrl}/propose`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  },
+  body: JSON.stringify({
+    execution_id: payload.execution_id,
+    source: payload.source,
+    constraints: payload.constraints,
+    target: payload.target,
+    ask_suggestions: true,
+    objective,              // <-- explícito
+  }),
+});
 
         const raw = await res.text();
         let data = null;
@@ -1969,6 +1972,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
