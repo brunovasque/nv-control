@@ -922,20 +922,30 @@ function buildApiAdapter(api) {
         // PROPOSE: ENGINEER MODE REAL (exige target para leitura live do worker-alvo)
         payload.target = getTargetRequired();
 
+        // Compat com backends que rodam PROPOSE via /audit: envia patch "noop" se textarea estiver vazio
+        try {
+          payload.patch = getPatchRequired();
+        } catch (_) {
+          payload.patch = { type: "patch_text", content: "// noop patch — propose handshake" };
+        }
+
         r = await api.propose({
           ...payload,
           ask_suggestions: true,
+          propose: true,
         });
 
         directorReportApi("PROPOSE (ENAVIA)", r);
 
-        // Autofill do PATCH com o patch_text sugerido
+        // Autofill do PATCH com o patch_text sugerido (tolerante a resposta aninhada)
         try {
+          const d = r?.data?.data ? r.data.data : r?.data;
+
           const patchText =
-            r?.data?.patch_text ||
-            r?.data?.patchText ||
-            r?.data?.patch?.content ||
-            r?.data?.patch?.patch_text ||
+            d?.patch_text ||
+            d?.patchText ||
+            d?.patch?.content ||
+            d?.patch?.patch_text ||
             null;
 
           if (patchText) {
@@ -1919,6 +1929,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
