@@ -919,20 +919,26 @@ function buildApiAdapter(api) {
       let r;
 
       if (isPropose) {
-        // PROPOSE: ENGINEER MODE REAL (exige target para leitura live do worker-alvo)
+        // PROPOSE: só roda quando houver um pedido real (objetivo).
         payload.target = getTargetRequired();
 
-        // Compat com backends que rodam PROPOSE via /audit: envia patch "noop" se textarea estiver vazio
-        try {
-          payload.patch = getPatchRequired();
-        } catch (_) {
-          payload.patch = { type: "patch_text", content: "// noop patch — propose handshake" };
+        // Usa o texto do chat como "objetivo". Se estiver vazio, não dispara PROPOSE.
+        const u = ui();
+        const objective = (u?.chatInput?.value || "").trim();
+
+        if (!objective) {
+          if (typeof directorSay === "function") {
+            directorSay(
+              "PROPOSE não executado: escreva no chat exatamente o que você quer que eu sugira sobre esse worker (ex.: 'criar /__internal__/routes', 'otimizar leitura X', 'corrigir bug Y')."
+            );
+          }
+          return { ok: false, skipped: true, reason: "missing_objective" };
         }
 
         r = await api.propose({
           ...payload,
           ask_suggestions: true,
-          propose: true,
+          objective, // <-- pedido real
         });
 
         directorReportApi("PROPOSE (ENAVIA)", r);
@@ -949,8 +955,7 @@ function buildApiAdapter(api) {
             null;
 
           if (patchText) {
-            const u = ui();
-            if (u.patchTextarea) {
+            if (u?.patchTextarea) {
               u.patchTextarea.value = String(patchText).trim();
               u.patchTextarea.dispatchEvent(new Event("input", { bubbles: true }));
               u.patchTextarea.dispatchEvent(new Event("change", { bubbles: true }));
@@ -970,6 +975,7 @@ function buildApiAdapter(api) {
           }
         } catch (_) {}
       } else {
+         
         // AUDIT: exige patch e target
         payload.target = getTargetRequired();
         payload.patch = getPatchRequired();
@@ -1929,6 +1935,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
