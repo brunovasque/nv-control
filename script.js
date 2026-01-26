@@ -919,29 +919,61 @@ function buildApiAdapter(api) {
       let r;
 
       if (isPropose) {
-        // PROPOSE canônico: só executa quando houver um pedido explícito do usuário.
+        // PROPOSE: ENGINEER MODE REAL (chama /propose de verdade)
         payload.target = getTargetRequired();
 
-        const u = ui();
+        // 🔒 Só sugere se houver um pedido explícito seu (do chat ou opts)
+        const objectiveRaw =
+          (opts && (opts.objective || opts.prompt)) ||
+          window.__LAST_DIRECTOR_OBJECTIVE__ ||
+          "";
 
-        // 1) objetivo vem do chat (pedido explícito)
-        const objective = (u?.chatInput?.value || "").trim();
+        const objective = String(objectiveRaw || "").trim();
 
         if (!objective) {
-          if (typeof directorSay === "function") {
-            directorSay(
-              "PROPOSE não executado: escreva no chat exatamente o que você quer que eu sugira sobre esse worker (ex.: 'criar /__internal__/routes', 'criar /__internal__/capabilities', 'otimizar X', 'corrigir bug Y')."
-            );
-          }
-          return { ok: false, skipped: true, reason: "missing_objective" };
+          const msg =
+            "Antes do PROPOSE, escreva no chat o que você quer (objetivo) e clique PROPOSE de novo. Sem pedido explícito, eu não gero sugestão.";
+          if (typeof directorSay === "function") directorSay(msg);
+
+          r = {
+            ok: false,
+            http_status: 400,
+            error: "objective_required",
+            data: { ok: false, error: "objective_required", message: msg },
+          };
+
+          directorReportApi("PROPOSE (ENAVIA)", r);
+          return r;
         }
 
-        // 2) PROPOSE não manda patch (isso é AUDIT)
-        r = await api.propose({
-          ...payload,
-          ask_suggestions: true,
-          objective,
+        const enaviaBaseUrl = mustGetEnaviaUrl();
+        const token = getTokenOrNull();
+
+        const res = await fetch(`${enaviaBaseUrl}/propose`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            ...payload,
+            ask_suggestions: true,
+            // redundância intencional (compat)
+            message: objective,
+            intent: { objective },
+          }),
         });
+
+        const raw = await res.text();
+        let data = null;
+        try { data = raw ? JSON.parse(raw) : {}; } catch (_) { data = { raw }; }
+
+        r = {
+          ok: res.ok,
+          http_status: res.status,
+          data,
+          error: res.ok ? null : (data?.error || data?.message || raw),
+        };
 
         directorReportApi("PROPOSE (ENAVIA)", r);
 
@@ -1937,6 +1969,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
