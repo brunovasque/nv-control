@@ -1016,18 +1016,46 @@ function buildApiAdapter(api) {
         try {
           const d = r?.data?.data ? r.data.data : r?.data;
 
-          const patchText =
+          // primeiro tenta formatos antigos (compatibilidade)
+          let patchText =
             d?.patch_text ||
             d?.patchText ||
             d?.patch?.content ||
             d?.patch?.patch_text ||
             null;
 
+          // 🔎 NOVO: extrai patch_text da resposta do EXECUTOR (propose.result.patch)
+          if (!patchText) {
+            const patchFromExecutor =
+              d?.propose?.result?.patch ||
+              d?.data?.propose?.result?.patch ||
+              null;
+
+            if (patchFromExecutor && patchFromExecutor.mode === "patch_text") {
+              const rawPatch = patchFromExecutor.patchText;
+
+              if (typeof rawPatch === "string") {
+                patchText = rawPatch;
+              } else if (Array.isArray(rawPatch)) {
+                try {
+                  // usamos JSON bem formatado como conteúdo de patch_text
+                  patchText = JSON.stringify(rawPatch, null, 2);
+                } catch (_) {
+                  patchText = String(rawPatch);
+                }
+              }
+            }
+          }
+
           if (patchText) {
             if (u?.patchTextarea) {
               u.patchTextarea.value = String(patchText).trim();
-              u.patchTextarea.dispatchEvent(new Event("input", { bubbles: true }));
-              u.patchTextarea.dispatchEvent(new Event("change", { bubbles: true }));
+              u.patchTextarea.dispatchEvent(
+                new Event("input", { bubbles: true })
+              );
+              u.patchTextarea.dispatchEvent(
+                new Event("change", { bubbles: true })
+              );
             }
 
             if (typeof directorSay === "function") {
@@ -2004,6 +2032,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
 
