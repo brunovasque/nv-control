@@ -398,6 +398,24 @@ function getTargetRequired() {
 }
 
 /* ============================================================
+   SEI LA QUE PATCH ESSE ABAIXO
+============================================================ */
+function bindPatchField() {
+  const u = ui();
+  const el = u.patchTextarea;
+  if (!el) return;
+
+  const handler = (e) => {
+    const value = String(e.target.value || "");
+    // mantém o texto do PATCH sincronizado com o panel-state
+    updatePanelState({ patch: String(value || "") });
+  };
+
+  el.addEventListener("input", handler, true);
+  el.addEventListener("change", handler, true);
+}
+
+/* ============================================================
    PATCH (OBRIGATÓRIO — INPUT HUMANO)
 ============================================================ */
 function getPatchRequired() {
@@ -1985,5 +2003,6 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
 
