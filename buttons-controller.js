@@ -74,10 +74,7 @@ const normalizedStatus =
 const canApplyTest =
   normalizedStatus === PATCH_STATUSES.AUDITED.toLowerCase() &&
   audit &&
-  audit.verdict === "approve" &&
-  normalizedRisk === "low" &&
-  !hasFindings &&
-  !hasRecommendations;
+  audit.verdict === "approve";
 
   toggle(buttons.applyTest, canApplyTest);
 
