@@ -295,15 +295,23 @@ export async function handlePanelAction(action) {
         const state = getPanelState();
 
         // 🔒 PROPOSE só roda com pedido explícito (objetivo) — NÃO inventa patch
-const objective =
+let objective =
   typeof state.last_message === "string" ? String(state.last_message).trim() : "";
+
+// ✅ alternativa segura: permitir objetivo vindo do PATCH apenas com prefixo "OBJ:"
+if (!objective && typeof state.patch === "string") {
+  const p = String(state.patch).trim();
+  if (/^OBJ\s*:/i.test(p)) {
+    objective = p.replace(/^OBJ\s*:/i, "").trim();
+  }
+}
 
 if (!objective) {
   addChatMessage({
     role: "director",
     text:
       "Antes do PROPOSE, escreva no chat exatamente o que você quer que eu proponha " +
-      "(ex: 'me proponha melhorias de logs sem mudar comportamento') e clique PROPOSE de novo.",
+      "OU cole no PATCH começando com 'OBJ:' (ex: OBJ: melhorias low-risk de logs) e clique PROPOSE de novo.",
   });
   return;
 }
