@@ -706,80 +706,74 @@ export function initFlowOrchestrator(apiAdapter) {
   if (api && typeof api.propose !== "function") {
     api = {
       ...api,
-      propose: async function ({ patch } = {}) {
-        // replica o contrato do api-client: propose -> POST /audit com propose:true
-        const enaviaBaseUrl = String(localStorage.getItem("nv_enavia_url") || "").replace(/\/$/, "");
-        if (!enaviaBaseUrl) {
-          throw new Error("PROPOSE_ERROR: nv_enavia_url ausente no localStorage.");
-        }
+      propose: async function ({ objective, patch } = {}) {
+  // ✅ CONTRATO: PROPOSE -> POST /propose (NÃO /audit)
+  const enaviaBaseUrl = String(localStorage.getItem("nv_enavia_url") || "").replace(/\/$/, "");
+  if (!enaviaBaseUrl) {
+    throw new Error("PROPOSE_ERROR: nv_enavia_url ausente no localStorage.");
+  }
 
-        const patchText =
-          typeof patch === "string" ? patch : JSON.stringify(patch ?? "", null, 2);
+  const objectiveText = String(objective || "").trim();
+  if (!objectiveText) {
+    throw new Error("PROPOSE_ERROR: objective ausente. Escreva o pedido no chat antes de clicar PROPOSE.");
+  }
 
-        if (!patchText || !String(patchText).trim()) {
-          throw new Error("PROPOSE_ERROR: patch ausente/vazio. Nada para propor.");
-        }
+  const state = getPanelState?.() || {};
+  const execution_id = state.execution_id || null;
 
-        const state = getPanelState?.() || {};
-        const execution_id = state.execution_id;
+  const envMode = String(localStorage.getItem("nv_env") || "test").trim().toLowerCase();
+  const lsTest = String(localStorage.getItem("nv_worker_test") || "").trim();
+  const lsProd = String(localStorage.getItem("nv_worker_real") || "").trim();
+  const inputVal = String(document.getElementById("targetWorkerIdInput")?.value || "").trim();
 
-        if (!execution_id) {
-          throw new Error("PROPOSE_ERROR: execution_id ausente no estado do painel.");
-        }
+  const rawWorker = envMode === "prod" ? (lsProd || inputVal) : (lsTest || inputVal);
 
-        const envMode = String(localStorage.getItem("nv_env") || "test").trim().toLowerCase();
-        const lsTest = String(localStorage.getItem("nv_worker_test") || "").trim();
-        const lsProd = String(localStorage.getItem("nv_worker_real") || "").trim();
-        const inputVal = String(document.getElementById("targetWorkerIdInput")?.value || "").trim();
+  const normalizeWorkerId = (v) => {
+    let s = String(v || "").trim();
+    if (!s) return "";
+    s = s.replace(/^https?:\/\//i, "");
+    s = s.split("/")[0].split("?")[0].split("#")[0];
+    if (s.includes(".")) s = s.split(".")[0];
+    return s.trim();
+  };
 
-        const rawWorker = envMode === "prod" ? (lsProd || inputVal) : (lsTest || inputVal);
+  const workerId = normalizeWorkerId(rawWorker);
+  if (!workerId) {
+    throw new Error(
+      "PROPOSE_ERROR: target.workerId ausente. Defina nv_worker_test/nv_worker_real ou preencha o targetWorkerIdInput."
+    );
+  }
 
-        const normalizeWorkerId = (v) => {
-          let s = String(v || "").trim();
-          if (!s) return "";
-          s = s.replace(/^https?:\/\//i, "");
-          s = s.split("/")[0].split("?")[0].split("#")[0];
-          if (s.includes(".")) s = s.split(".")[0];
-          return s.trim();
-        };
+  const payload = {
+    ...(execution_id ? { execution_id } : {}),
+    source: "nv-control",
+    mode: "enavia_propose",
+    target: { system: "cloudflare_worker", workerId },
+    ask_suggestions: true,
+    prompt: objectiveText,
+    intent: { objective: objectiveText },
+    constraints: { read_only: true, no_auto_apply: true },
+    timestamp: Date.now(),
+    ...(typeof patch === "string" && patch.trim()
+      ? { patch: { type: "patch_text", content: String(patch).trim() } }
+      : {}),
+  };
 
-        const workerId = normalizeWorkerId(rawWorker);
-        if (!workerId) {
-          throw new Error(
-            "PROPOSE_ERROR: target.workerId ausente. Defina nv_worker_test/nv_worker_real ou preencha o targetWorkerIdInput."
-          );
-        }
+  const res = await fetch(`${enaviaBaseUrl}/propose`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
 
-        const payload = {
-          execution_id,
-          source: "nv-control",
-          mode: "enavia_audit",
-          target: { system: "enavia", workerId },
-          patch: { type: "patch_text", content: String(patchText) },
-          constraints: { read_only: true, no_auto_apply: true },
-          timestamp: Date.now(),
-          propose: true,
-        };
+  const text = await res.text().catch(() => "");
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch { data = { raw: text }; }
 
-        const res = await fetch(`${enaviaBaseUrl}/audit`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
+  if (!res.ok || data?.ok === false) {
+    return { ok: false, http_status: res.status, error: data?.error || `HTTP_${res.status}`, data };
+  }
 
-        const text = await res.text().catch(() => "");
-        let data = null;
-        try {
-          data = text ? JSON.parse(text) : null;
-        } catch {
-          data = { raw: text };
-        }
-
-        if (!res.ok || data?.ok === false) {
-          return { ok: false, http_status: res.status, error: data?.error || `HTTP_${res.status}`, data };
-        }
-
-        return { ok: true, http_status: res.status, data };
+  return { ok: true, http_status: res.status, data };
       },
     };
   }
