@@ -1972,15 +1972,3 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
-
-
-
-
-
-
-
-
-
-
-
-
