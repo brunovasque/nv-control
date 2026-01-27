@@ -928,11 +928,25 @@ function buildApiAdapter(api) {
           window.__LAST_DIRECTOR_OBJECTIVE__ ||
           "";
 
-        const objective = String(objectiveRaw || "").trim();
+        let objective = String(objectiveRaw || "").trim();
+
+        // ✅ fallback: se o chat falhar (CORS), aceite objetivo vindo do PATCH
+        if (!objective) {
+          try {
+            const st =
+              typeof getPanelState === "function" ? (getPanelState() || {}) : {};
+            const p = typeof st.patch === "string" ? st.patch.trim() : "";
+            if (p) {
+              objective = /^OBJ\s*:/i.test(p)
+                ? p.replace(/^OBJ\s*:/i, "").trim()
+                : p;
+            }
+          } catch (_) {}
+        }
 
         if (!objective) {
           const msg =
-            "Antes do PROPOSE, escreva no chat o que você quer (objetivo) e clique PROPOSE de novo. Sem pedido explícito, eu não gero sugestão.";
+            "Antes do PROPOSE, escreva no chat o que você quer (objetivo) OU cole o objetivo no PATCH e clique PROPOSE de novo.";
           if (typeof directorSay === "function") directorSay(msg);
 
           r = {
@@ -949,23 +963,20 @@ function buildApiAdapter(api) {
         const enaviaBaseUrl = mustGetEnaviaUrl();
         const token = getTokenOrNull();
 
-        const u = ui(); // <-- adiciona isso antes do autofill também
-
-const res = await fetch(`${enaviaBaseUrl}/propose`, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  },
-  body: JSON.stringify({
-    execution_id: payload.execution_id,
-    source: payload.source,
-    constraints: payload.constraints,
-    target: payload.target,
-    ask_suggestions: true,
-    objective,              // <-- explícito
-  }),
-});
+        const res = await fetch(`${enaviaBaseUrl}/propose`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            ...payload,
+            ask_suggestions: true,
+            // redundância intencional (compat)
+            message: objective,
+            intent: { objective },
+          }),
+        });
 
         const raw = await res.text();
         let data = null;
@@ -1972,3 +1983,4 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
