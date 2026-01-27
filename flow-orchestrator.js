@@ -294,16 +294,29 @@ export async function handlePanelAction(action) {
       try {
         const state = getPanelState();
 
-        // 🔒 Garante patch como STRING (igual ao AUDIT)
-        const patchText =
-          typeof state.patch === "string" && state.patch.trim()
-            ? state.patch
-            : typeof state.last_message === "string" && state.last_message.trim()
-            ? state.last_message
-            : "// noop patch — test handshake";
+        // 🔒 PROPOSE só roda com pedido explícito (objetivo) — NÃO inventa patch
+const objective =
+  typeof state.last_message === "string" ? String(state.last_message).trim() : "";
 
-        // ✅ PROPOSE canônico (api-client monta propose:true + patch)
-        const res = await api.propose({ patch: patchText });
+if (!objective) {
+  addChatMessage({
+    role: "director",
+    text:
+      "Antes do PROPOSE, escreva no chat exatamente o que você quer que eu proponha " +
+      "(ex: 'me proponha melhorias de logs sem mudar comportamento') e clique PROPOSE de novo.",
+  });
+  return;
+}
+
+// Patch é opcional: só manda se você colou algo de verdade no campo PATCH
+const patchText =
+  typeof state.patch === "string" && state.patch.trim() ? String(state.patch).trim() : null;
+
+// ✅ PROPOSE: envia objetivo; patch só se existir
+const res = await api.propose({
+  objective,
+  ...(patchText ? { patch: patchText } : {}),
+});
 
         console.log("[ENAVIA PROPOSE RESPONSE]", res);
 
