@@ -145,10 +145,12 @@ function ui() {
       qs("#workerIdInput") ||
       qs("[data-field='target-workerid']"),
 
+    // 👇 AQUI É O PONTO QUE VAMOS AJUSTAR
     patchTextarea:
       qs("#patchTextarea") ||
       qs("#patchInput") ||
-      qs("textarea[data-field='patch']"),
+      qs("textarea[data-field='patch']") ||
+      qs("textarea[data-field='patch-textarea']"),
 
     sendBtn:
       qs("#sendBtn") ||
@@ -1983,4 +1985,5 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
+
 
