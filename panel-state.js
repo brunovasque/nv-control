@@ -126,7 +126,7 @@ export function canTransitionTo(nextStatus) {
     audited: ["proposed", "staged"],
 
     // 🔥 LIBERADO: propose pode avançar
-    proposed: ["staged"],
+    proposed: ["audited", "staged"],
 
     staged: ["tested", "test_failed"],
 
