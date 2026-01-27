@@ -298,12 +298,19 @@ export async function handlePanelAction(action) {
 let objective =
   typeof state.last_message === "string" ? String(state.last_message).trim() : "";
 
-// ✅ alternativa segura: permitir objetivo vindo do PATCH apenas com prefixo "OBJ:"
-if (!objective && typeof state.patch === "string") {
-  const p = String(state.patch).trim();
-  if (/^OBJ\s*:/i.test(p)) {
-    objective = p.replace(/^OBJ\s*:/i, "").trim();
-  }
+const patchRaw = typeof state.patch === "string" ? String(state.patch).trim() : "";
+
+let objectiveCameFromPatch = false;
+
+// ✅ fallback: permitir objetivo vindo do PATCH (sem depender do chat)
+// - se vier com "OBJ:", remove o prefixo
+// - se vier sem prefixo, assume que é objetivo (e NÃO trata como patch)
+if (!objective && patchRaw) {
+  objective = /^OBJ\s*:/i.test(patchRaw)
+    ? patchRaw.replace(/^OBJ\s*:/i, "").trim()
+    : patchRaw;
+
+  objectiveCameFromPatch = true;
 }
 
 if (!objective) {
@@ -311,14 +318,15 @@ if (!objective) {
     role: "director",
     text:
       "Antes do PROPOSE, escreva no chat exatamente o que você quer que eu proponha " +
-      "OU cole no PATCH começando com 'OBJ:' (ex: OBJ: melhorias low-risk de logs) e clique PROPOSE de novo.",
+      "OU cole o objetivo no PATCH (ex: melhorias low-risk de logs) e clique PROPOSE de novo.",
   });
   return;
 }
 
 // Patch é opcional: só manda se você colou algo de verdade no campo PATCH
+// ⚠️ Se o objetivo veio do PATCH, NÃO envie patch (senão vira patch fake)
 const patchText =
-  typeof state.patch === "string" && state.patch.trim() ? String(state.patch).trim() : null;
+  !objectiveCameFromPatch && patchRaw ? patchRaw : null;
 
 // ✅ PROPOSE: envia objetivo; patch só se existir
 const res = await api.propose({
