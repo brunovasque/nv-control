@@ -161,12 +161,8 @@ html, body {
   display: flex;
   flex-direction: column;
   background: #12151c;
-}
 
-/* ============================================================
-   WATERMARK — LOGO ENAVIA (FUNDO SUTIL NO CHAT)
-============================================================ */
-.chat-container {
+  /* Watermark control */
   position: relative;
   overflow: hidden;
 }
@@ -174,9 +170,20 @@ html, body {
 .chat-container::before {
   content: "";
   position: absolute;
-  inset: -60px;
-  background: url("/assets/logo-enavia.png") center / 520px no-repeat;
-  opacity: 0.06;
+  inset: 0;
+
+  /* watermark */
+  background-image: url("/assets/logo-enavia.png");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 560px;
+
+  /* visual */
+  opacity: 0.08;
+
+  /* sobe ~3–4cm (ajuste fino aqui) */
+  transform: translateY(-40px);
+
   pointer-events: none;
   z-index: 0;
 }
@@ -487,4 +494,5 @@ html, body {
   font-weight: 700;
   letter-spacing: .5px;
 }
+
 
