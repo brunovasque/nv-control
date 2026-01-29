@@ -16,87 +16,95 @@ html, body {
 }
 
 /* ============================================================
-   ROOT LAYOUT
+   APP LAYOUT
 ============================================================ */
 .app-root {
   display: flex;
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden;
+  height: 100%;
 }
 
 /* ============================================================
-   SIDEBAR
+   SIDEBAR (LEGADO)
 ============================================================ */
 .sidebar {
   width: 260px;
-  background: #0c0f14;
   border-right: 1px solid #1e2230;
-  display: flex;
-  flex-direction: column;
+  background: #0b0d12;
+  padding: 18px 14px;
 }
 
 .sidebar-header {
-  padding: 24px 20px;
-  border-bottom: 1px solid #1e2230;
+  margin-bottom: 18px;
 }
 
 .logo {
-  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-img {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+}
+
+.logo-text {
+  font-size: 16px;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
+}
+
+.logo-subtext {
+  font-size: 12px;
+  color: #6f7785;
+  margin-top: 2px;
 }
 
 .subtitle {
+  margin-top: 10px;
   font-size: 12px;
-  color: #8b90a0;
-  margin-top: 4px;
+  color: #6f7785;
 }
 
 .sidebar-section {
-  padding: 16px 12px;
+  margin-top: 18px;
 }
 
 .section-title {
   font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 1px;
   color: #6f7785;
-  margin-bottom: 8px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
 }
 
 .sidebar-btn {
   width: 100%;
-  background: transparent;
-  border: none;
-  color: #c9ccd3;
   text-align: left;
   padding: 10px 12px;
-  border-radius: 6px;
+  border-radius: 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #e6e8eb;
   cursor: pointer;
-  font-size: 14px;
+  margin-bottom: 8px;
+  font-size: 13px;
 }
 
 .sidebar-btn:hover {
-  background: #161a22;
+  background: rgba(255,255,255,0.03);
 }
 
 .sidebar-btn.active {
-  background: #1b2030;
-  color: #ffffff;
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.06);
 }
 
-/* ============================================================
-   CHAT MODES (SIDEBAR)
-============================================================ */
-.mode-btn {
-  margin-top: 4px;
-}
-
-.mode-btn.active {
-  background: #2a3146;
-  border-left: 3px solid #4da3ff;
-  color: #ffffff;
+.mode-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 /* ============================================================
@@ -122,42 +130,6 @@ html, body {
   background: #0f1115;
 }
 
-/* ============================================================
-   ABAS PRINCIPAIS (Diretor / Deploy / Browser / Telemetria / Histórico)
-============================================================ */
-.tabs-bar {
-  display: flex;
-  gap: 8px;
-  padding: 8px 20px 0;
-  border-bottom: 1px solid #1e2230;
-  background: #0f1115;
-}
-
-.tab-btn {
-  border: none;
-  background: transparent;
-  color: #9aa0a6;
-  font-size: 13px;
-  padding: 6px 14px;
-  border-radius: 999px;
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.tab-btn:hover {
-  background: #1b2030;
-  color: #e6e8eb;
-}
-
-.tab-btn.active {
-  background: #1b2030;
-  color: #ffffff;
-}
-
-/* ============================================================
-   FIM DAS ABAS PRINCIPAIS ACIMA
-============================================================ */
-
 .execution-info,
 .status-info {
   font-size: 13px;
@@ -173,6 +145,21 @@ html, body {
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 12px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.03);
+  color: #9aa0a6;
+}
+
+.status-pill.ok {
+  background: rgba(0, 200, 120, 0.12);
+  color: #9ff0c8;
+  border-color: rgba(0, 200, 120, 0.25);
+}
+
+.status-pill.danger {
+  background: rgba(255, 80, 80, 0.12);
+  color: #ffb7b7;
+  border-color: rgba(255, 80, 80, 0.25);
 }
 
 .status-pill.neutral {
@@ -187,44 +174,13 @@ html, body {
   flex: 1;
   display: flex;
   overflow: hidden;
-
-  /* fundo padrão com logo para todas as abas */
-  position: relative;
 }
 
-.content-area::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-
-  /* watermark */
-  background-image: url("/assets/logo-enavia.png");
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 560px;
-
-  /* visual */
-  opacity: 0.08;
-  transform: translateY(-40px);
-
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* garante que tudo da área central fique acima da logo */
-.content-area > * {
-  position: relative;
-  z-index: 1;
-}
-
-/* ============================================================
-   CHAT
-============================================================ */
 .chat-container {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: #12151c;
+  overflow: hidden;
 }
 
 .chat-messages {
@@ -240,41 +196,34 @@ html, body {
 
 .chat-role {
   font-size: 13px;
-  font-weight: 500;
-  margin-bottom: 10px;
   color: #6f7785;
+  margin-bottom: 6px;
 }
 
 .chat-text {
-  font-size: 16px;
-  line-height: 1.7;
   white-space: pre-wrap;
-  max-width: 760px;
+  line-height: 1.6;
+  font-size: 15px;
 }
 
-/* ROLES */
-.role-director .chat-role {
-  color: #4da3ff;
+.role-director .chat-text {
+  color: #e6e8eb;
 }
 
-.role-enavia .chat-role {
-  color: #4fd1a5;
+.role-enavia .chat-text {
+  color: #d9e6ff;
 }
 
-.role-human .chat-role {
-  color: #c9ccd3;
-}
-
-/* INPUT */
 .chat-input-container {
   border-top: 1px solid #1e2230;
-  padding: 16px 20px;
-  background: #12151c;
+  padding: 14px 16px;
+  display: flex;
+  gap: 10px;
+  background: #0f1115;
 }
 
 .chat-input {
-  width: 100%;
-  min-height: 52px;
+  flex: 1;
   max-height: 140px;
   resize: none;
   background: #161a22;
@@ -291,276 +240,475 @@ html, body {
 
 .chat-input:focus {
   outline: none;
-  border-color: #4da3ff;
+  border-color: #2a3144;
+}
+
+.send-btn {
+  width: 110px;
+  border-radius: 10px;
+  background: #2a3144;
+  border: 1px solid rgba(255,255,255,0.08);
+  color: #e6e8eb;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.send-btn:hover {
+  background: #323b52;
 }
 
 /* ============================================================
-   ACTIONS PANEL (RIGHT)
+   ACTIONS PANEL
 ============================================================ */
 .actions-panel {
-  width: 260px;
+  width: 280px;
   border-left: 1px solid #1e2230;
-  background: #0c0f14;
-  padding: 16px 12px;
+  padding: 14px 14px;
+  background: #0f1115;
   overflow-y: auto;
 }
 
 .actions-header {
-  font-size: 12px;
-  color: #8b90a0;
+  font-size: 13px;
+  color: #9aa0a6;
   margin-bottom: 12px;
-  padding-left: 8px;
 }
 
 .action-btn {
   width: 100%;
-  margin-bottom: 8px;
-  padding: 12px;
-  font-size: 14px;
-  border-radius: 8px;
-  border: 1px solid #1e2230;
-  background: #12151c;
-  color: #c9ccd3;
+  border-radius: 10px;
+  padding: 12px 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
+  color: #e6e8eb;
   cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
 }
 
 .action-btn:hover {
-  background: #1b2030;
-}
-
-.action-btn.disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.action-btn.danger {
-  border-color: #402020;
-  background: #1a0f12;
-  color: #ff6b6b;
+  background: rgba(255,255,255,0.06);
 }
 
 .action-btn.secondary {
-  background: transparent;
-  border-color: #1e2230;
+  background: rgba(255,255,255,0.03);
   color: #9aa0a6;
+}
+
+.action-btn.danger {
+  background: rgba(255, 80, 80, 0.08);
+  border-color: rgba(255, 80, 80, 0.20);
+  color: #ffb7b7;
+}
+
+.action-btn.live-btn {
+  background: rgba(255, 80, 80, 0.10);
+  border-color: rgba(255, 80, 80, 0.28);
+  color: #ffb7b7;
+}
+
+.action-btn.disabled,
+.action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .divider {
   height: 1px;
-  background: #1e2230;
-  margin: 12px 0;
+  background: rgba(255,255,255,0.06);
+  margin: 10px 0 12px;
 }
 
 /* ============================================================
    CENTER ALERT
 ============================================================ */
 .center-alert {
-  position: absolute;
+  position: fixed;
   inset: 0;
+  background: rgba(0,0,0,0.55);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(15, 17, 21, 0.55);
-  z-index: 10;
+  z-index: 1000;
 }
 
 .center-alert.hidden {
   display: none;
 }
 
-.alert-box {
-  background: #12151c;
+.center-alert > div {
+  width: 520px;
+  border-radius: 14px;
   border: 1px solid #1e2230;
-  border-radius: 12px;
-  padding: 24px 28px;
-  max-width: 420px;
-  text-align: center;
+  background: #0f1115;
+  padding: 20px;
+  box-shadow: 0 18px 44px rgba(0,0,0,0.55);
 }
 
 .alert-title {
   font-size: 16px;
-  margin-bottom: 8px;
+  font-weight: 700;
+  margin-bottom: 10px;
 }
 
 .alert-text {
-  font-size: 14px;
+  font-size: 13px;
   color: #9aa0a6;
+  line-height: 1.6;
 }
 
 /* ============================================================
-   SCROLLBARS (DARK)
+   MAIN TABS (CANÔNICO)
 ============================================================ */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
+.tabs-bar{
+  height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  border-bottom: 1px solid #1e2230;
   background: #0f1115;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #2a2f40;
-  border-radius: 8px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #3a415a;
-}
-
-/* ============================================================
-   AO VIVO (noVNC)
-============================================================ */
-
-.live-divider {
-  margin: 18px 0 14px;
-  opacity: 0.45;
-}
-
-.action-btn.live-btn {
-  border: 1px solid #ff3b3b;
-  color: #ff3b3b;
-  background: rgba(255, 59, 59, 0.08);
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
-.action-btn.live-btn:hover {
-  background: rgba(255, 59, 59, 0.18);
-}
-
-/* ============================================================
-   EXECUTOR DE CÓDIGO — BOTÕES (VISUAL PREMIUM)
-============================================================ */
-
-.executor-actions {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.executor-actions button {
-  background: linear-gradient(180deg, #141824, #0f121a);
-  border: 1px solid #1e2230;
-  border-radius: 10px;
-  padding: 10px 16px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #e8eaed;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.executor-actions button:hover:not(:disabled) {
-  background: linear-gradient(180deg, #1a1f2e, #131826);
-  border-color: #2a3042;
-}
-
-.executor-actions button:active:not(:disabled) {
-  transform: translateY(1px);
-}
-
-/* Disabled */
-.executor-actions button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-/* Apply (ação forte) */
-#codeApplyBtn {
-  background: linear-gradient(180deg, #12302a, #0e241f);
-  border-color: #1e6b5c;
-}
-
-/* Rollback (perigo) */
-#codeRollbackBtn {
-  background: linear-gradient(180deg, #2a1214, #1e0e10);
-  border-color: #6b1e25;
-}
-
-#codeRollbackBtn:hover:not(:disabled) {
-  background: linear-gradient(180deg, #35171a, #241013);
-}
-
-/* ============================================================
-   EXECUTOR DE CÓDIGO — BOTÕES SECUNDÁRIOS (HISTÓRICO / TELEMETRIA)
-============================================================ */
-
-.executor-actions-secondary {
-  display: flex;
-  gap: 10px;
-  margin-top: 6px;
-  opacity: 0.85;
-}
-
-.executor-btn-secondary {
-  background: linear-gradient(180deg, #12151c, #0f1115);
-  border: 1px solid #1e2230;
-  border-radius: 10px;
-  padding: 10px 16px;
-  font-size: 13px;
-  font-weight: 500;
+.tab-btn{
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
   color: #9aa0a6;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 13px;
   cursor: pointer;
-  transition: all 0.15s ease;
 }
 
-.executor-btn-secondary:hover {
-  background: linear-gradient(180deg, #1a1f2e, #131826);
-  border-color: #2a3042;
+.tab-btn:hover{
+  background: rgba(255,255,255,0.03);
   color: #e6e8eb;
 }
 
-.logo{
+.tab-btn.active{
+  background: rgba(255,255,255,0.06);
+  border-color: #2a3144;
+  color: #e6e8eb;
+}
+
+/* ============================================================
+   LAYOUT FIXO (header + tabs + conteúdo com scroll + footer)
+============================================================ */
+.app-root{
+  height: 100vh;
+}
+
+.sidebar{
+  display: none; /* abas laterais antigas: escondidas (layout novo usa tabs do topo) */
+}
+
+.main-area{
+  width: 100%;
+  overflow: hidden;
+}
+
+.content-area{
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* watermark (logo de fundo) para TODAS as abas */
+.content-area::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("/assets/logo-enavia-glyph.png");
+  background-repeat: no-repeat;
+  background-position: center 42%;
+  background-size: 520px;
+  opacity: 0.06;
+  pointer-events: none;
+  filter: grayscale(1);
+}
+
+.tab-panel{
+  position: relative;
+  height: 100%;
+  display: none;
+  overflow: hidden;
+}
+
+.main-area[data-current-tab="director"] .tab-panel[data-tab="director"],
+.main-area[data-current-tab="deploy"] .tab-panel[data-tab="deploy"],
+.main-area[data-current-tab="browser"] .tab-panel[data-tab="browser"],
+.main-area[data-current-tab="telemetry"] .tab-panel[data-tab="telemetry"],
+.main-area[data-current-tab="history"] .tab-panel[data-tab="history"]{
+  display: flex;
+}
+
+/* ============================================================
+   FOOTER
+============================================================ */
+.footer-bar{
+  height: 44px;
+  border-top: 1px solid #1e2230;
+  background: #0f1115;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  font-size: 12px;
+  color: #9aa0a6;
+}
+.footer-right{
+  color: #6f7785;
+}
+
+/* ============================================================
+   DIRECTOR
+============================================================ */
+.director-layout{
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 14px;
+  padding: 12px 14px 14px;
+  overflow: hidden;
+}
+
+.director-layout .chat-container{
+  background: #0f1115;
+  border-radius: 14px;
+  border: 1px solid #1e2230;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.director-layout .chat-messages{
+  padding: 20px 22px;
+}
+
+.director-widgets{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.widget-card{
+  border: 1px solid #1e2230;
+  border-radius: 14px;
+  background: rgba(12,15,21,0.92);
+  padding: 14px;
+  box-shadow: 0 12px 26px rgba(0,0,0,0.35);
+}
+.widget-title{
+  font-size: 13px;
+  font-weight: 600;
+  color: #e6e8eb;
+  margin-bottom: 10px;
+}
+.widget-body{
+  font-size: 12px;
+  color: #9aa0a6;
+  display: grid;
+  gap: 8px;
+}
+.pill{
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.06);
+  color: #e6e8eb;
+  font-size: 12px;
+}
+
+/* ============================================================
+   DEPLOY
+============================================================ */
+.deploy-layout{
+  width: 100%;
+  padding: 12px 14px 14px;
+  overflow: auto;
+}
+
+.deploy-box{
+  border: 1px solid #1e2230;
+  border-radius: 14px;
+  background: rgba(12,15,21,0.92);
+  padding: 14px;
+  box-shadow: 0 14px 30px rgba(0,0,0,0.45);
+}
+
+.deploy-title{
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #e6e8eb;
+}
+
+.deploy-grid{
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.deploy-grid .actions-panel{
+  width: auto;
+  border: 1px solid #1e2230;
+  border-radius: 14px;
+  background: #0c0f15;
+  padding: 12px;
+}
+
+.deploy-grid .actions-header{
+  margin-bottom: 10px;
+}
+
+.deploy-log{
+  border: 1px solid #1e2230;
+  border-radius: 14px;
+  background: #0c0f15;
+  padding: 12px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.deploy-log-title{
+  font-size: 12px;
+  color: #9aa0a6;
+  margin-bottom: 10px;
+}
+
+.mono-log{
+  flex: 1;
+  overflow: auto;
+  background: #0f1115;
+  border: 1px solid #1e2230;
+  border-radius: 12px;
+  padding: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #e6e8eb;
+}
+
+/* ============================================================
+   BROWSER (fullscreen com coluna esquerda + noVNC)
+============================================================ */
+.browser-layout{
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 12px;
+  padding: 12px 14px 0;
+  overflow: hidden;
+}
+
+.browser-left{
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: auto;
+  padding-bottom: 12px;
+}
+
+.browser-toolbar{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid #1e2230;
+  border-radius: 14px;
+  background: rgba(12,15,21,0.92);
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.browser-back{
+  font-size: 12px;
+  color: #9aa0a6;
+}
+
+.browser-title{
+  font-size: 13px;
+  font-weight: 600;
+  color: #e6e8eb;
+}
+
+.browser-status{
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.logo-img{
-  width: 58px;
-  height: 58px;
-  border-radius: 12px;
-  display: block;
+.browser-right{
+  border: 1px solid #1e2230;
+  border-radius: 14px;
+  background: rgba(12,15,21,0.92);
+  overflow: hidden;
+  min-width: 0;
 }
 
-.logo-text{
-  font-weight: 700;
-  letter-spacing: .5px;
+.browser-iframe{
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.browser-logbar{
+  height: 36px;
+  border-top: 1px solid #1e2230;
+  background: #0f1115;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  font-size: 12px;
+  color: #9aa0a6;
 }
 
 /* ============================================================
-   LAYOUT POR ABA
-   - Director: padrão (chat + painel lateral)
-   - Deploy: foco no patch/pipeline
-   - Browser: foco no executor de código
+   SIMPLE PANELS (telemetry/history)
 ============================================================ */
-
-/* Deploy → só painel de ações ocupando o centro */
-.main-area[data-current-tab="deploy"] .chat-container,
-.main-area[data-current-tab="deploy"] #codeExecutorCard {
-  display: none !important;
-}
-
-.main-area[data-current-tab="deploy"] .content-area {
-  display: block;
-}
-
-.main-area[data-current-tab="deploy"] .actions-panel {
+.simple-panel{
   width: 100%;
-  max-width: 900px;
-  margin: 16px auto;
-  border-left: none;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px 14px;
+  overflow: hidden;
 }
 
-/* Browser → executor de código em destaque */
-.main-area[data-current-tab="browser"] .chat-container,
-.main-area[data-current-tab="browser"] .actions-panel {
-  display: none !important;
+.simple-title{
+  font-size: 13px;
+  font-weight: 600;
+  color: #e6e8eb;
+  margin-bottom: 10px;
 }
 
-.main-area[data-current-tab="browser"] #codeExecutorCard {
-  display: block !important;
+.simple-subtitle{
+  font-size: 12px;
+  color: #6f7785;
+  margin-bottom: 10px;
 }
 
-/* Telemetria / Histórico por enquanto usam o layout padrão;
-   o conteúdo continua trocando pelos modos da sidebar. */
+.simple-controls{
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.select{
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid #1e2230;
+  background: #0c0f15;
+  color: #e6e8eb;
+  padding: 0 10px;
+  font-size: 12px;
+}
