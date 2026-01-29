@@ -1348,3 +1348,77 @@ body { overflow: hidden; }
   color: #7b86a3;
 }
 
+/* ============================================================
+   FIX REAL (print): textarea do plano escuro + botões reorganizados + VNC maior
+   ============================================================ */
+
+/* 1) Força o textarea do plano ficar igual painel (mesmo se o wrapper não bater) */
+#humanBrowserPlan,
+.tab-panel[data-tab="browser"] textarea,
+.tab-panel[data-tab="browser"] .browser-left textarea{
+  width: 100%;
+  min-height: 260px;
+  max-height: 52vh;
+  resize: vertical;
+
+  background: #0b0f15;
+  color: #e6e8eb;
+  border: 1px solid rgba(34, 44, 70, .85);
+  border-radius: 12px;
+  padding: 10px;
+
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+/* 2) Coluna esquerda menor e VNC dominando */
+.tab-panel[data-tab="browser"] .browser-layout{
+  grid-template-columns: 340px 1fr; /* mais VNC */
+  gap: 14px;
+}
+
+.tab-panel[data-tab="browser"] .browser-right{
+  height: 100%;
+  min-height: 0;
+}
+
+.tab-panel[data-tab="browser"] .browser-iframe{
+  height: 100%;
+  min-height: 0;
+}
+
+/* 3) Reorganiza os botões: AO VIVO grande em cima, ONLINE pequeno embaixo */
+.tab-panel[data-tab="browser"] .browser-toolbar{
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.tab-panel[data-tab="browser"] .browser-status{
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* AO VIVO (destaque) */
+.tab-panel[data-tab="browser"] .action-btn.live-btn{
+  width: 100%;
+  height: 48px;
+  border-radius: 14px;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+/* ONLINE (discreto) — se for status-pill */
+.tab-panel[data-tab="browser"] .status-pill.ok,
+.tab-panel[data-tab="browser"] .status-pill{
+  width: 100%;
+  text-align: center;
+  padding: 8px 10px;
+  border-radius: 14px;
+  font-size: 12px;
+  opacity: .9;
+}
