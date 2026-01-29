@@ -23,13 +23,13 @@
 
 <body>
 
-  <!-- =========================
+  <!-- =====================
        APP ROOT
   ========================== -->
   <div class="app-root">
 
     <!-- =========================
-         SIDEBAR ESQUERDA
+         SIDEBAR ESQUERDA (mantida no DOM, mas o CSS novo esconde)
     ========================== -->
     <aside class="sidebar">
 
@@ -44,9 +44,8 @@
   <div class="subtitle">Painel de Controle</div>
 </div>
 
-      <!-- MODOS / CANAIS -->
       <nav class="sidebar-section">
-        <div class="section-title">Modos</div>
+        <div class="section-title">MODOS</div>
 
         <button class="sidebar-btn active" data-mode="director">
           Director
@@ -69,20 +68,23 @@
       <nav class="sidebar-section">
         <div class="section-title">Ações</div>
 
-        <button class="sidebar-btn" data-action="view-director-enavia-chat">
-          Visualizar conversa<br>
-          Director ⇄ ENAVIA
+        <button class="sidebar-btn" data-action="view-director">
+          Visualizar conversa<br />
+          Director ➜ ENAVIA
+        </button>
+      </nav>
+
+      <!-- SWITCH CHAT MODE -->
+      <nav class="sidebar-section">
+        <div class="section-title">Chat</div>
+
+        <button class="sidebar-btn mode-pill active" data-chat-mode="director">
+          🧠 Modo Director
         </button>
 
-      <div class="divider"></div>
-
-<button class="sidebar-btn mode-btn active" data-chat-mode="director">
-  🧠 Modo Director
-</button>
-
-<button class="sidebar-btn mode-btn" data-chat-mode="manual">
-  ✍️ Modo Manual
-</button>
+        <button class="sidebar-btn mode-pill" data-chat-mode="manual">
+          ✍️ Modo Manual
+        </button>
 
       </nav>
 
@@ -100,7 +102,7 @@
 
         <div class="execution-info">
           <span class="label">Execution ID:</span>
-          <span class="value" id="executionId">—</span>
+          <span id="executionIdLabel">—</span>
         </div>
 
         <div class="status-info">
@@ -123,11 +125,12 @@
            CONTEÚDO CENTRAL
       ========================== -->
       <section class="content-area">
-
-        <!-- =========================
-             CHAT PRINCIPAL (DIRECTOR)
-        ========================== -->
-        <div class="chat-container">
+      <!-- =========================
+           TAB: DIRECTOR
+      ========================== -->
+      <section class="tab-panel" data-tab="director">
+        <div class="director-layout">
+          <div class="chat-container">
 
           <div class="chat-messages" id="chatMessages">
 
@@ -143,7 +146,7 @@
   </div>
 </div>
 
-</div>
+          </div>
 
 <!-- INPUT -->
 <div class="chat-input-container">
@@ -157,140 +160,38 @@
           </div>
 
         </div>
+          <div class="director-widgets">
+            <div class="widget-card">
+              <div class="widget-title">Resumo Auditoria</div>
+              <div class="widget-body">
+                <div>• risco: <span class="pill">—</span></div>
+                <div>• fase: <span class="pill">—</span></div>
+                <div>• próximo passo: <span class="pill">—</span></div>
+              </div>
+            </div>
 
-<!-- =========================
-     EXECUTOR DE CÓDIGO (MODO MANUAL)
-========================== -->
-<div
-  id="codeExecutorCard"
-  style="
-    display: none;
-    flex: 1;
-    padding: 24px;
-    background: #0f1115;
-  "
->
-  <div
-    style="
-      border: 1px solid #1e2230;
-      border-radius: 14px;
-      background: linear-gradient(180deg, #12151c, #0f1115);
-      padding: 22px;
-      max-width: 900px;
-      margin: 0 auto;
-      box-shadow: 0 0 0 1px rgba(255,255,255,0.02),
-                  0 12px 30px rgba(0,0,0,0.45);
-    "
-  >
+            <div class="widget-card">
+              <div class="widget-title">Mapa Canônico (Resumo)</div>
+              <div class="widget-body">
+                <div>• rotas: <span class="pill">—</span></div>
+                <div>• bindings: <span class="pill">—</span></div>
+                <div>• invariants: <span class="pill">—</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-    <!-- TÍTULO -->
-    <div style="margin-bottom: 14px;">
-      <div style="font-size: 16px; font-weight: 600;">
-        🧪 Executor de Código — Modo Manual
-      </div>
-      <div style="font-size: 13px; color: #9aa0a6; margin-top: 4px;">
-        Canal isolado para diagnose, dry-run, apply e rollback via DigitalOcean.
-      </div>
-    </div>
+      <!-- =========================
+           TAB: DEPLOY
+      ========================== -->
+      <section class="tab-panel" data-tab="deploy">
+        <div class="deploy-layout">
+          <div class="deploy-box">
+            <div class="deploy-title">Deploy → Patch → Target</div>
 
-    <!-- TEXTO EXPLICATIVO -->
-    <div
-      style="
-        margin-bottom: 14px;
-        font-size: 12px;
-        color: #6f7785;
-      "
-    >
-      Este canal é totalmente independente do fluxo de deploy do Worker e do Executor de Browser.
-    </div>
-
-    <!-- EXECUTOR DE CÓDIGO (DO) -->
-<div
-  id="codeExecutorPanel"
-  style="
-    border: 1px dashed #1e2230;
-    border-radius: 10px;
-    padding: 14px;
-    margin-bottom: 18px;
-    background: #0c0f15;
-  "
->
-  <div style="font-size: 14px; font-weight: 500; margin-bottom: 10px;">
-    Executor de Código (DigitalOcean)
-  </div>
-
-  <div class="executor-actions">
-    <button id="codeDiagnoseBtn">Diagnose</button>
-    <button id="codeDryRunBtn">Dry Run</button>
-    <button id="codeApplyBtn" disabled>Aplicar</button>
-    <button id="codeRollbackBtn" disabled>Rollback</button>
-  </div>
-
-  <div class="executor-actions executor-actions-secondary">
-    <button class="executor-btn-secondary">Histórico</button>
-    <button class="executor-btn-secondary">Telemetria</button>
-
-    <!-- EXECUTAR BROWSER (FIXO — SOMENTE MODO MANUAL) -->
-    <button
-      id="browser-execute-btn"
-      class="executor-btn-secondary"
-      disabled
-    >
-      Executar Browser
-    </button>
-  </div>
-
-  <pre
-    id="codeExecutorOutput"
-    style="
-      background: #0f1115;
-      border: 1px solid #1e2230;
-      border-radius: 8px;
-      padding: 12px;
-      font-size: 12px;
-      color: #e8eaed;
-      max-height: 240px;
-      overflow: auto;
-    "
-  ></pre>
-</div>
-
-<!-- INPUT HUMANO -->
-<textarea
-  id="humanBrowserPlan"
-  data-field="human-browser-plan"
-  placeholder="Cole aqui o patch ou instrução técnica para diagnose / dry-run"
-  style="
-    width: 100%;
-    min-height: 220px;
-    background: #0f1115;
-    color: #ffffff;
-    border: 1px solid #1e2230;
-    border-radius: 10px;
-    padding: 14px;
-    font-family: monospace;
-    font-size: 13px;
-    line-height: 1.5;
-  "
-></textarea>
-
-<div
-  style="
-    margin-top: 10px;
-    font-size: 12px;
-    color: #6f7785;
-  "
->
-  Nenhuma execução ocorre sem ação humana explícita.
-</div>
-
-</div>
-</div>
-
-        <!-- =========================
-             PAINEL DE BOTÕES (DIREITA)
-        ========================== -->
-        <aside class="actions-panel">
+            <div class="deploy-grid">
+              <aside class="actions-panel">
 
           <div class="actions-header">
             Fluxo de Deploy
@@ -352,57 +253,196 @@
           <button class="action-btn secondary" data-action="cancel">
             CANCELAR
           </button>
+</aside>
+              <div class="deploy-log">
+                <div class="deploy-log-title">Log do Pipeline</div>
+                <pre class="mono-log" id="deployPipelineLog">—</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-          <!-- 🔴 AO VIVO -->
-<div class="divider live-divider"></div>
+      <!-- =========================
+           TAB: BROWSER
+      ========================== -->
+      <section class="tab-panel" data-tab="browser">
+        <div class="browser-layout">
+          <div class="browser-left">
+            <div class="browser-toolbar">
+              <div class="browser-back">← Voltar</div>
+              <div class="browser-title">Browser Executor</div>
+              <div class="browser-status">
+                <span class="status-pill neutral" id="browser-status-pill">Aguardando</span>
+                <button class="action-btn live-btn" id="liveViewBtn">🔴 AO VIVO</button>
+              </div>
+            </div>
 
-<button class="action-btn live-btn" id="liveViewBtn">
-  🔴 AO VIVO
-</button>
+            <!-- =================
+     EXECUTOR DE CÓDIGO (MODO MANUAL)
+======================= -->
+<div
+  id="codeExecutorCard"
+  style="
+      margin-top: 18px;
+      border: 1px solid #1e2230;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #12151c, #0f1115);
+      padding: 22px;
+      max-width: 900px;
+      margin: 0 auto;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.02),
+                  0 12px 30px rgba(0,0,0,0.45);
+    "
+  >
 
-        </aside>
+    <!-- TÍTULO -->
+    <div style="margin-bottom: 14px;">
+      <div style="font-size: 16px; font-weight: 600;">
+        🧪 Executor de Código — Modo Manual
+      </div>
+      <div style="font-size: 13px; color: #9aa0a6; margin-top: 4px;">
+        Canal isolado para diagnose, dry-run, apply e rollback via DigitalOcean.
+      </div>
+    </div>
+
+    <!-- TEXTO EXPLICATIVO -->
+    <div
+      style="
+        margin-bottom: 14px;
+        font-size: 12px;
+        color: #6f7785;
+      "
+    >
+      Este canal é totalmente independente do fluxo de deploy do Worker e do Executor de Browser.
+    </div>
+
+    <!-- BOTÕES -->
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+      <button class="action-btn secondary" id="codeDiagnoseBtn">
+        DIAGNOSE
+      </button>
+      <button class="action-btn secondary" id="codeDryRunBtn">
+        DRY-RUN
+      </button>
+      <button class="action-btn" id="codeApplyBtn">
+        APPLY
+      </button>
+      <button class="action-btn danger" id="codeRollbackBtn">
+        ROLLBACK
+      </button>
+    </div>
+
+    <!-- OUTPUT -->
+    <pre
+      id="codeExecutorOutput"
+      style="
+      background:#0c0f15;
+      border:1px solid #1e2230;
+      border-radius:12px;
+      padding:14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+      font-size: 12px;
+      color: #e8eaed;
+      max-height: 240px;
+      overflow: auto;
+    "
+  ></pre>
+</div>
+
+<!-- INPUT HUMANO -->
+<textarea
+  id="humanBrowserPlan"
+  data-field="human-browser-plan"
+  placeholder="Cole aqui o patch ou instrução técnica para diagnose / dry-run"
+  style="
+    width: 100%;
+    min-height: 220px;
+    margin-top: 14px;
+    border: 1px solid #1e2230;
+    border-radius: 14px;
+    padding: 14px;
+    background: #0c0f15;
+    color: #e6e8eb;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    resize: vertical;
+  "
+></textarea>
+
+<div style="display:flex; gap:10px; margin-top:12px; justify-content:flex-end;">
+  <button class="action-btn" id="browser-execute-btn">
+    Executar Browser
+  </button>
+</div>
+          </div>
+
+          <div class="browser-right">
+            <iframe class="browser-iframe" title="noVNC" src="https://browser.nv-imoveis.com/novnc/vnc.html?autoconnect=1"></iframe>
+          </div>
+        </div>
+
+        <div class="browser-logbar">
+          <div class="browser-logtext" id="browserLogLine">—</div>
+        </div>
+      </section>
+
+      <!-- =========================
+           TAB: TELEMETRIA
+      ========================== -->
+      <section class="tab-panel" data-tab="telemetry">
+        <div class="simple-panel">
+          <div class="simple-title">Telemetria / JSON bruto</div>
+          <div class="simple-controls">
+            <select id="telemetryExecSelect" class="select">
+              <option value="">exec —</option>
+            </select>
+            <select id="telemetryFilterSelect" class="select">
+              <option value="">filtrar: tudo</option>
+              <option value="audit">audit</option>
+              <option value="propose">propose</option>
+              <option value="deploy">deploy</option>
+            </select>
+          </div>
+          <pre class="mono-log" id="telemetryPre">—</pre>
+        </div>
+      </section>
+
+      <!-- =========================
+           TAB: HISTÓRICO
+      ========================== -->
+      <section class="tab-panel" data-tab="history">
+        <div class="simple-panel">
+          <div class="simple-title">Histórico</div>
+          <div class="simple-subtitle">Execuções recentes / rastreio</div>
+          <pre class="mono-log" id="codeHistoryBox">—</pre>
+        </div>
+      </section>
 
       </section>
+
+      <!-- =========================
+           FOOTER (SCROLL SAFE)
+      ========================== -->
+      <footer class="footer-bar">
+        <div class="footer-left">ENAVIA • Painel</div>
+        <div class="footer-right">Dica: use as abas no topo — o conteúdo rola aqui sem precisar diminuir zoom.</div>
+      </footer>
 
       <!-- =========================
            ALERTA CENTRAL
       ========================== -->
       <div class="center-alert hidden" id="centerAlert">
-        <div class="alert-box">
-          <div class="alert-title">⚠️ Ação bloqueada</div>
-          <div class="alert-text" id="centerAlertText">
-            Esta ação ainda não está disponível no fluxo atual.
-          </div>
-        </div>
+        <div class="alert-title" id="centerAlertTitle">Atenção</div>
+        <div class="alert-text" id="centerAlertText">—</div>
       </div>
 
     </main>
 
   </div>
 
-  <!-- 🔗 EXECUTOR (CONFIGURAÇÃO GLOBAL) -->
-<script>
-  window.RUN_ADAPTER_URL = "https://run.nv-imoveis.com";
-  window.BROWSER_EXECUTOR_URL = "https://run.nv-imoveis.com";
-</script>
-
-<!-- 🔗 CLIENTE DO EXECUTOR (FRONTEND PURO) -->
-<!-- <script src="./browser-executor.js"></script> -->
-
-  <!-- ✅ SCRIPT PRINCIPAL (OBRIGATÓRIO PARA VERCEL) -->
+  <!-- OVERLAY AO VIVO (criado pelo JS quando clicar) -->
   <script type="module" src="./script.js"></script>
-
-  <script type="module" src="./lib/browser-executor-ui.js"></script>
-
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
