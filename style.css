@@ -1231,3 +1231,119 @@ body { overflow: hidden; }
   z-index: 1;
 }
 
+/* =========================
+   PATCH: FULL-PANEL + WATERMARK + DEPLOY SCROLL + BROWSER LAYOUT
+   ========================= */
+
+/* Watermark (fundo com a logo) em todas as abas */
+.tab-panel{
+  position: relative;
+}
+.tab-panel::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background: url("/assets/logo-enavia-glyph.png") no-repeat 70% 55%;
+  background-size: 520px auto;
+  opacity: 0.055;
+  pointer-events: none;
+  filter: saturate(0.9);
+}
+.tab-panel > *{
+  position: relative;
+  z-index: 1;
+}
+
+/* DEPLOY: scroll interno na coluna da esquerda (pra alcançar rollback/cancelar) */
+.tab-panel[data-tab="deploy"] .deploy-grid{
+  height: 100%;
+  min-height: 0;
+}
+.tab-panel[data-tab="deploy"] .actions-panel{
+  max-height: 100%;
+  overflow: auto;
+  padding-right: 8px; /* dá espaço pro scrollbar não “comer” conteúdo */
+}
+
+/* BROWSER: layout de verdade (left fixo + VNC gigante) */
+.tab-panel[data-tab="browser"] .browser-layout{
+  height: 100%;
+  min-height: 0;
+  align-items: stretch;
+}
+.tab-panel[data-tab="browser"] .browser-left{
+  width: 360px;
+  min-width: 320px;
+  max-width: 420px;
+  overflow: auto;
+  padding: 14px;
+  gap: 12px;
+}
+.tab-panel[data-tab="browser"] .browser-right{
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.tab-panel[data-tab="browser"] .browser-iframe{
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 18px;
+  background: #0b0f15;
+}
+
+/* BROWSER: reorganizar os botões/indicadores (AO VIVO em destaque) */
+.tab-panel[data-tab="browser"] .browser-back{ display:none; } /* “Voltar” pode sumir */
+.tab-panel[data-tab="browser"] .browser-toolbar{
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.tab-panel[data-tab="browser"] .browser-status{
+  width: 100%;
+  display: flex;
+  gap: 10px;
+}
+.tab-panel[data-tab="browser"] .live-btn{
+  width: 100%;
+  height: 48px;
+  border-radius: 14px;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+/* BROWSER: caixa do plano (textarea escuro, igual painel) */
+.browser-plan-box{
+  border: 1px solid rgba(34, 44, 70, .65);
+  background: rgba(10, 12, 16, .70);
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.02) inset;
+}
+.browser-plan-title{
+  font-weight: 800;
+  color: #cfd6e6;
+  margin-bottom: 8px;
+}
+.browser-plan-box textarea{
+  width: 100%;
+  min-height: 240px;
+  max-height: 52vh;
+  resize: vertical;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(34, 44, 70, .85);
+  background: #0b0f15;
+  color: #e6e8eb;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.35;
+}
+.browser-plan-hint{
+  margin-top: 8px;
+  font-size: 12px;
+  color: #7b86a3;
+}
