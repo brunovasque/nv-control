@@ -91,7 +91,7 @@
     <!-- =========================
          ÁREA PRINCIPAL
     ========================== -->
-    <main class="main-area">
+    <main class="main-area" data-current-tab="director">
 
       <!-- =========================
            HEADER SUPERIOR
@@ -109,6 +109,15 @@
         </div>
 
       </header>
+
+      <!-- ABAS PRINCIPAIS -->
+      <nav class="tabs-bar">
+        <button class="tab-btn active" data-main-tab="director">Diretor</button>
+        <button class="tab-btn" data-main-tab="deploy">Deploy</button>
+        <button class="tab-btn" data-main-tab="browser">Browser</button>
+        <button class="tab-btn" data-main-tab="telemetry">Telemetria</button>
+        <button class="tab-btn" data-main-tab="history">Histórico</button>
+      </nav>
 
       <!-- =========================
            CONTEÚDO CENTRAL
@@ -387,6 +396,7 @@
 
 </body>
 </html>
+
 
 
 
