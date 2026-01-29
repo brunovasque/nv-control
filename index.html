@@ -23,13 +23,13 @@
 
 <body>
 
-  <!-- =====================
+  <!-- =========================
        APP ROOT
   ========================== -->
   <div class="app-root">
 
     <!-- =========================
-         SIDEBAR ESQUERDA (mantida no DOM, mas o CSS novo esconde)
+         SIDEBAR ESQUERDA
     ========================== -->
     <aside class="sidebar">
 
@@ -44,8 +44,9 @@
   <div class="subtitle">Painel de Controle</div>
 </div>
 
+      <!-- MODOS / CANAIS -->
       <nav class="sidebar-section">
-        <div class="section-title">MODOS</div>
+        <div class="section-title">Modos</div>
 
         <button class="sidebar-btn active" data-mode="director">
           Director
@@ -68,23 +69,20 @@
       <nav class="sidebar-section">
         <div class="section-title">Ações</div>
 
-        <button class="sidebar-btn" data-action="view-director">
-          Visualizar conversa<br />
-          Director ➜ ENAVIA
-        </button>
-      </nav>
-
-      <!-- SWITCH CHAT MODE -->
-      <nav class="sidebar-section">
-        <div class="section-title">Chat</div>
-
-        <button class="sidebar-btn mode-pill active" data-chat-mode="director">
-          🧠 Modo Director
+        <button class="sidebar-btn" data-action="view-director-enavia-chat">
+          Visualizar conversa<br>
+          Director ⇄ ENAVIA
         </button>
 
-        <button class="sidebar-btn mode-pill" data-chat-mode="manual">
-          ✍️ Modo Manual
-        </button>
+      <div class="divider"></div>
+
+<button class="sidebar-btn mode-btn active" data-chat-mode="director">
+  🧠 Modo Director
+</button>
+
+<button class="sidebar-btn mode-btn" data-chat-mode="manual">
+  ✍️ Modo Manual
+</button>
 
       </nav>
 
@@ -100,9 +98,17 @@
       ========================== -->
       <header class="top-bar">
 
+        <div class="brand">
+          <img class="brand-logo" src="/assets/logo-enavia.png" alt="ENAVIA" />
+          <div class="brand-copy">
+            <div class="brand-name">ENAVIA</div>
+            <div class="brand-sub">NV‑CONTROL</div>
+          </div>
+        </div>
+
         <div class="execution-info">
           <span class="label">Execution ID:</span>
-          <span id="executionIdLabel">—</span>
+          <span class="value" id="executionId">—</span>
         </div>
 
         <div class="status-info">
@@ -146,7 +152,7 @@
   </div>
 </div>
 
-          </div>
+</div>
 
 <!-- INPUT -->
 <div class="chat-input-container">
@@ -191,7 +197,10 @@
             <div class="deploy-title">Deploy → Patch → Target</div>
 
             <div class="deploy-grid">
-              <aside class="actions-panel">
+              <!-- =========================
+             PAINEL DE BOTÕES (DIREITA)
+        ========================== -->
+        <aside class="actions-panel">
 
           <div class="actions-header">
             Fluxo de Deploy
@@ -267,24 +276,31 @@
            TAB: BROWSER
       ========================== -->
       <section class="tab-panel" data-tab="browser">
+        <div class="browser-toolbar browser-toolbar--full">
+          <div class="browser-back">← Voltar</div>
+          <div class="browser-title">Browser Executor</div>
+          <div class="browser-status">
+            <span class="status-pill neutral" id="browser-status-pill">Aguardando</span>
+            <button class="action-btn live-btn" id="liveViewBtn">🔴 AO VIVO</button>
+          </div>
+        </div>
+
         <div class="browser-layout">
           <div class="browser-left">
-            <div class="browser-toolbar">
-              <div class="browser-back">← Voltar</div>
-              <div class="browser-title">Browser Executor</div>
-              <div class="browser-status">
-                <span class="status-pill neutral" id="browser-status-pill">Aguardando</span>
-                <button class="action-btn live-btn" id="liveViewBtn">🔴 AO VIVO</button>
-              </div>
-            </div>
-
-            <!-- =================
+              <!-- =========================
      EXECUTOR DE CÓDIGO (MODO MANUAL)
-======================= -->
+========================== -->
 <div
   id="codeExecutorCard"
   style="
-      margin-top: 18px;
+    display: none;
+    flex: 1;
+    padding: 24px;
+    background: #0f1115;
+  "
+>
+  <div
+    style="
       border: 1px solid #1e2230;
       border-radius: 14px;
       background: linear-gradient(180deg, #12151c, #0f1115);
@@ -317,31 +333,49 @@
       Este canal é totalmente independente do fluxo de deploy do Worker e do Executor de Browser.
     </div>
 
-    <!-- BOTÕES -->
-    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
-      <button class="action-btn secondary" id="codeDiagnoseBtn">
-        DIAGNOSE
-      </button>
-      <button class="action-btn secondary" id="codeDryRunBtn">
-        DRY-RUN
-      </button>
-      <button class="action-btn" id="codeApplyBtn">
-        APPLY
-      </button>
-      <button class="action-btn danger" id="codeRollbackBtn">
-        ROLLBACK
-      </button>
-    </div>
+    <!-- EXECUTOR DE CÓDIGO (DO) -->
+<div
+  id="codeExecutorPanel"
+  style="
+    border: 1px dashed #1e2230;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 18px;
+    background: #0c0f15;
+  "
+>
+  <div style="font-size: 14px; font-weight: 500; margin-bottom: 10px;">
+    Executor de Código (DigitalOcean)
+  </div>
 
-    <!-- OUTPUT -->
-    <pre
-      id="codeExecutorOutput"
-      style="
-      background:#0c0f15;
-      border:1px solid #1e2230;
-      border-radius:12px;
-      padding:14px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  <div class="executor-actions">
+    <button id="codeDiagnoseBtn">Diagnose</button>
+    <button id="codeDryRunBtn">Dry Run</button>
+    <button id="codeApplyBtn" disabled>Aplicar</button>
+    <button id="codeRollbackBtn" disabled>Rollback</button>
+  </div>
+
+  <div class="executor-actions executor-actions-secondary">
+    <button class="executor-btn-secondary">Histórico</button>
+    <button class="executor-btn-secondary">Telemetria</button>
+
+    <!-- EXECUTAR BROWSER (FIXO — SOMENTE MODO MANUAL) -->
+    <button
+      id="browser-execute-btn"
+      class="executor-btn-secondary"
+      disabled
+    >
+      Executar Browser
+    </button>
+  </div>
+
+  <pre
+    id="codeExecutorOutput"
+    style="
+      background: #0f1115;
+      border: 1px solid #1e2230;
+      border-radius: 8px;
+      padding: 12px;
       font-size: 12px;
       color: #e8eaed;
       max-height: 240px;
@@ -358,23 +392,28 @@
   style="
     width: 100%;
     min-height: 220px;
-    margin-top: 14px;
+    background: #0f1115;
+    color: #ffffff;
     border: 1px solid #1e2230;
-    border-radius: 14px;
+    border-radius: 10px;
     padding: 14px;
-    background: #0c0f15;
-    color: #e6e8eb;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-    font-size: 12px;
+    font-family: monospace;
+    font-size: 13px;
     line-height: 1.5;
-    resize: vertical;
   "
 ></textarea>
 
-<div style="display:flex; gap:10px; margin-top:12px; justify-content:flex-end;">
-  <button class="action-btn" id="browser-execute-btn">
-    Executar Browser
-  </button>
+<div
+  style="
+    margin-top: 10px;
+    font-size: 12px;
+    color: #6f7785;
+  "
+>
+  Nenhuma execução ocorre sem ação humana explícita.
+</div>
+
+</div>
 </div>
           </div>
 
@@ -422,6 +461,7 @@
 
       </section>
 
+
       <!-- =========================
            FOOTER (SCROLL SAFE)
       ========================== -->
@@ -434,15 +474,31 @@
            ALERTA CENTRAL
       ========================== -->
       <div class="center-alert hidden" id="centerAlert">
-        <div class="alert-title" id="centerAlertTitle">Atenção</div>
-        <div class="alert-text" id="centerAlertText">—</div>
+        <div class="alert-box">
+          <div class="alert-title">⚠️ Ação bloqueada</div>
+          <div class="alert-text" id="centerAlertText">
+            Esta ação ainda não está disponível no fluxo atual.
+          </div>
+        </div>
       </div>
 
     </main>
 
   </div>
 
-  <!-- OVERLAY AO VIVO (criado pelo JS quando clicar) -->
+  <!-- 🔗 EXECUTOR (CONFIGURAÇÃO GLOBAL) -->
+<script>
+  window.RUN_ADAPTER_URL = "https://run.nv-imoveis.com";
+  window.BROWSER_EXECUTOR_URL = "https://run.nv-imoveis.com";
+</script>
+
+<!-- 🔗 CLIENTE DO EXECUTOR (FRONTEND PURO) -->
+<!-- <script src="./browser-executor.js"></script> -->
+
+  <!-- ✅ SCRIPT PRINCIPAL (OBRIGATÓRIO PARA VERCEL) -->
   <script type="module" src="./script.js"></script>
+
+  <script type="module" src="./lib/browser-executor-ui.js"></script>
+
 </body>
 </html>
