@@ -122,6 +122,42 @@ html, body {
   background: #0f1115;
 }
 
+/* ============================================================
+   ABAS PRINCIPAIS (Diretor / Deploy / Browser / Telemetria / Histórico)
+============================================================ */
+.tabs-bar {
+  display: flex;
+  gap: 8px;
+  padding: 8px 20px 0;
+  border-bottom: 1px solid #1e2230;
+  background: #0f1115;
+}
+
+.tab-btn {
+  border: none;
+  background: transparent;
+  color: #9aa0a6;
+  font-size: 13px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.tab-btn:hover {
+  background: #1b2030;
+  color: #e6e8eb;
+}
+
+.tab-btn.active {
+  background: #1b2030;
+  color: #ffffff;
+}
+
+/* ============================================================
+   FIM DAS ABAS PRINCIPAIS ACIMA
+============================================================ */
+
 .execution-info,
 .status-info {
   font-size: 13px;
@@ -151,23 +187,12 @@ html, body {
   flex: 1;
   display: flex;
   overflow: hidden;
-}
 
-/* ============================================================
-   CHAT
-============================================================ */
-.chat-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: #12151c;
-
-  /* Watermark control */
+  /* fundo padrão com logo para todas as abas */
   position: relative;
-  overflow: hidden;
 }
 
-.chat-container::before {
+.content-area::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -180,18 +205,26 @@ html, body {
 
   /* visual */
   opacity: 0.08;
-
-  /* sobe ~3–4cm (ajuste fino aqui) */
   transform: translateY(-40px);
 
   pointer-events: none;
   z-index: 0;
 }
 
-/* garante que o conteúdo fique acima da watermark */
-.chat-container > * {
+/* garante que tudo da área central fique acima da logo */
+.content-area > * {
   position: relative;
   z-index: 1;
+}
+
+/* ============================================================
+   CHAT
+============================================================ */
+.chat-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #12151c;
 }
 
 .chat-messages {
@@ -495,6 +528,39 @@ html, body {
   letter-spacing: .5px;
 }
 
+/* ============================================================
+   LAYOUT POR ABA
+   - Director: padrão (chat + painel lateral)
+   - Deploy: foco no patch/pipeline
+   - Browser: foco no executor de código
+============================================================ */
 
+/* Deploy → só painel de ações ocupando o centro */
+.main-area[data-current-tab="deploy"] .chat-container,
+.main-area[data-current-tab="deploy"] #codeExecutorCard {
+  display: none !important;
+}
 
+.main-area[data-current-tab="deploy"] .content-area {
+  display: block;
+}
 
+.main-area[data-current-tab="deploy"] .actions-panel {
+  width: 100%;
+  max-width: 900px;
+  margin: 16px auto;
+  border-left: none;
+}
+
+/* Browser → executor de código em destaque */
+.main-area[data-current-tab="browser"] .chat-container,
+.main-area[data-current-tab="browser"] .actions-panel {
+  display: none !important;
+}
+
+.main-area[data-current-tab="browser"] #codeExecutorCard {
+  display: block !important;
+}
+
+/* Telemetria / Histórico por enquanto usam o layout padrão;
+   o conteúdo continua trocando pelos modos da sidebar. */
