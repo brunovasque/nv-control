@@ -16,95 +16,87 @@ html, body {
 }
 
 /* ============================================================
-   APP LAYOUT
+   ROOT LAYOUT
 ============================================================ */
 .app-root {
   display: flex;
-  height: 100%;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
 }
 
 /* ============================================================
-   SIDEBAR (LEGADO)
+   SIDEBAR
 ============================================================ */
 .sidebar {
   width: 260px;
+  background: #0c0f14;
   border-right: 1px solid #1e2230;
-  background: #0b0d12;
-  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-header {
-  margin-bottom: 18px;
+  padding: 24px 20px;
+  border-bottom: 1px solid #1e2230;
 }
 
 .logo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.logo-img {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-}
-
-.logo-text {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
-  letter-spacing: 0.6px;
-}
-
-.logo-subtext {
-  font-size: 12px;
-  color: #6f7785;
-  margin-top: 2px;
+  letter-spacing: 0.5px;
 }
 
 .subtitle {
-  margin-top: 10px;
   font-size: 12px;
-  color: #6f7785;
+  color: #8b90a0;
+  margin-top: 4px;
 }
 
 .sidebar-section {
-  margin-top: 18px;
+  padding: 16px 12px;
 }
 
 .section-title {
   font-size: 11px;
-  letter-spacing: 1px;
-  color: #6f7785;
   text-transform: uppercase;
-  margin-bottom: 10px;
+  letter-spacing: 0.08em;
+  color: #6f7785;
+  margin-bottom: 8px;
 }
 
 .sidebar-btn {
   width: 100%;
+  background: transparent;
+  border: none;
+  color: #c9ccd3;
   text-align: left;
   padding: 10px 12px;
-  border-radius: 10px;
-  background: transparent;
-  border: 1px solid transparent;
-  color: #e6e8eb;
+  border-radius: 6px;
   cursor: pointer;
-  margin-bottom: 8px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .sidebar-btn:hover {
-  background: rgba(255,255,255,0.03);
+  background: #161a22;
 }
 
 .sidebar-btn.active {
-  background: rgba(255,255,255,0.05);
-  border-color: rgba(255,255,255,0.06);
+  background: #1b2030;
+  color: #ffffff;
 }
 
-.mode-pill {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+/* ============================================================
+   CHAT MODES (SIDEBAR)
+============================================================ */
+.mode-btn {
+  margin-top: 4px;
+}
+
+.mode-btn.active {
+  background: #2a3146;
+  border-left: 3px solid #4da3ff;
+  color: #ffffff;
 }
 
 /* ============================================================
@@ -145,21 +137,6 @@ html, body {
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 12px;
-  border: 1px solid rgba(255,255,255,0.06);
-  background: rgba(255,255,255,0.03);
-  color: #9aa0a6;
-}
-
-.status-pill.ok {
-  background: rgba(0, 200, 120, 0.12);
-  color: #9ff0c8;
-  border-color: rgba(0, 200, 120, 0.25);
-}
-
-.status-pill.danger {
-  background: rgba(255, 80, 80, 0.12);
-  color: #ffb7b7;
-  border-color: rgba(255, 80, 80, 0.25);
 }
 
 .status-pill.neutral {
@@ -176,11 +153,24 @@ html, body {
   overflow: hidden;
 }
 
+/* ============================================================
+   CHAT
+============================================================ */
 .chat-container {
   flex: 1;
   display: flex;
   flex-direction: column;
+  background: #12151c;
+
+  /* Watermark control */
+  position: relative;
   overflow: hidden;
+}
+
+/* garante que o conteúdo fique acima da watermark */
+.chat-container > * {
+  position: relative;
+  z-index: 1;
 }
 
 .chat-messages {
@@ -196,34 +186,41 @@ html, body {
 
 .chat-role {
   font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 10px;
   color: #6f7785;
-  margin-bottom: 6px;
 }
 
 .chat-text {
+  font-size: 16px;
+  line-height: 1.7;
   white-space: pre-wrap;
-  line-height: 1.6;
-  font-size: 15px;
+  max-width: 760px;
 }
 
-.role-director .chat-text {
-  color: #e6e8eb;
+/* ROLES */
+.role-director .chat-role {
+  color: #4da3ff;
 }
 
-.role-enavia .chat-text {
-  color: #d9e6ff;
+.role-enavia .chat-role {
+  color: #4fd1a5;
 }
 
+.role-human .chat-role {
+  color: #c9ccd3;
+}
+
+/* INPUT */
 .chat-input-container {
   border-top: 1px solid #1e2230;
-  padding: 14px 16px;
-  display: flex;
-  gap: 10px;
-  background: #0f1115;
+  padding: 16px 20px;
+  background: #12151c;
 }
 
 .chat-input {
-  flex: 1;
+  width: 100%;
+  min-height: 52px;
   max-height: 140px;
   resize: none;
   background: #161a22;
@@ -240,123 +237,243 @@ html, body {
 
 .chat-input:focus {
   outline: none;
-  border-color: #2a3144;
-}
-
-.send-btn {
-  width: 110px;
-  border-radius: 10px;
-  background: #2a3144;
-  border: 1px solid rgba(255,255,255,0.08);
-  color: #e6e8eb;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.send-btn:hover {
-  background: #323b52;
+  border-color: #4da3ff;
 }
 
 /* ============================================================
-   ACTIONS PANEL
+   ACTIONS PANEL (RIGHT)
 ============================================================ */
 .actions-panel {
-  width: 280px;
+  width: 260px;
   border-left: 1px solid #1e2230;
-  padding: 14px 14px;
-  background: #0f1115;
+  background: #0c0f14;
+  padding: 16px 12px;
   overflow-y: auto;
 }
 
 .actions-header {
-  font-size: 13px;
-  color: #9aa0a6;
+  font-size: 12px;
+  color: #8b90a0;
   margin-bottom: 12px;
+  padding-left: 8px;
 }
 
 .action-btn {
   width: 100%;
-  border-radius: 10px;
-  padding: 12px 12px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.04);
-  color: #e6e8eb;
+  margin-bottom: 8px;
+  padding: 12px;
+  font-size: 14px;
+  border-radius: 8px;
+  border: 1px solid #1e2230;
+  background: #12151c;
+  color: #c9ccd3;
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  margin-bottom: 10px;
 }
 
 .action-btn:hover {
-  background: rgba(255,255,255,0.06);
+  background: #1b2030;
 }
 
-.action-btn.secondary {
-  background: rgba(255,255,255,0.03);
-  color: #9aa0a6;
+.action-btn.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .action-btn.danger {
-  background: rgba(255, 80, 80, 0.08);
-  border-color: rgba(255, 80, 80, 0.20);
-  color: #ffb7b7;
+  border-color: #402020;
+  background: #1a0f12;
+  color: #ff6b6b;
 }
 
-.action-btn.live-btn {
-  background: rgba(255, 80, 80, 0.10);
-  border-color: rgba(255, 80, 80, 0.28);
-  color: #ffb7b7;
-}
-
-.action-btn.disabled,
-.action-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.action-btn.secondary {
+  background: transparent;
+  border-color: #1e2230;
+  color: #9aa0a6;
 }
 
 .divider {
   height: 1px;
-  background: rgba(255,255,255,0.06);
-  margin: 10px 0 12px;
+  background: #1e2230;
+  margin: 12px 0;
 }
 
 /* ============================================================
    CENTER ALERT
 ============================================================ */
 .center-alert {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.55);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  background: rgba(15, 17, 21, 0.55);
+  z-index: 10;
 }
 
 .center-alert.hidden {
   display: none;
 }
 
-.center-alert > div {
-  width: 520px;
-  border-radius: 14px;
+.alert-box {
+  background: #12151c;
   border: 1px solid #1e2230;
-  background: #0f1115;
-  padding: 20px;
-  box-shadow: 0 18px 44px rgba(0,0,0,0.55);
+  border-radius: 12px;
+  padding: 24px 28px;
+  max-width: 420px;
+  text-align: center;
 }
 
 .alert-title {
   font-size: 16px;
-  font-weight: 700;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .alert-text {
-  font-size: 13px;
+  font-size: 14px;
   color: #9aa0a6;
-  line-height: 1.6;
 }
+
+/* ============================================================
+   SCROLLBARS (DARK)
+============================================================ */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f1115;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2a2f40;
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3a415a;
+}
+
+/* ============================================================
+   AO VIVO (noVNC)
+============================================================ */
+
+.live-divider {
+  margin: 18px 0 14px;
+  opacity: 0.45;
+}
+
+.action-btn.live-btn {
+  border: 1px solid #ff3b3b;
+  color: #ff3b3b;
+  background: rgba(255, 59, 59, 0.08);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.action-btn.live-btn:hover {
+  background: rgba(255, 59, 59, 0.18);
+}
+
+/* ============================================================
+   EXECUTOR DE CÓDIGO — BOTÕES (VISUAL PREMIUM)
+============================================================ */
+
+.executor-actions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.executor-actions button {
+  background: linear-gradient(180deg, #141824, #0f121a);
+  border: 1px solid #1e2230;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #e8eaed;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.executor-actions button:hover:not(:disabled) {
+  background: linear-gradient(180deg, #1a1f2e, #131826);
+  border-color: #2a3042;
+}
+
+.executor-actions button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* Disabled */
+.executor-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Apply (ação forte) */
+#codeApplyBtn {
+  background: linear-gradient(180deg, #12302a, #0e241f);
+  border-color: #1e6b5c;
+}
+
+/* Rollback (perigo) */
+#codeRollbackBtn {
+  background: linear-gradient(180deg, #2a1214, #1e0e10);
+  border-color: #6b1e25;
+}
+
+#codeRollbackBtn:hover:not(:disabled) {
+  background: linear-gradient(180deg, #35171a, #241013);
+}
+
+/* ============================================================
+   EXECUTOR DE CÓDIGO — BOTÕES SECUNDÁRIOS (HISTÓRICO / TELEMETRIA)
+============================================================ */
+
+.executor-actions-secondary {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+  opacity: 0.85;
+}
+
+.executor-btn-secondary {
+  background: linear-gradient(180deg, #12151c, #0f1115);
+  border: 1px solid #1e2230;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #9aa0a6;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.executor-btn-secondary:hover {
+  background: linear-gradient(180deg, #1a1f2e, #131826);
+  border-color: #2a3042;
+  color: #e6e8eb;
+}
+
+.logo{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-img{
+  width: 58px;
+  height: 58px;
+  border-radius: 12px;
+  display: block;
+}
+
+.logo-text{
+  font-weight: 700;
+  letter-spacing: .5px;
+}
+
 
 /* ============================================================
    MAIN TABS (CANÔNICO)
@@ -711,4 +828,194 @@ html, body {
   color: #e6e8eb;
   padding: 0 10px;
   font-size: 12px;
+}
+
+
+
+
+/* ============================================================
+   V2 POLISH — identidade + fullscreen + scrollbars
+============================================================ */
+:root{
+  --bg0:#0b0d12;
+  --bg1:#0f1115;
+  --card:#0c0f15;
+  --card2:rgba(12,15,21,.92);
+  --stroke:#1e2230;
+  --stroke2:#2a3144;
+  --muted:#9aa0a6;
+  --muted2:#6f7785;
+  --text:#e6e8eb;
+  --accent:#5aa7ff;
+  --danger:#ff5a5a;
+  --ok:#00c878;
+  --radius:14px;
+}
+
+/* barras de rolagem (dark) */
+*{
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.18) rgba(255,255,255,.05);
+}
+*::-webkit-scrollbar{ width: 10px; height:10px; }
+*::-webkit-scrollbar-track{ background: rgba(255,255,255,.05); }
+*::-webkit-scrollbar-thumb{
+  background: rgba(255,255,255,.18);
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,.05);
+}
+*::-webkit-scrollbar-thumb:hover{ background: rgba(255,255,255,.26); }
+
+/* garante fullscreen real sem “coluna branca” do body */
+html, body{ height:100%; overflow:hidden; background: var(--bg1); }
+
+/* topbar com identidade + separação */
+.top-bar{
+  background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0));
+}
+.top-bar::after{
+  content:"";
+  position:absolute;
+  left:0; right:0; bottom:-1px;
+  height:1px;
+  background: linear-gradient(90deg, rgba(90,167,255,.35), rgba(255,255,255,.06), rgba(255,90,90,.18));
+  pointer-events:none;
+  opacity:.55;
+}
+.top-bar{ position:relative; }
+
+/* brand */
+.brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-width: 220px;
+}
+.brand-logo{
+  width:38px; height:38px;
+  border-radius:12px;
+  box-shadow: 0 10px 28px rgba(0,0,0,.35);
+}
+.brand-name{
+  font-weight:800;
+  letter-spacing:.6px;
+  font-size:14px;
+}
+.brand-sub{
+  color: var(--muted2);
+  font-size:11px;
+  margin-top:2px;
+}
+
+/* tabs mais “produto” */
+.tabs-bar{
+  backdrop-filter: blur(8px);
+  background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0));
+}
+.tab-btn{
+  border-color: rgba(255,255,255,0.06);
+}
+.tab-btn.active{
+  background: rgba(90,167,255,.10);
+  border-color: rgba(90,167,255,.35);
+  box-shadow: 0 10px 22px rgba(0,0,0,.25);
+}
+
+/* watermark mais bonito e central (todas abas) */
+.content-area::before{
+  background-position: center 46%;
+  background-size: min(560px, 52vw);
+  opacity: 0.075;
+}
+
+/* cards / sombras consistentes */
+.widget-card, .deploy-box, .deploy-grid .actions-panel, .deploy-log, .browser-right, .browser-toolbar{
+  border-radius: var(--radius);
+  border-color: rgba(255,255,255,.06);
+  box-shadow: 0 16px 44px rgba(0,0,0,.42);
+}
+
+/* DIRECTOR - melhor aproveitamento */
+.director-layout{
+  height: 100%;
+}
+.director-widgets{
+  padding-bottom: 6px;
+}
+
+/* DEPLOY - ocupa tela e log grande (sem “quadradinho”) */
+.deploy-layout{
+  height: 100%;
+  overflow: hidden; /* scroll interno */
+}
+.deploy-box{
+  height: calc(100% - 4px);
+  display:flex;
+  flex-direction:column;
+}
+.deploy-grid{
+  flex:1;
+  min-height: 0;
+}
+.deploy-log{
+  min-height: 0;
+}
+.mono-log{
+  width:100%;
+  min-width:0;
+}
+
+/* BROWSER - toolbar no topo da aba e iframe domina */
+.browser-toolbar--full{
+  margin: 12px 14px 0;
+}
+.browser-layout{
+  height: calc(100% - 48px); /* reserva para toolbar */
+}
+.browser-layout{
+  grid-template-columns: 420px 1fr; /* esquerda confortável, direita gigante */
+}
+.browser-left{
+  overflow: auto;
+}
+.browser-right{
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02), 0 18px 50px rgba(0,0,0,.45);
+}
+.browser-iframe{
+  background:#000;
+}
+
+/* LOG BAR no Browser sempre visível e “fina” */
+.browser-logbar{
+  position: sticky;
+  bottom: 0;
+  height: 34px;
+  background: rgba(15,17,21,.92);
+  backdrop-filter: blur(8px);
+}
+
+/* TELEMETRIA/HISTÓRICO - painel cheio */
+.simple-panel{
+  height: 100%;
+}
+.simple-panel .mono-log{
+  flex:1;
+  min-height: 0;
+}
+
+/* botões com mais “vida” */
+.action-btn{
+  transition: transform .08s ease, background .12s ease, border-color .12s ease;
+}
+.action-btn:hover{ transform: translateY(-1px); }
+.action-btn.live-btn{
+  box-shadow: 0 10px 22px rgba(255,90,90,.18);
+}
+.status-pill.ok{
+  box-shadow: 0 10px 22px rgba(0,200,120,.12);
+}
+
+/* footer discreto (mas útil) */
+.footer-bar{
+  background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,.02));
 }
