@@ -2033,7 +2033,32 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 // 🔗 Expor handler do Director para o Browser Executor (bridge canônica)
 // window.handleDirectorMessage = handleDirectorMessage;
 
+// ============================================================
+// ABAS PRINCIPAIS (Diretor / Deploy / Browser / Telemetria / Histórico)
+// ============================================================
+(function initMainTabs() {
+  const main = document.querySelector(".main-area");
+  if (!main) return;
 
+  const tabs = document.querySelectorAll(".tab-btn[data-main-tab]");
+  if (!tabs.length) return;
 
+  function setTab(btn) {
+    const tab = btn.getAttribute("data-main-tab") || "director";
 
+    main.setAttribute("data-current-tab", tab);
 
+    tabs.forEach((t) => {
+      t.classList.toggle("active", t === btn);
+    });
+  }
+
+  tabs.forEach((btn) => {
+    btn.addEventListener("click", () => setTab(btn));
+  });
+
+  const initial =
+    document.querySelector(".tab-btn[data-main-tab].active") || tabs[0];
+
+  if (initial) setTab(initial);
+})();
