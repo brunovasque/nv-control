@@ -308,6 +308,13 @@ function hydrateFromLocalStorage() {
   if (u.targetWorkerIdInput) u.targetWorkerIdInput.value = targetWorkerId;
 
   updatePanelState({ approved_by: approvedBy });
+
+  // tenta preencher TESTE / REAL com base no alvo salvo
+  try {
+    refreshDeployActiveFromWorkerId();
+  } catch (_) {
+    // enriquecimento visual apenas; não pode quebrar o painel
+  }
 }
 
 function bindPersistence() {
@@ -2272,6 +2279,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
