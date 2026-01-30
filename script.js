@@ -165,6 +165,10 @@ function ui() {
     telemetryBox:
       qs("#telemetryBox") ||
       qs("[data-panel='telemetry']"),
+
+    // Versões ativas de deploy (TEST / PROD)
+    deployTestActiveVersion: document.getElementById("deployTestActiveVersion"),
+    deployRealActiveVersion: document.getElementById("deployRealActiveVersion"),
   };
 }
 
@@ -470,6 +474,126 @@ function directorReportApi(label, result) {
   }
   const err = result.error || "Erro desconhecido";
   return directorSay(`⚠️ ${label}: falhou (${err}). Veja detalhes na telemetria.`);
+}
+
+// ============================================================
+//  DEPLOY ACTIVE VERSION (TEST / REAL)
+//  - Atualiza spans do painel com a versão e "há X tempo"
+// ============================================================
+function formatRelativeTimeFromMs(diffMs) {
+  const s = Math.floor(diffMs / 1000);
+  if (s <= 5) return "agora";
+  if (s < 60) return `há ${s}s`;
+
+  const m = Math.floor(s / 60);
+  if (m < 60) return `há ${m}min`;
+
+  const h = Math.floor(m / 60);
+  if (h < 24) return `há ${h}h`;
+
+  const d = Math.floor(h / 24);
+  return `há ${d}d`;
+}
+
+function updateDeployActiveVersion(env, info) {
+  try {
+    const u = ui();
+
+    const span =
+      env === "real"
+        ? u.deployRealActiveVersion
+        : u.deployTestActiveVersion;
+
+    if (!span) return;
+
+    const version =
+      info?.version ||
+      info?.id ||
+      info?.deployment_id ||
+      info?.deployment?.id ||
+      info?.deployment?.version ||
+      info?.active_version ||
+      info?.data?.active_version ||
+      null;
+
+    const tsRaw =
+      info?.ts ||
+      info?.timestamp ||
+      info?.deployed_at ||
+      info?.deployment?.deployed_at ||
+      info?.data?.deployed_at ||
+      null;
+
+    let label = "—";
+
+    if (version) {
+      let timePart = "";
+
+      if (tsRaw) {
+        const ts =
+          typeof tsRaw === "number" ? tsRaw : Date.parse(tsRaw);
+        if (!Number.isNaN(ts)) {
+          timePart = ` · ${formatRelativeTimeFromMs(Date.now() - ts)}`;
+        }
+      } else {
+        // se não vier timestamp do worker, considera "agora"
+        timePart = " · agora";
+      }
+
+      label = `${version}${timePart}`;
+    }
+
+    span.textContent = label;
+
+    // espelha no panel-state (opcional, para telemetria futura)
+    try {
+      updatePanelState({
+        [env === "real" ? "deploy_active_real" : "deploy_active_test"]: {
+          version: version || null,
+          ts: tsRaw || Date.now(),
+        },
+      });
+    } catch (_) {}
+  } catch (_) {}
+}
+
+function syncDeployActiveFromResult(env, r) {
+  try {
+    if (!r) return;
+
+    const root = r.data || r;
+
+    // tenta achar um "deployment" mais específico
+    let candidate =
+      root?.deployment ||
+      root?.active_deployment ||
+      root?.active ||
+      root?.state?.active ||
+      null;
+
+    // fallback: pega o primeiro da lista, se existir
+    if (!candidate) {
+      const list =
+        root?.deployments ||
+        root?.deployment_history ||
+        root?.versions ||
+        null;
+
+      if (Array.isArray(list) && list.length) {
+        candidate = list[0];
+      }
+    }
+
+    const ts =
+      candidate?.ts ||
+      candidate?.timestamp ||
+      candidate?.deployed_at ||
+      root?.ts ||
+      root?.timestamp ||
+      null;
+
+    updateDeployActiveVersion(env, { ...(candidate || {}), ts });
+  } catch (_) {}
 }
 
 if (!__DISABLE_LEGACY_BROWSER__) {
@@ -1117,6 +1241,12 @@ function buildApiAdapter(api) {
       const execution_id = getExecutionIdRequired();
       const r = await api.deployTest({ execution_id });
       directorReportApi("DEPLOY TESTE (TEST)", r);
+
+      // atualiza painel com versão ativa em TEST
+      try {
+        syncDeployActiveFromResult("test", r);
+      } catch (_) {}
+
       return r;
     },
 
@@ -1135,6 +1265,12 @@ function buildApiAdapter(api) {
 
       const r = await api.promoteReal(payload);
       directorReportApi("PROMOTE REAL (PROD)", r);
+
+      // atualiza painel com versão ativa em PROD
+      try {
+        syncDeployActiveFromResult("real", r);
+      } catch (_) {}
+
       return r;
     },
 
@@ -2062,3 +2198,4 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
