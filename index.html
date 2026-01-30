@@ -391,24 +391,25 @@
   ></pre>
 </div>
 
-<!-- INPUT HUMANO -->
-<textarea
-  id="humanCodeInput"
-  data-field="human-code-input"
-  placeholder="Cole aqui o patch ou instrução técnica para diagnose / dry-run"
-  style="
-    width: 100%;
-    min-height: 220px;
-    background: #0f1115;
-    color: #ffffff;
-    border: 1px solid #1e2230;
-    border-radius: 10px;
-    padding: 14px;
-    font-family: monospace;
-    font-size: 13px;
-    line-height: 1.5;
-  "
-></textarea>
+<!-- INPUT HUMANO (por enquanto oculto: não está ligado no executor) -->
+    <textarea
+      id="humanCodeInput"
+      data-field="human-code-input"
+      placeholder="Cole aqui o patch ou instrução técnica para diagnose / dry-run"
+      style="
+        display: none;
+        width: 100%;
+        min-height: 220px;
+        background: #0f1115;
+        color: #ffffff;
+        border: 1px solid #1e2230;
+        border-radius: 10px;
+        padding: 14px;
+        font-family: monospace;
+        font-size: 13px;
+        line-height: 1.5;
+      "
+    ></textarea>
 
 <div
   style="
@@ -509,6 +510,7 @@
 
 </body>
 </html>
+
 
 
 
