@@ -1210,8 +1210,8 @@ body { overflow: hidden; }
 
 /* textarea do plano (se existir) ficar visível e “usável” */
 #humanBrowserPlan{
-  min-height: 100px;
-  height: 140px;
+  min-height: 180px;
+  height: 220px;
   resize: vertical;
 }
 
@@ -1357,7 +1357,7 @@ body { overflow: hidden; }
 .tab-panel[data-tab="browser"] textarea,
 .tab-panel[data-tab="browser"] .browser-left textarea{
   width: 100%;
-  min-height: 260px;
+  min-height: 220px;
   max-height: 52vh;
   resize: vertical;
 
@@ -1422,6 +1422,7 @@ body { overflow: hidden; }
   font-size: 12px;
   opacity: .9;
 }
+
 
 
 
