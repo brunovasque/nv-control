@@ -561,21 +561,6 @@ function directorReportApi(label, result) {
 //  DEPLOY ACTIVE VERSION (TEST / REAL)
 //  - Atualiza spans do painel com a versão e "há X tempo"
 // ============================================================
-function formatRelativeTimeFromMs(diffMs) {
-  const s = Math.floor(diffMs / 1000);
-  if (s <= 5) return "agora";
-  if (s < 60) return `há ${s}s`;
-
-  const m = Math.floor(s / 60);
-  if (m < 60) return `há ${m}min`;
-
-  const h = Math.floor(m / 60);
-  if (h < 24) return `há ${h}h`;
-
-  const d = Math.floor(h / 24);
-  return `há ${d}d`;
-}
-
 function updateDeployActiveVersion(env, info) {
   try {
     const u = ui();
@@ -587,6 +572,8 @@ function updateDeployActiveVersion(env, info) {
 
     if (!span) return;
 
+    const humanEnv = env === "real" ? "REAL" : "TESTE";
+
     // 🔹 Versão de script (v194a5dc1) – PRIORIDADE
     const scriptVersion =
       info?.script_version ||
@@ -594,18 +581,50 @@ function updateDeployActiveVersion(env, info) {
       info?.data?.script_version ||
       null;
 
-    // 🔹 ID do deployment (cb9234...) – fallback
-    const baseVersion =
-      info?.version ||
+    // 🔹 ID / número do deployment — apoio
+    const number =
+      info?.number ??
+      info?.deployment?.number ??
+      null;
+
+    const deploymentId =
       info?.id ||
       info?.deployment_id ||
       info?.deployment?.id ||
+      null;
+
+    // 🔹 Origem / autor / trigger / mensagem (dados ricos do alvo)
+    const source =
+      info?.source ||
+      info?.deployment?.source ||
+      null;
+
+    const authorEmail =
+      info?.author_email ||
+      info?.deployment?.author_email ||
+      null;
+
+    const triggeredBy =
+      info?.triggered_by ||
+      info?.deployment?.triggered_by ||
+      null;
+
+    const message =
+      info?.message ||
+      info?.deployment?.message ||
+      info?.annotations?.["workers/message"] ||
+      null;
+
+    // 🔹 ID “bruto” como fallback se não tiver script_version
+    const baseVersion =
+      info?.version ||
+      deploymentId ||
       info?.deployment?.version ||
       info?.active_version ||
       info?.data?.active_version ||
       null;
 
-    // O que vamos exibir no painel
+    // O que vamos exibir no span
     const version = scriptVersion || baseVersion;
 
     const tsRaw =
@@ -636,12 +655,58 @@ function updateDeployActiveVersion(env, info) {
 
     span.textContent = label;
 
-    // espelha no panel-state (telemetria futura)
+    // 🔹 Linguagem humana (tooltip) — resumo rico
+    const parts = [];
+
+    parts.push(`Ambiente: ${humanEnv}`);
+
+    if (version) {
+      if (number != null) {
+        parts.push(`Versão: ${version} (#${number})`);
+      } else {
+        parts.push(`Versão: ${version}`);
+      }
+    }
+
+    if (deploymentId) {
+      parts.push(`Deployment: ${deploymentId}`);
+    }
+
+    if (source || triggeredBy) {
+      const src = source || "desconhecido";
+      const trg = triggeredBy ? `/${triggeredBy}` : "";
+      parts.push(`Origem: ${src}${trg}`);
+    }
+
+    if (authorEmail) {
+      parts.push(`Autor: ${authorEmail}`);
+    }
+
+    if (message) {
+      parts.push(`Msg: ${message}`);
+    }
+
+    const humanSummary = parts.join(" | ") || "Sem dados de deploy.";
+
+    span.title = humanSummary;
+
+    // 🔹 Espelha tudo no panel-state (para uso futuro na aba)
     try {
+      const key =
+        env === "real" ? "deploy_active_real" : "deploy_active_test";
+
       updatePanelState({
-        [env === "real" ? "deploy_active_real" : "deploy_active_test"]: {
+        [key]: {
           version: version || null,
+          number: number ?? null,
+          deployment_id: deploymentId || null,
+          script_version: scriptVersion || null,
+          source: source || null,
+          author_email: authorEmail || null,
+          triggered_by: triggeredBy || null,
+          message: message || null,
           ts: tsRaw || Date.now(),
+          human: humanSummary,
         },
       });
     } catch (_) {}
@@ -2289,6 +2354,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
