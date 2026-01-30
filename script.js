@@ -587,7 +587,15 @@ function updateDeployActiveVersion(env, info) {
 
     if (!span) return;
 
-    const version =
+    // 🔹 Versão de script (v194a5dc1) – PRIORIDADE
+    const scriptVersion =
+      info?.script_version ||
+      info?.deployment?.script_version ||
+      info?.data?.script_version ||
+      null;
+
+    // 🔹 ID do deployment (cb9234...) – fallback
+    const baseVersion =
       info?.version ||
       info?.id ||
       info?.deployment_id ||
@@ -596,6 +604,9 @@ function updateDeployActiveVersion(env, info) {
       info?.active_version ||
       info?.data?.active_version ||
       null;
+
+    // O que vamos exibir no painel
+    const version = scriptVersion || baseVersion;
 
     const tsRaw =
       info?.ts ||
@@ -611,8 +622,7 @@ function updateDeployActiveVersion(env, info) {
       let timePart = "";
 
       if (tsRaw) {
-        const ts =
-          typeof tsRaw === "number" ? tsRaw : Date.parse(tsRaw);
+        const ts = typeof tsRaw === "number" ? tsRaw : Date.parse(tsRaw);
         if (!Number.isNaN(ts)) {
           timePart = ` · ${formatRelativeTimeFromMs(Date.now() - ts)}`;
         }
@@ -626,7 +636,7 @@ function updateDeployActiveVersion(env, info) {
 
     span.textContent = label;
 
-    // espelha no panel-state (opcional, para telemetria futura)
+    // espelha no panel-state (telemetria futura)
     try {
       updatePanelState({
         [env === "real" ? "deploy_active_real" : "deploy_active_test"]: {
@@ -2279,6 +2289,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
