@@ -558,7 +558,7 @@ html, body {
 .main-area[data-current-tab="browser"] .tab-panel[data-tab="browser"],
 .main-area[data-current-tab="telemetry"] .tab-panel[data-tab="telemetry"],
 .main-area[data-current-tab="history"] .tab-panel[data-tab="history"]{
-  display: flex;
+  display: block;
 }
 
 /* ============================================================
@@ -1422,3 +1422,4 @@ body { overflow: hidden; }
   font-size: 12px;
   opacity: .9;
 }
+
