@@ -561,6 +561,28 @@ function directorReportApi(label, result) {
 //  DEPLOY ACTIVE VERSION (TEST / REAL)
 //  - Atualiza spans do painel com a versão e "há X tempo"
 // ============================================================
+function formatRelativeTimeFromMs(diffMs) {
+  try {
+    if (typeof diffMs !== "number" || !isFinite(diffMs)) {
+      return "agora";
+    }
+
+    const sec = Math.max(0, Math.floor(diffMs / 1000));
+    if (sec < 60) return "agora";
+
+    const min = Math.floor(sec / 60);
+    if (min < 60) return `há ${min}min`;
+
+    const h = Math.floor(min / 60);
+    if (h < 24) return `há ${h}h`;
+
+    const d = Math.floor(h / 24);
+    return `há ${d}d`;
+  } catch (_) {
+    return "agora";
+  }
+}
+
 function updateDeployActiveVersion(env, info) {
   try {
     const u = ui();
@@ -2354,6 +2376,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
