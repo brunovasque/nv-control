@@ -318,7 +318,56 @@ function bindPersistence() {
   on(u.debugToggle, "change", (e) => localStorage.setItem(LS.DEBUG, e.target.checked ? "true" : "false"));
   on(u.envSelect, "change", (e) => localStorage.setItem(LS.ENV, e.target.value || DEFAULTS.env));
   on(u.executionIdInput, "input", (e) => localStorage.setItem(LS.LAST_EXECUTION_ID, e.target.value || ""));
-  on(u.targetWorkerIdInput, "input", (e) => localStorage.setItem(LS.LAST_TARGET_WORKERID, e.target.value || ""));
+  on(
+    u.targetWorkerIdInput,
+    "input",
+    (e) => localStorage.setItem(LS.LAST_TARGET_WORKERID, e.target.value || "")
+  );
+
+  // quando o alvo muda de fato, consulta o Deploy Worker e preenche TESTE / REAL
+  on(u.targetWorkerIdInput, "change", () => {
+    refreshDeployActiveFromWorkerId();
+  });
+}
+
+async function refreshDeployActiveFromWorkerId() {
+  try {
+    const u = ui();
+    const input = u.targetWorkerIdInput;
+    if (!input) return;
+
+    const workerId = (input.value || "").trim();
+    if (!workerId) return;
+
+    const deployBaseUrl = mustGetDeployUrl();
+    if (!deployBaseUrl) return;
+
+    const base = deployBaseUrl.replace(/\/$/, "");
+
+    const fetchEnv = async (env) => {
+      try {
+        const url = `${base}/deploy-active?workerId=${encodeURIComponent(workerId)}&env=${encodeURIComponent(env)}`;
+        const res = await fetch(url, {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
+
+        if (!res.ok) return;
+
+        const data = await res.json().catch(() => null);
+        if (!data || data.ok === false) return;
+
+        // reaproveita o helper que você já tem
+        syncDeployActiveFromResult(env, data);
+      } catch (_) {
+        // erro de rede aqui não pode travar o painel
+      }
+    };
+
+    await Promise.all([fetchEnv("test"), fetchEnv("real")]);
+  } catch (_) {
+    // falha silenciosa, é só um enriquecimento visual
+  }
 }
 
 function getDebug() {
@@ -2198,4 +2247,5 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
