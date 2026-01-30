@@ -312,16 +312,39 @@ function hydrateFromLocalStorage() {
 
 function bindPersistence() {
   const u = ui();
-  on(u.enaviaUrlInput, "input", (e) => localStorage.setItem(LS.ENAVIA_URL, (e.target.value || "").replace(/\/$/, "")));
-  on(u.deployUrlInput, "input", (e) => localStorage.setItem(LS.DEPLOY_URL, (e.target.value || "").replace(/\/$/, "")));
-  on(u.tokenInput, "input", (e) => localStorage.setItem(LS.INTERNAL_TOKEN, e.target.value || ""));
-  on(u.debugToggle, "change", (e) => localStorage.setItem(LS.DEBUG, e.target.checked ? "true" : "false"));
-  on(u.envSelect, "change", (e) => localStorage.setItem(LS.ENV, e.target.value || DEFAULTS.env));
-  on(u.executionIdInput, "input", (e) => localStorage.setItem(LS.LAST_EXECUTION_ID, e.target.value || ""));
   on(
-    u.targetWorkerIdInput,
+    u.enaviaUrlInput,
     "input",
-    (e) => localStorage.setItem(LS.LAST_TARGET_WORKERID, e.target.value || "")
+    (e) =>
+      localStorage.setItem(
+        LS.ENAVIA_URL,
+        (e.target.value || "").replace(/\/$/, "")
+      )
+  );
+  on(
+    u.deployUrlInput,
+    "input",
+    (e) =>
+      localStorage.setItem(
+        LS.DEPLOY_URL,
+        (e.target.value || "").replace(/\/$/, "")
+      )
+  );
+  on(u.tokenInput, "input", (e) =>
+    localStorage.setItem(LS.INTERNAL_TOKEN, e.target.value || "")
+  );
+  on(u.debugToggle, "change", (e) =>
+    localStorage.setItem(LS.DEBUG, e.target.checked ? "true" : "false")
+  );
+  on(u.envSelect, "change", (e) =>
+    localStorage.setItem(LS.ENV, e.target.value || DEFAULTS.env)
+  );
+  on(u.executionIdInput, "input", (e) =>
+    localStorage.setItem(LS.LAST_EXECUTION_ID, e.target.value || "")
+  );
+
+  on(u.targetWorkerIdInput, "input", (e) =>
+    localStorage.setItem(LS.LAST_TARGET_WORKERID, e.target.value || "")
   );
 
   // quando o alvo muda de fato, consulta o Deploy Worker e preenche TESTE / REAL
@@ -346,7 +369,10 @@ async function refreshDeployActiveFromWorkerId() {
 
     const fetchEnv = async (env) => {
       try {
-        const url = `${base}/deploy-active?workerId=${encodeURIComponent(workerId)}&env=${encodeURIComponent(env)}`;
+        const url = `${base}/deploy-active?workerId=${encodeURIComponent(
+          workerId
+        )}&env=${encodeURIComponent(env)}`;
+
         const res = await fetch(url, {
           method: "GET",
           headers: { Accept: "application/json" },
@@ -357,16 +383,15 @@ async function refreshDeployActiveFromWorkerId() {
         const data = await res.json().catch(() => null);
         if (!data || data.ok === false) return;
 
-        // reaproveita o helper que você já tem
         syncDeployActiveFromResult(env, data);
       } catch (_) {
-        // erro de rede aqui não pode travar o painel
+        // erro de rede não trava painel
       }
     };
 
     await Promise.all([fetchEnv("test"), fetchEnv("real")]);
   } catch (_) {
-    // falha silenciosa, é só um enriquecimento visual
+    // enriquecimento visual, falha silenciosa
   }
 }
 
@@ -2247,5 +2272,6 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
