@@ -735,7 +735,7 @@ html, body {
   min-width: 0;
   overflow: auto;
   padding-bottom: 12px;
-  gap: 16px;
+  gap: 8px;
 }
 
 .browser-toolbar{
@@ -1425,6 +1425,7 @@ body { overflow: hidden; }
   font-size: 12px;
   opacity: .9;
 }
+
 
 
 
