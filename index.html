@@ -276,27 +276,25 @@
            TAB: BROWSER
       ========================== -->
       <section class="tab-panel" data-tab="browser">
-        <div class="browser-toolbar browser-toolbar--full">
-          <div class="browser-back">← Voltar</div>
-          <div class="browser-title">Browser Executor</div>
-        </div>
-
         <div class="browser-layout">
           <div class="browser-left">
 
             <div class="browser-plan">
-  <div class="subhead">Plano / Steps</div>
-  <textarea id="humanBrowserPlan" placeholder='{"version":"plan.v1","steps":[{"type":"open","url":"https://..."}]}'></textarea>
+              <div class="subhead">Plano / Steps</div>
+              <textarea
+                id="humanBrowserPlan"
+                placeholder='{"version":"plan.v1","steps":[{"type":"open","url":"https://dash.cloudflare.com/"}]}'
+              ></textarea>
               <button class="action-btn" id="browser-execute-btn" disabled>
-  ▶ Executar
-</button>
+                ▶ Executar
+              </button>
             </div>
 
             <div class="browser-status">
               <button class="action-btn live-btn" id="liveViewBtn">🔴 AO VIVO</button>
               <span class="status-pill neutral" id="browser-status-pill">Aguardando</span>
             </div>
-                
+    
               <!-- =========================
      EXECUTOR DE CÓDIGO (MODO MANUAL)
 ========================== -->
@@ -512,6 +510,7 @@
 
 </body>
 </html>
+
 
 
 
