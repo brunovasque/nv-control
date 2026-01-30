@@ -279,10 +279,6 @@
         <div class="browser-toolbar browser-toolbar--full">
           <div class="browser-back">← Voltar</div>
           <div class="browser-title">Browser Executor</div>
-          <div class="browser-status">
-            <span class="status-pill neutral" id="browser-status-pill">Aguardando</span>
-            <button class="action-btn live-btn" id="liveViewBtn">🔴 AO VIVO</button>
-          </div>
         </div>
 
         <div class="browser-layout">
@@ -294,7 +290,12 @@
               <button class="action-btn" id="browser-execute-btn" disabled>
   ▶ Executar
 </button>
-</div>
+            </div>
+
+            <div class="browser-status">
+              <button class="action-btn live-btn" id="liveViewBtn">🔴 AO VIVO</button>
+              <span class="status-pill neutral" id="browser-status-pill">Aguardando</span>
+            </div>
                 
               <!-- =========================
      EXECUTOR DE CÓDIGO (MODO MANUAL)
@@ -511,6 +512,7 @@
 
 </body>
 </html>
+
 
 
 
