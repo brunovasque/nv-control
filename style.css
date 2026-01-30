@@ -1210,8 +1210,8 @@ body { overflow: hidden; }
 
 /* textarea do plano (se existir) ficar visível e “usável” */
 #humanBrowserPlan{
-  min-height: 140px;
-  height: 180px;
+  min-height: 100px;
+  height: 140px;
   resize: vertical;
 }
 
@@ -1422,6 +1422,7 @@ body { overflow: hidden; }
   font-size: 12px;
   opacity: .9;
 }
+
 
 
 
