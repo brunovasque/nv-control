@@ -5,7 +5,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; connect-src 'self' https://run.nv-imoveis.com https://browser.nv-imoveis.com https://nv-enavia.brunovasque.workers.dev; img-src 'self' data: blob; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; frame-src 'self' https://browser.nv-imoveis.com; object-src 'none';"
+          "value": "default-src 'self'; connect-src 'self' https://run.nv-imoveis.com https://browser.nv-imoveis.com https://nv-enavia.brunovasque.workers.dev https://deploy-worker.brunovasque.workers.dev; img-src 'self' data: blob; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; frame-src 'self' https://browser.nv-imoveis.com; object-src 'none';"
         }
       ]
     }
