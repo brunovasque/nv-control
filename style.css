@@ -1771,7 +1771,7 @@ body { overflow: hidden; }
   background-position: 50% 52% !important;
 
   /* tamanho mais consistente */
-  background-size: 38% auto !important;
+  background-size: 42% auto !important;
 
    /* centro matemático do card */
   background-position: 50% 50% !important;
@@ -1787,9 +1787,10 @@ body { overflow: hidden; }
   right: 0 !important;
 
   /* corta a área do input (ajuste fino aqui) */
-  bottom: 130px !important;
+  bottom: 100px !important;
 
   /* agora o 50/50 fica "no corpo do chat", não no input */
   background-position: 50% 50% !important;
 }
+
 
