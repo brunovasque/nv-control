@@ -371,12 +371,26 @@ function bindPersistence() {
 
   // quando o alvo muda de fato, consulta o Deploy Worker e preenche TESTE / REAL + histórico
   on(u.targetWorkerIdInput, "change", () => {
-  refreshDeployActiveFromWorkerId();
-  refreshDeployHistoryFromWorkerId();
-  refreshDeployHealthFromWorkerId();
-  renderPipelineTimelineCard();
-  
-     // Atualiza também o card de teste de browser para este worker
+    // Worker digitado no input (fonte da verdade visual)
+    const workerId = (u.targetWorkerIdInput?.value || "").trim();
+
+    // Atualiza o estado canônico do alvo para o Status ler
+    if (workerId) {
+      updatePanelState({
+        target: {
+          system: "TARGET_WORKER",
+          workerId,
+        },
+      });
+    }
+
+    // Atualiza dados de deploy puxando do Deploy Worker
+    refreshDeployActiveFromWorkerId();
+    refreshDeployHistoryFromWorkerId();
+    refreshDeployHealthFromWorkerId();
+    renderPipelineTimelineCard();
+
+    // Atualiza os cards visuais dependentes do alvo
     try {
       renderWorkerStatusCard();
       renderDeployHistoryCard();
@@ -3031,6 +3045,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
