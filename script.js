@@ -229,8 +229,9 @@ function boot() {
    // auto-refresh leve do status do worker (TESTE / REAL)
   try {
     setInterval(() => {
-      refreshDeployActiveFromWorkerId();
-      refreshDeployHistoryFromWorkerId();
+    refreshDeployActiveFromWorkerId();
+    refreshDeployHistoryFromWorkerId();
+    refreshDeployHealthFromWorkerId();
     }, 10000); // 10s; se quiser mais "ao vivo", pode reduzir
   } catch (_) {
     // enriquecimento visual apenas; não pode quebrar o painel
@@ -321,8 +322,9 @@ function hydrateFromLocalStorage() {
 
   // tenta preencher TESTE / REAL + histórico com base no alvo salvo
   try {
-    refreshDeployActiveFromWorkerId();
-    refreshDeployHistoryFromWorkerId();
+  refreshDeployActiveFromWorkerId();
+  refreshDeployHistoryFromWorkerId();
+  refreshDeployHealthFromWorkerId();
   } catch (_) {
     // enriquecimento visual apenas; não pode quebrar o painel
   }
@@ -367,8 +369,9 @@ function bindPersistence() {
 
   // quando o alvo muda de fato, consulta o Deploy Worker e preenche TESTE / REAL + histórico
   on(u.targetWorkerIdInput, "change", () => {
-    refreshDeployActiveFromWorkerId();
-    refreshDeployHistoryFromWorkerId();
+  refreshDeployActiveFromWorkerId();
+  refreshDeployHistoryFromWorkerId();
+  refreshDeployHealthFromWorkerId();
   });
 }
 
@@ -671,6 +674,106 @@ function renderWorkerStatusCard() {
     if (realSubEl) realSubEl.textContent = r.sub;
   } catch (_) {
     // não pode quebrar painel
+  }
+}
+
+/* NOVO: CARD SAÚDE (5 MIN) */
+function renderDeployHealthCard() {
+  try {
+    const box = document.getElementById("deployHealthBox");
+    if (!box) return;
+
+    const st =
+      typeof getPanelState === "function" ? getPanelState() || {} : {};
+    const h = st.deploy_health || null;
+
+    if (!h || h.ok === false) {
+      box.textContent = "Sem dados de saúde para este worker.";
+      return;
+    }
+
+    // primeira fase: só indica que está desligado
+    if (h.has_data === false) {
+      const winLabel = h.window || "5m";
+      box.textContent =
+        `Telemetria resumida ainda não está ligada para este worker.\n` +
+        `(Janela: ${winLabel})`;
+      return;
+    }
+
+    const lines = [];
+
+    if (typeof h.requests === "number") {
+      lines.push(`• Requisições (${h.window || "5m"}): ${h.requests}`);
+    }
+    if (typeof h.error_rate === "number") {
+      lines.push(
+        `• Erro % (4xx/5xx): ${(h.error_rate * 100).toFixed(1)}%`
+      );
+    }
+    if (typeof h.p95_ms === "number") {
+      lines.push(`• Latência p95: ${h.p95_ms} ms`);
+    }
+
+    if (h.last_error_message) {
+      let when = "";
+      if (h.last_error_ts) {
+        const parsed = Date.parse(h.last_error_ts);
+        if (!Number.isNaN(parsed)) {
+          const diff = Date.now() - parsed;
+          when = formatRelativeTimeFromMs(diff);
+        }
+      }
+      const extra = when && when !== "agora" ? ` · ${when}` : "";
+      lines.push(`• Último erro: ${h.last_error_message}${extra}`);
+    }
+
+    if (!lines.length) {
+      box.textContent = "Sem erros recentes na janela.";
+    } else {
+      box.textContent = lines.join("\n");
+    }
+  } catch (_) {
+    // enriquecimento visual; nunca quebra painel
+  }
+}
+
+async function refreshDeployHealthFromWorkerId() {
+  try {
+    const u = ui();
+    const input = u.targetWorkerIdInput;
+    if (!input) return;
+
+    const workerId = (input.value || "").trim();
+    if (!workerId) return;
+
+    const deployBaseUrl = mustGetDeployUrl();
+    if (!deployBaseUrl) return;
+
+    const base = deployBaseUrl.replace(/\/$/, "");
+
+    // por enquanto olhamos a saúde do ambiente de TESTE, janela fixa 5m
+    const url = `${base}/deploy-health?workerId=${encodeURIComponent(
+      workerId
+    )}&env=test&window=5m`;
+
+    const res = await fetch(url, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+
+    if (!res.ok) return;
+
+    const data = await res.json().catch(() => null);
+    if (!data || data.ok === false) return;
+
+    if (typeof updatePanelState === "function") {
+      updatePanelState({ deploy_health: data });
+    }
+
+    renderDeployHealthCard();
+  } catch (_) {
+    // erro de rede não pode travar painel
   }
 }
 
@@ -2578,6 +2681,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
