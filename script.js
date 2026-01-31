@@ -843,6 +843,55 @@ function renderBrowserTestCard() {
   }
 }
 
+/* NOVO: CARD RESUMO DO PIPELINE / PRÓXIMO PASSO */
+function renderPipelineSummaryCard() {
+  try {
+    const box = document.getElementById("pipelineSummaryBox");
+    if (!box) return;
+
+    const st =
+      typeof getPanelState === "function" ? getPanelState() || {} : {};
+
+    const execId =
+      typeof getExecutionId === "function" ? getExecutionId() || "" : "";
+
+    const env =
+      st.env ||
+      localStorage.getItem(LS.ENV) ||
+      "test";
+
+    const targetWorkerId =
+      (st.target && st.target.workerId) ||
+      localStorage.getItem(LS.LAST_TARGET_WORKERID) ||
+      "";
+
+    const lines = [];
+
+    if (targetWorkerId) {
+      lines.push(`Worker alvo: ${targetWorkerId} (${env})`);
+    }
+
+    if (execId) {
+      lines.push(`Execution ID atual: ${execId}`);
+      lines.push(
+        "Resumo automático do pipeline ainda não está ligado."
+      );
+      lines.push(
+        "Por enquanto, siga a ordem: AUDIT → APPLY TEST → DEPLOY TESTE → APPROVE → PROMOTE REAL."
+      );
+    } else {
+      lines.push("Execution ID atual: — (pipeline não iniciado)");
+      lines.push(
+        "Assim que você iniciar um AUDIT/PROPOSE com execution_id, este card passa a acompanhar o pipeline."
+      );
+    }
+
+    box.textContent = lines.join("\n");
+  } catch (_) {
+    // visual apenas; não pode quebrar o painel
+  }
+}
+
 /* NOVO: CARD HISTÓRICO DE VERSÕES (TESTE) */
 function renderDeployHistoryCard() {
   try {
@@ -2747,6 +2796,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
