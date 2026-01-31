@@ -1524,8 +1524,9 @@ body { overflow: hidden; }
 
 /* garante que os cards se comportem bem dentro do grid */
 .tab-panel[data-tab="deploy"] .deploy-right-column .deploy-log{
-  min-width: 0;
+  height: auto;        /* libera altura natural do card */
   min-height: 140px;
+  min-width: 0;
 }
 
 /* ===== DEPLOY: identidade visual dos cards ===== */
@@ -1758,3 +1759,4 @@ body { overflow: hidden; }
   filter: none;
   pointer-events: none;
 }
+
