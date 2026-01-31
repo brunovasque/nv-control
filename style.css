@@ -1787,11 +1787,12 @@ body { overflow: hidden; }
   right: 0 !important;
 
   /* corta a área do input (ajuste fino aqui) */
-  bottom: 107px !important;
+  bottom: 110px !important;
 
   /* agora o 50/50 fica "no corpo do chat", não no input */
   background-position: 50% 50% !important;
 }
+
 
 
 
