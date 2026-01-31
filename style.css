@@ -535,8 +535,8 @@ html, body {
   overflow: hidden;
 }
 
-/* watermark (logo de fundo) para TODAS as abas */
-.content-area::before{
+/* watermark (logo de fundo) apenas no card principal do Diretor */
+.tab-panel[data-tab="director"] .chat-container::before{
   content: "";
   position: absolute;
   inset: 0;
@@ -1729,6 +1729,7 @@ body { overflow: hidden; }
   );
   border-color: rgba(90,167,255,.50);
 }
+
 
 
 
