@@ -583,6 +583,72 @@ function formatRelativeTimeFromMs(diffMs) {
   }
 }
 
+/* NOVO: CARD STATUS DO WORKER (ALVO) */
+function renderWorkerStatusCard() {
+  try {
+    const card = document.getElementById("workerStatusCard");
+    if (!card) return;
+
+    const st = typeof getPanelState === "function" ? getPanelState() || {} : {};
+
+    const workerEl = document.getElementById("workerStatusWorkerId");
+    const testMainEl = document.getElementById("workerStatusTestMain");
+    const testSubEl = document.getElementById("workerStatusTestSub");
+    const realMainEl = document.getElementById("workerStatusRealMain");
+    const realSubEl = document.getElementById("workerStatusRealSub");
+
+    const targetWorkerId =
+      st?.target?.workerId ||
+      localStorage.getItem("nv_target_workerid") ||
+      localStorage.getItem("nv_worker_test") ||
+      localStorage.getItem("nv_worker_real") ||
+      "";
+
+    if (workerEl) workerEl.textContent = targetWorkerId || "—";
+
+    const test = st?.deploy_active_test || null;
+    const real = st?.deploy_active_real || null;
+
+    const formatEnv = (data) => {
+      if (!data || !data.version) {
+        return { main: "—", sub: "—" };
+      }
+
+      const tsNum = data.ts ? Number(data.ts) : NaN;
+      const diff = !Number.isNaN(tsNum) ? Date.now() - tsNum : null;
+      const timeLabel =
+        diff != null ? formatRelativeTimeFromMs(diff) : "agora";
+
+      const numberPart =
+        typeof data.number === "number" ? ` (#${data.number})` : "";
+
+      const main = `${data.version}${numberPart} · ${timeLabel}`;
+
+      const pieces = [];
+      if (data.source) {
+        const trg = data.triggered_by ? `/${data.triggered_by}` : "";
+        pieces.push(`Origem: ${data.source}${trg}`);
+      }
+      if (data.author_email) pieces.push(`Autor: ${data.author_email}`);
+      if (data.message) pieces.push(`Msg: ${data.message}`);
+
+      const sub = pieces.length ? pieces.join(" | ") : "—";
+
+      return { main, sub };
+    };
+
+    const t = formatEnv(test);
+    const r = formatEnv(real);
+
+    if (testMainEl) testMainEl.textContent = t.main;
+    if (testSubEl) testSubEl.textContent = t.sub;
+    if (realMainEl) realMainEl.textContent = r.main;
+    if (realSubEl) realSubEl.textContent = r.sub;
+  } catch (_) {
+    // não pode quebrar painel
+  }
+}
+
 function updateDeployActiveVersion(env, info) {
   try {
     const u = ui();
@@ -731,9 +797,10 @@ function updateDeployActiveVersion(env, info) {
           human: humanSummary,
         },
       });
+
+      // 🔹 Atualiza o card visual sempre que o estado mudar
+      renderWorkerStatusCard();
     } catch (_) {}
-  } catch (_) {}
-}
 
 function syncDeployActiveFromResult(env, r) {
   try {
@@ -2376,6 +2443,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
