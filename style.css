@@ -1757,3 +1757,23 @@ body { overflow: hidden; }
   pointer-events: none;
 }
 
+/* FIX watermark Director: manter cor + centralizar melhor */
+.tab-panel[data-tab="director"] .chat-container{
+  position: relative;   /* garante referência do ::before */
+  overflow: hidden;     /* evita "vazar" */
+}
+
+.tab-panel[data-tab="director"] .chat-container::before{
+  /* remove o que mata a cor */
+  filter: saturate(1.15) brightness(1.05) !important;
+
+  /* centralização mais “no meio” */
+  background-position: 50% 52% !important;
+
+  /* tamanho mais consistente */
+  background-size: min(720px, 62vw) !important;
+
+  /* deixa a cor aparecer sem ficar gritante */
+  opacity: 0.12 !important;
+}
+
