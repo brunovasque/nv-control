@@ -1543,17 +1543,12 @@ body { overflow: hidden; }
   box-shadow: 0 0 0 1px rgba(90,167,255,0.12);
 }
 
-/* Paleta por card: borda forte + fundo com “sabor” */
+/* Paleta por card: borda forte + fundo com “sabor” (suave, mesmo nível do Status) */
 
-/* Histórico + Resumo + Log: azul ENAVIA (mesma identidade do status) */
+/* Histórico + Resumo + Log: azul ENAVIA */
 .tab-panel[data-tab="deploy"] #deployHistoryCard,
 .tab-panel[data-tab="deploy"] #pipelineSummaryCard,
 .tab-panel[data-tab="deploy"] #pipelineTimelineCard{
-  background: radial-gradient(
-    circle at top left,
-    rgba(90,167,255,.06),
-    #0c0f15
-  );
   border-color: rgba(90,167,255,.60);
   box-shadow:
     0 0 0 1px rgba(0,0,0,.7),
@@ -1568,12 +1563,7 @@ body { overflow: hidden; }
 
 /* Saúde: verde (OK) */
 .tab-panel[data-tab="deploy"] #deployHealthCard{
-  background: radial-gradient(
-    circle at top left,
-    rgba(0,200,120,.08),
-    #0c1412
-  );
-  border-color: rgba(0,200,120,.60);
+  border-color: rgba(0,200,120,.55);
   box-shadow:
     0 0 0 1px rgba(0,0,0,.7),
     0 0 0 1px rgba(0,200,120,.12);
@@ -1586,19 +1576,14 @@ body { overflow: hidden; }
 .tab-panel[data-tab="deploy"] #deployHealthCard .deploy-log-title::after{
   background: linear-gradient(
     90deg,
-    rgba(0,200,120,.7),
+    rgba(0,200,120,.65),
     rgba(0,200,120,0)
   );
 }
 
 /* Smoke: laranja (atenção/teste) */
 .tab-panel[data-tab="deploy"] #browserTestCard{
-  background: radial-gradient(
-    circle at top left,
-    rgba(255,184,76,.10),
-    #14120c
-  );
-  border-color: rgba(255,184,76,.65);
+  border-color: rgba(255,184,76,.60);
   box-shadow:
     0 0 0 1px rgba(0,0,0,.7),
     0 0 0 1px rgba(255,184,76,.13);
@@ -1611,7 +1596,7 @@ body { overflow: hidden; }
 .tab-panel[data-tab="deploy"] #browserTestCard .deploy-log-title::after{
   background: linear-gradient(
     90deg,
-    rgba(255,184,76,.8),
+    rgba(255,184,76,.75),
     rgba(255,184,76,0)
   );
 }
@@ -1721,3 +1706,4 @@ body { overflow: hidden; }
   );
   border-color: rgba(90,167,255,.50);
 }
+
