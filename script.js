@@ -230,6 +230,7 @@ function boot() {
   try {
     setInterval(() => {
       refreshDeployActiveFromWorkerId();
+      refreshDeployHistoryFromWorkerId();
     }, 10000); // 10s; se quiser mais "ao vivo", pode reduzir
   } catch (_) {
     // enriquecimento visual apenas; não pode quebrar o painel
@@ -2577,6 +2578,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
