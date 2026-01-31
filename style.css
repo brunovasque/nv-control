@@ -1497,12 +1497,31 @@ body { overflow: hidden; }
 /* ===== DEPLOY: identidade visual dos cards ===== */
 
 /* Títulos: mais fortes, com cara de seção */
+/* Títulos dos cards da coluna direita (Deploy) em destaque azul */
 .tab-panel[data-tab="deploy"] .deploy-log-title{
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted2);
-  opacity: .95;
+  letter-spacing: 0.09em;
+  color: var(--accent);      /* azul ENAVIA */
+  opacity: .96;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+/* Linha fina de apoio ao lado do título (estilo “seção”) */
+.tab-panel[data-tab="deploy"] .deploy-log-title::after{
+  content: "";
+  flex: 1;
+  height: 1px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(90,167,255,.55),
+    rgba(90,167,255,0)
+  );
+  opacity: .85;
 }
 
 /* Card principal: Status do Worker (alvo) com acento */
@@ -1590,4 +1609,5 @@ body { overflow: hidden; }
 .tab-panel[data-tab="deploy"] #pipelineTimelineCard .mono-log{
   border-color: #22273a;
 }
+
 
