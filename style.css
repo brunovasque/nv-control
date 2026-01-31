@@ -1530,6 +1530,79 @@ body { overflow: hidden; }
   box-shadow: 0 0 0 1px rgba(90,167,255,0.12);
 }
 
+/* Paleta por card: borda forte + fundo com “sabor” */
+
+/* Histórico + Resumo + Log: azul ENAVIA (mesma identidade do status) */
+.tab-panel[data-tab="deploy"] #deployHistoryCard,
+.tab-panel[data-tab="deploy"] #pipelineSummaryCard,
+.tab-panel[data-tab="deploy"] #pipelineTimelineCard{
+  background: radial-gradient(
+    circle at top left,
+    rgba(90,167,255,.14),
+    #0c0f15
+  );
+  border-color: rgba(90,167,255,.85);
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,.7),
+    0 0 0 1px rgba(90,167,255,.24);
+}
+
+.tab-panel[data-tab="deploy"] #deployHistoryCard .deploy-log-title,
+.tab-panel[data-tab="deploy"] #pipelineSummaryCard .deploy-log-title,
+.tab-panel[data-tab="deploy"] #pipelineTimelineCard .deploy-log-title{
+  color: var(--accent);
+}
+
+/* Saúde: verde (OK) */
+.tab-panel[data-tab="deploy"] #deployHealthCard{
+  background: radial-gradient(
+    circle at top left,
+    rgba(0,200,120,.16),
+    #0c1412
+  );
+  border-color: rgba(0,200,120,.85);
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,.7),
+    0 0 0 1px rgba(0,200,120,.22);
+}
+
+.tab-panel[data-tab="deploy"] #deployHealthCard .deploy-log-title{
+  color: var(--ok);
+}
+
+.tab-panel[data-tab="deploy"] #deployHealthCard .deploy-log-title::after{
+  background: linear-gradient(
+    90deg,
+    rgba(0,200,120,.7),
+    rgba(0,200,120,0)
+  );
+}
+
+/* Smoke: laranja (atenção/teste) */
+.tab-panel[data-tab="deploy"] #browserTestCard{
+  background: radial-gradient(
+    circle at top left,
+    rgba(255,184,76,.18),
+    #14120c
+  );
+  border-color: rgba(255,184,76,.9);
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,.7),
+    0 0 0 1px rgba(255,184,76,.24);
+}
+
+.tab-panel[data-tab="deploy"] #browserTestCard .deploy-log-title{
+  color: #ffb84c;
+}
+
+.tab-panel[data-tab="deploy"] #browserTestCard .deploy-log-title::after{
+  background: linear-gradient(
+    90deg,
+    rgba(255,184,76,.8),
+    rgba(255,184,76,0)
+  );
+}
+
 /* Linha "Worker: deploy-worker" */
 .worker-status-line{
   display: flex;
@@ -1609,5 +1682,6 @@ body { overflow: hidden; }
 .tab-panel[data-tab="deploy"] #pipelineTimelineCard .mono-log{
   border-color: #22273a;
 }
+
 
 
