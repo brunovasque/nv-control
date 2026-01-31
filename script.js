@@ -318,9 +318,10 @@ function hydrateFromLocalStorage() {
 
   updatePanelState({ approved_by: approvedBy });
 
-  // tenta preencher TESTE / REAL com base no alvo salvo
+  // tenta preencher TESTE / REAL + histórico com base no alvo salvo
   try {
     refreshDeployActiveFromWorkerId();
+    refreshDeployHistoryFromWorkerId();
   } catch (_) {
     // enriquecimento visual apenas; não pode quebrar o painel
   }
@@ -363,9 +364,10 @@ function bindPersistence() {
     localStorage.setItem(LS.LAST_TARGET_WORKERID, e.target.value || "")
   );
 
-  // quando o alvo muda de fato, consulta o Deploy Worker e preenche TESTE / REAL
+  // quando o alvo muda de fato, consulta o Deploy Worker e preenche TESTE / REAL + histórico
   on(u.targetWorkerIdInput, "change", () => {
     refreshDeployActiveFromWorkerId();
+    refreshDeployHistoryFromWorkerId();
   });
 }
 
@@ -2575,6 +2577,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
