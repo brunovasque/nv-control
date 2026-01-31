@@ -771,9 +771,29 @@ html, body {
 }
 
 .deploy-version-value{
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+               "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;              /* um pouco maior */
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #0b0f15;
+  border: 1px solid rgba(255,255,255,0.08);
   color: #e6e8eb;
+}
+
+/* TESTE = azul, REAL = laranja, igual “clima” do Status */
+.tab-panel[data-tab="deploy"] .deploy-active-versions .deploy-version-row:first-child .deploy-version-value{
+  background: radial-gradient(circle at top left,
+              rgba(90,167,255,0.22), #050811);
+  border-color: rgba(90,167,255,0.55);
+  color: #e6f1ff;
+}
+
+.tab-panel[data-tab="deploy"] .deploy-active-versions .deploy-version-row:last-child .deploy-version-value{
+  background: radial-gradient(circle at top left,
+              rgba(255,184,76,0.24), #1b1206);
+  border-color: rgba(255,184,76,0.65);
+  color: #ffe9c2;
 }
 
 /* ============================================================
@@ -1654,7 +1674,9 @@ body { overflow: hidden; }
 .worker-env-main{
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
                "Liberation Mono", "Courier New", monospace;
-  font-size: 13px;
+  font-size: 15px;        /* antes: 13px */
+  font-weight: 600;       /* dá mais presença */
+  letter-spacing: 0.02em; /* leve “cara” de tag */
   color: var(--accent);
 }
 
@@ -1706,4 +1728,5 @@ body { overflow: hidden; }
   );
   border-color: rgba(90,167,255,.50);
 }
+
 
