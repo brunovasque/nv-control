@@ -668,23 +668,29 @@ html, body {
   color: #e6e8eb;
 }
 
-.deploy-grid{
-  display: grid;
-  grid-template-columns: 420px 1fr;
-  gap: 14px;
-  align-items: start;
-}
-
 .deploy-grid .actions-panel{
   width: auto;
-  border: 1px solid #1e2230;
   border-radius: 14px;
-  background: #0c0f15;
-  padding: 12px;
+  padding: 14px 14px 12px;
+
+  /* mesmo clima dos cards azuis da direita */
+  background: radial-gradient(
+    circle at top left,
+    rgba(90,167,255,.18),
+    #050811
+  );
+  border: 1px solid rgba(90,167,255,.85);
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,.7),
+    0 0 0 1px rgba(90,167,255,.24);
 }
 
 .deploy-grid .actions-header{
   margin-bottom: 10px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--accent);
 }
 
 .deploy-log{
@@ -1708,3 +1714,4 @@ body { overflow: hidden; }
   );
   border-color: rgba(90,167,255,.7);
 }
+
