@@ -1771,9 +1771,10 @@ body { overflow: hidden; }
   background-position: 50% 52% !important;
 
   /* tamanho mais consistente */
-  background-size: min(720px, 62vw) !important;
+  background-size: 75% auto !important;
 
   /* deixa a cor aparecer sem ficar gritante */
   opacity: 0.12 !important;
 }
+
 
