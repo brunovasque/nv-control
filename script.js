@@ -233,6 +233,7 @@ function boot() {
     refreshDeployHistoryFromWorkerId();
     refreshDeployHealthFromWorkerId();
     renderPipelineSummaryCard();
+    renderPipelineTimelineCard();
     }, 10000); // 10s; se quiser mais "ao vivo", pode reduzir
   } catch (_) {
     // enriquecimento visual apenas; não pode quebrar o painel
@@ -373,6 +374,7 @@ function bindPersistence() {
   refreshDeployActiveFromWorkerId();
   refreshDeployHistoryFromWorkerId();
   refreshDeployHealthFromWorkerId();
+  renderPipelineTimelineCard();
   
      // Atualiza também o card de teste de browser para este worker
     try {
@@ -2868,6 +2870,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
