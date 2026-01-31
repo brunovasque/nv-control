@@ -1780,3 +1780,15 @@ body { overflow: hidden; }
   opacity: 0.12 !important;
 }
 
+/* Watermark Director: centralizar só na área acima do input */
+.tab-panel[data-tab="director"] .chat-container::before{
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+
+  /* corta a área do input (ajuste fino aqui) */
+  bottom: 140px !important;
+
+  /* agora o 50/50 fica "no corpo do chat", não no input */
+  background-position: 50% 50% !important;
+}
