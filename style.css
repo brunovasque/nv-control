@@ -1730,6 +1730,29 @@ body { overflow: hidden; }
   border-color: rgba(90,167,255,.50);
 }
 
+/* ============================================================
+   FIX: watermark só no card principal (Diretor)
+   - desliga watermark global
+   - liga só no card do Diretor
+   ============================================================ */
 
+/* Mata qualquer watermark global que esteja vindo de baixo */
+.content-area::before { content: none !important; background: none !important; }
+.tab-panel::before    { content: none !important; background: none !important; }
 
+/* Watermark só no card do chat do Diretor */
+.tab-panel[data-tab="director"] .chat-container::before{
+  content: "" !important;
+  position: absolute;
+  inset: 0;
 
+  /* usa o arquivo que existe (evita 404 do glyph) */
+  background-image: url("/assets/logo-enavia.png");
+  background-repeat: no-repeat;
+  background-position: center 45%;
+  background-size: min(640px, 58vw);
+
+  opacity: 0.07;
+  filter: grayscale(1);
+  pointer-events: none;
+}
