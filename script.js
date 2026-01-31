@@ -966,6 +966,69 @@ function renderPipelineTimelineCard() {
   }
 }
 
+/* HELPER: REGISTRA EVENTOS NO PIPELINE TIMELINE */
+function addPipelineTimelineEntry(entry) {
+  try {
+    if (
+      typeof getPanelState !== "function" ||
+      typeof updatePanelState !== "function"
+    ) {
+      return;
+    }
+
+    const st = getPanelState() || {};
+
+    const currentEnv =
+      (entry && entry.env) ||
+      st.env ||
+      localStorage.getItem(LS.ENV) ||
+      "test";
+
+    let targetFromEntry = entry && entry.target;
+    if (targetFromEntry && typeof targetFromEntry === "object") {
+      targetFromEntry =
+        targetFromEntry.workerId ||
+        targetFromEntry.id ||
+        JSON.stringify(targetFromEntry);
+    }
+
+    const targetWorkerId =
+      targetFromEntry ||
+      (st.target && st.target.workerId) ||
+      localStorage.getItem(LS.LAST_TARGET_WORKERID) ||
+      localStorage.getItem("nv_target_workerid") ||
+      localStorage.getItem("nv_worker_test") ||
+      localStorage.getItem("nv_worker_real") ||
+      "";
+
+    const prev = Array.isArray(st.pipeline_timeline)
+      ? st.pipeline_timeline
+      : [];
+
+    const normalized = {
+      ts: entry && entry.ts ? entry.ts : new Date().toISOString(),
+      action: (entry && entry.action) || "UNKNOWN",
+      status: (entry && entry.status) || "ok",
+      env: currentEnv,
+      target: targetWorkerId || "",
+      execution_id:
+        (entry && entry.execution_id) ||
+        (typeof getExecutionId === "function" ? getExecutionId() || "" : ""),
+      label: entry && entry.label ? entry.label : undefined,
+    };
+
+    const next = [normalized, ...prev].slice(0, 40);
+
+    updatePanelState({ pipeline_timeline: next });
+
+    try {
+      renderPipelineTimelineCard();
+    } catch (_) {}
+  } catch (_) {
+    // não pode derrubar o painel
+  }
+}
+
 /* NOVO: CARD HISTÓRICO DE VERSÕES (TESTE) */
 function renderDeployHistoryCard() {
   try {
@@ -1906,6 +1969,22 @@ function buildApiAdapter(api) {
 
       const r = await api.applyTest(payload);
       directorReportApi("APPLY TEST (STAGING)", r);
+
+      // registra no card Timeline
+      try {
+        if (typeof addPipelineTimelineEntry === "function") {
+          const ok = !!(r && r.ok !== false && !r.error && !r.errors);
+          addPipelineTimelineEntry({
+            action: "APPLY_TEST",
+            status: ok ? "ok" : "error",
+            env: "test",
+            target,
+            execution_id,
+            label: "APPLY TEST (STAGING)",
+          });
+        }
+      } catch (_) {}
+
       return r;
     },
 
@@ -1913,6 +1992,20 @@ function buildApiAdapter(api) {
       const execution_id = getExecutionIdRequired();
       const r = await api.deployTest({ execution_id });
       directorReportApi("DEPLOY TESTE (TEST)", r);
+
+      // registra no card Timeline
+      try {
+        if (typeof addPipelineTimelineEntry === "function") {
+          const ok = !!(r && r.ok !== false && !r.error && !r.errors);
+          addPipelineTimelineEntry({
+            action: "DEPLOY_TEST",
+            status: ok ? "ok" : "error",
+            env: "test",
+            execution_id,
+            label: "DEPLOY TESTE (TEST)",
+          });
+        }
+      } catch (_) {}
 
       // atualiza painel com versão ativa em TEST
       try {
@@ -1938,6 +2031,21 @@ function buildApiAdapter(api) {
       const r = await api.promoteReal(payload);
       directorReportApi("PROMOTE REAL (PROD)", r);
 
+      // registra no card Timeline
+      try {
+        if (typeof addPipelineTimelineEntry === "function") {
+          const ok = !!(r && r.ok !== false && !r.error && !r.errors);
+          addPipelineTimelineEntry({
+            action: "PROMOTE_REAL",
+            status: ok ? "ok" : "error",
+            env: "real",
+            target,
+            execution_id,
+            label: "PROMOTE REAL (PROD)",
+          });
+        }
+      } catch (_) {}
+
       // atualiza painel com versão ativa em PROD
       try {
         syncDeployActiveFromResult("real", r);
@@ -1950,6 +2058,19 @@ function buildApiAdapter(api) {
       const execution_id = getExecutionIdRequired();
       const r = await api.rollback({ execution_id });
       directorReportApi("ROLLBACK (MANUAL)", r);
+
+      try {
+        if (typeof addPipelineTimelineEntry === "function") {
+          const ok = !!(r && r.ok !== false && !r.error && !r.errors);
+          addPipelineTimelineEntry({
+            action: "ROLLBACK",
+            status: ok ? "ok" : "error",
+            execution_id,
+            label: "ROLLBACK (MANUAL)",
+          });
+        }
+      } catch (_) {}
+
       return r;
     },
 
@@ -1957,6 +2078,19 @@ function buildApiAdapter(api) {
       const execution_id = getExecutionIdRequired();
       const r = await api.cancel({ execution_id, cleanup: true });
       directorReportApi("CANCELAR CICLO", r);
+
+      try {
+        if (typeof addPipelineTimelineEntry === "function") {
+          const ok = !!(r && r.ok !== false && !r.error && !r.errors);
+          addPipelineTimelineEntry({
+            action: "CANCEL",
+            status: ok ? "ok" : "error",
+            execution_id,
+            label: "CANCELAR CICLO",
+          });
+        }
+      } catch (_) {}
+
       return r;
     },
 
@@ -1964,6 +2098,19 @@ function buildApiAdapter(api) {
       const execution_id = getExecutionIdRequired();
       const r = await api.status(execution_id);
       directorReportApi("STATUS", r);
+
+      try {
+        if (typeof addPipelineTimelineEntry === "function") {
+          const ok = !!(r && r.ok !== false && !r.error && !r.errors);
+          addPipelineTimelineEntry({
+            action: "STATUS",
+            status: ok ? "ok" : "error",
+            execution_id,
+            label: "STATUS",
+          });
+        }
+      } catch (_) {}
+
       return r;
     },
   };
@@ -2870,6 +3017,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
