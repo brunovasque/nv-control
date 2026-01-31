@@ -614,8 +614,21 @@ function renderWorkerStatusCard() {
         return { main: "—", sub: "—" };
       }
 
-      const tsNum = data.ts ? Number(data.ts) : NaN;
-      const diff = !Number.isNaN(tsNum) ? Date.now() - tsNum : null;
+      let diff = null;
+
+      if (data.ts) {
+        if (typeof data.ts === "number") {
+          // já veio em ms
+          diff = Date.now() - data.ts;
+        } else {
+          // veio como string ISO (ex.: "2026-01-30T21:57:48.018702Z")
+          const parsed = Date.parse(data.ts);
+          if (!Number.isNaN(parsed)) {
+            diff = Date.now() - parsed;
+          }
+        }
+      }
+
       const timeLabel =
         diff != null ? formatRelativeTimeFromMs(diff) : "agora";
 
@@ -2448,4 +2461,5 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
