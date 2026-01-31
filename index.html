@@ -286,27 +286,25 @@
         </aside>
 
         <!-- CARD: STATUS DO WORKER (ALVO) -->
-          <div class="deploy-log deploy-status-card" id="workerStatusCard">
+          <div class="deploy-status-card" id="workerStatusCard">
             <div class="deploy-log-title">Status do Worker (alvo)</div>
 
-            <div class="mono-log worker-status-box">
-              <div class="worker-status-line">
-                <span class="worker-status-label">Worker:</span>
-                <span class="worker-status-value" id="workerStatusWorkerId">—</span>
+            <div class="worker-status-line">
+              <span class="worker-status-label">Worker:</span>
+              <span class="worker-status-value" id="workerStatusWorkerId">—</span>
+            </div>
+
+            <div class="worker-status-env">
+              <div class="worker-env-block">
+                <div class="worker-env-title">TESTE</div>
+                <div class="worker-env-main" id="workerStatusTestMain">—</div>
+                <div class="worker-env-sub" id="workerStatusTestSub">—</div>
               </div>
 
-              <div class="worker-status-env">
-                <div class="worker-env-block">
-                  <div class="worker-env-title">TESTE</div>
-                  <div class="worker-env-main" id="workerStatusTestMain">—</div>
-                  <div class="worker-env-sub" id="workerStatusTestSub">—</div>
-                </div>
-
-                <div class="worker-env-block">
-                  <div class="worker-env-title">REAL</div>
-                  <div class="worker-env-main" id="workerStatusRealMain">—</div>
-                  <div class="worker-env-sub" id="workerStatusRealSub">—</div>
-                </div>
+              <div class="worker-env-block">
+                <div class="worker-env-title">REAL</div>
+                <div class="worker-env-main" id="workerStatusRealMain">—</div>
+                <div class="worker-env-sub" id="workerStatusRealSub">—</div>
               </div>
             </div>
           </div>
@@ -552,6 +550,7 @@
 
 </body>
 </html>
+
 
 
 
