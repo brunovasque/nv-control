@@ -1481,3 +1481,99 @@ body { overflow: hidden; }
   min-height: 140px;
 }
 
+/* ===== DEPLOY: identidade visual dos cards ===== */
+
+/* Títulos: mais fortes, com cara de seção */
+.tab-panel[data-tab="deploy"] .deploy-log-title{
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted2);
+  opacity: .95;
+}
+
+/* Card principal: Status do Worker (alvo) com acento */
+.tab-panel[data-tab="deploy"] #workerStatusCard{
+  border: 1px solid rgba(90,167,255,0.8);
+  box-shadow: 0 0 0 1px rgba(90,167,255,0.12);
+}
+
+/* Linha "Worker: deploy-worker" */
+.worker-status-line{
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.worker-status-label{
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--muted2);
+}
+
+.worker-status-value{
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+               "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  background: radial-gradient(circle at top left,
+              rgba(90,167,255,.28), transparent 55%);
+  border: 1px solid rgba(90,167,255,.45);
+  color: #e6f1ff;
+}
+
+/* TESTE / REAL com mais presença visual */
+.worker-status-env{
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.worker-env-block{
+  flex: 1;
+  padding: 10px 11px;
+  border-radius: 12px;
+  background: radial-gradient(circle at top left,
+              rgba(90,167,255,.12), #0b0f15);
+  border: 1px solid #1e2230;
+}
+
+.worker-env-title{
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted2);
+  margin-bottom: 4px;
+}
+
+.worker-env-main{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+               "Liberation Mono", "Courier New", monospace;
+  font-size: 13px;
+  color: var(--accent);
+}
+
+.worker-env-sub{
+  margin-top: 2px;
+  font-size: 11px;
+  color: #9aa0a6;
+}
+
+/* Saúde / Smoke / Pipeline com glow suave de fundo */
+.tab-panel[data-tab="deploy"] #deployHealthCard,
+.tab-panel[data-tab="deploy"] #browserTestCard,
+.tab-panel[data-tab="deploy"] #pipelineSummaryCard,
+.tab-panel[data-tab="deploy"] #pipelineTimelineCard{
+  background: radial-gradient(circle at top left,
+              rgba(90,167,255,.05), #0c0f15);
+}
+
+/* Pre’s desses cards um pouco mais “limpos” pra leitura */
+.tab-panel[data-tab="deploy"] #deployHealthCard .mono-log,
+.tab-panel[data-tab="deploy"] #browserTestCard .mono-log,
+.tab-panel[data-tab="deploy"] #pipelineSummaryCard .mono-log,
+.tab-panel[data-tab="deploy"] #pipelineTimelineCard .mono-log{
+  border-color: #22273a;
+}
