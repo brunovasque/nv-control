@@ -777,6 +777,63 @@ async function refreshDeployHealthFromWorkerId() {
   }
 }
 
+/* NOVO: CARD ÚLTIMO TESTE DE BROWSER (SMOKE) */
+function renderBrowserTestCard() {
+  try {
+    const box = document.getElementById("browserTestBox");
+    if (!box) return;
+
+    const st = typeof getPanelState === "function" ? getPanelState() || {} : {};
+
+    // worker atual do painel
+    const targetWorkerId =
+      st?.target?.workerId ||
+      localStorage.getItem("nv_target_workerid") ||
+      localStorage.getItem("nv_worker_test") ||
+      localStorage.getItem("nv_worker_real") ||
+      "";
+
+    const status = st.browser_test_status || null;
+
+    // Se não tem status ou é de outro worker, mostra mensagem neutra
+    if (!status || status.target !== targetWorkerId) {
+      box.textContent =
+        "Nenhum teste de browser registrado para este worker.";
+      return;
+    }
+
+    const scenario = status.scenario || "smoke /health";
+    const rawStatus = status.status || "not_run";
+
+    let statusLabel = "⏳ Pendente";
+    if (rawStatus === "passed") statusLabel = "✅ Passou";
+    else if (rawStatus === "failed") statusLabel = "❌ Falhou";
+    else if (rawStatus === "not_run") statusLabel = "— Nunca rodou";
+
+    let whenStr = "";
+    if (status.last_run_ts) {
+      const parsed = Date.parse(status.last_run_ts);
+      if (!Number.isNaN(parsed)) {
+        const diff = Date.now() - parsed;
+        whenStr = formatRelativeTimeFromMs(diff);
+      }
+    }
+
+    const details = status.details || "";
+    const runId = status.run_id || "";
+
+    const lines = [];
+    lines.push(`Cenário: ${scenario}`);
+    lines.push(`Status: ${statusLabel}${whenStr ? " · " + whenStr : ""}`);
+    if (details) lines.push(`Resumo: ${details}`);
+    if (runId) lines.push(`Run ID: ${runId}`);
+
+    box.textContent = lines.join("\n");
+  } catch (_) {
+    // enriquecimento visual; nunca pode quebrar o painel
+  }
+}
+
 /* NOVO: CARD HISTÓRICO DE VERSÕES (TESTE) */
 function renderDeployHistoryCard() {
   try {
@@ -2681,6 +2738,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
