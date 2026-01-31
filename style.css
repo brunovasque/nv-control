@@ -1513,6 +1513,7 @@ body { overflow: hidden; }
   height: 100%;                 /* cola na altura útil da aba */
   display: grid;
   grid-template-columns: 1fr 1fr;
+  grid-auto-rows: minmax(170px, auto);  /* ⬅ cada linha tem altura mínima boa */
   gap: 12px;
 
   overflow-y: auto;             /* scroll mora aqui */
@@ -1524,7 +1525,7 @@ body { overflow: hidden; }
 
 /* garante que os cards se comportem bem dentro do grid */
 .tab-panel[data-tab="deploy"] .deploy-right-column .deploy-log{
-  height: auto;        /* libera altura natural do card */
+  height: 100%;        /* card ocupa a linha inteira */
   min-height: 140px;
   min-width: 0;
 }
@@ -1759,4 +1760,5 @@ body { overflow: hidden; }
   filter: none;
   pointer-events: none;
 }
+
 
