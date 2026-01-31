@@ -302,6 +302,16 @@
             <pre class="mono-log" id="deployHistoryBox">—</pre>
           </div>
 
+         <!-- CARD: RESUMO AUDITORIA (AGORA NA ABA DEPLOY) -->
+  <div class="deploy-log">
+    <div class="deploy-log-title">Resumo Auditoria</div>
+    <div class="widget-body">
+      <div>• risco: <span class="pill">—</span></div>
+      <div>• fase: <span class="pill">—</span></div>
+      <div>• próximo passo: <span class="pill">—</span></div>
+    </div>
+  </div>
+
           <!-- CARD: SAÚDE (ÚLTIMOS 5 MIN) -->
           <div class="deploy-log" id="deployHealthCard">
             <div class="deploy-log-title">Saúde (últimos 5 min)</div>
@@ -309,6 +319,16 @@
 Telemetria resumida ainda não está ligada para este worker.
             </pre>
           </div>
+
+         <!-- CARD: MAPA CANÔNICO (AGORA NA ABA DEPLOY) -->
+  <div class="deploy-log">
+    <div class="deploy-log-title">Mapa Canônico (Resumo)</div>
+    <div class="widget-body">
+      <div>• rotas: <span class="pill">—</span></div>
+      <div>• bindings: <span class="pill">—</span></div>
+      <div>• invariants: <span class="pill">—</span></div>
+    </div>
+  </div>
 
           <!-- CARD: ÚLTIMO TESTE DE BROWSER (SMOKE) -->
           <div class="deploy-log" id="browserTestCard">
@@ -327,28 +347,8 @@ Pipeline automático ainda não está ligado para este worker.
 Por enquanto, siga a ordem: AUDIT → APPLY TEST → DEPLOY TESTE → APPROVE → PROMOTE REAL.
             </pre>
           </div>
-
-         <!-- CARD: RESUMO AUDITORIA (AGORA NA ABA DEPLOY) -->
-  <div class="deploy-log">
-    <div class="deploy-log-title">Resumo Auditoria</div>
-    <div class="widget-body">
-      <div>• risco: <span class="pill">—</span></div>
-      <div>• fase: <span class="pill">—</span></div>
-      <div>• próximo passo: <span class="pill">—</span></div>
-    </div>
-  </div>
-
-  <!-- CARD: MAPA CANÔNICO (AGORA NA ABA DEPLOY) -->
-  <div class="deploy-log">
-    <div class="deploy-log-title">Mapa Canônico (Resumo)</div>
-    <div class="widget-body">
-      <div>• rotas: <span class="pill">—</span></div>
-      <div>• bindings: <span class="pill">—</span></div>
-      <div>• invariants: <span class="pill">—</span></div>
-    </div>
-  </div>
-
-          <!-- CARD: LOG RESUMIDO DO PIPELINE -->
+         
+         <!-- CARD: LOG RESUMIDO DO PIPELINE -->
           <div class="deploy-log" id="pipelineTimelineCard">
             <div class="deploy-log-title">Log resumido do pipeline</div>
             <pre class="mono-log" id="pipelineTimelineBox">
@@ -591,6 +591,7 @@ Nenhum registro de pipeline para este worker ainda.
 
 </body>
 </html>
+
 
 
 
