@@ -1951,6 +1951,20 @@ function buildApiAdapter(api) {
         } catch (_) {}
       }
 
+       // Timeline do pipeline: registra AUDIT / PROPOSE
+      try {
+        if (typeof addPipelineTimelineEntry === "function") {
+          const ok = !!(r && r.ok !== false && !r.error && !r.errors);
+
+          addPipelineTimelineEntry({
+            action: isPropose ? "PROPOSE" : "AUDIT",
+            status: ok ? "ok" : "error",
+            execution_id,
+            label: isPropose ? "PROPOSE (ENAVIA)" : "AUDIT (ENAVIA)",
+          });
+        }
+      } catch (_) {}
+
       return r;
     },
 
@@ -3017,6 +3031,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
