@@ -893,6 +893,77 @@ function renderPipelineSummaryCard() {
   }
 }
 
+/* NOVO: CARD LOG RESUMIDO DO PIPELINE */
+function renderPipelineTimelineCard() {
+  try {
+    const box = document.getElementById("pipelineTimelineBox");
+    if (!box) return;
+
+    const st =
+      typeof getPanelState === "function" ? getPanelState() || {} : {};
+
+    const targetWorkerId =
+      (st.target && st.target.workerId) ||
+      localStorage.getItem("nv_target_workerid") ||
+      localStorage.getItem("nv_worker_test") ||
+      localStorage.getItem("nv_worker_real") ||
+      "";
+
+    const env =
+      st.env ||
+      localStorage.getItem(LS.ENV) ||
+      "test";
+
+    const timeline = Array.isArray(st.pipeline_timeline)
+      ? st.pipeline_timeline
+      : [];
+
+    if (!timeline.length) {
+      box.textContent =
+        "Nenhum registro de pipeline para este worker ainda.";
+      return;
+    }
+
+    const lines = [];
+
+    for (const entry of timeline.slice(0, 8)) {
+      if (!entry) continue;
+
+      const action = (entry.action || "").toUpperCase() || "ACTION";
+      const statusRaw = (entry.status || "").toLowerCase();
+
+      let statusLabel = "(pendente)";
+      if (statusRaw === "ok" || statusRaw === "success") statusLabel = "(ok)";
+      else if (statusRaw === "error" || statusRaw === "failed")
+        statusLabel = "(erro)";
+
+      const tgt = entry.target || targetWorkerId || "—";
+
+      const tsRaw = entry.ts || entry.timestamp || null;
+      let hhmm = "--:--";
+      if (tsRaw) {
+        const parsed = Date.parse(tsRaw);
+        if (!Number.isNaN(parsed)) {
+          const d = new Date(parsed);
+          const hh = String(d.getHours()).padStart(2, "0");
+          const mm = String(d.getMinutes()).padStart(2, "0");
+          hhmm = `${hh}:${mm}`;
+        }
+      }
+
+      const envLabel = entry.env || env || "test";
+
+      lines.push(
+        `[${hhmm}] ${action} ${tgt} [${envLabel}] ${statusLabel}`
+      );
+    }
+
+    box.textContent = lines.join("\n");
+  } catch (_) {
+    // visual apenas; nunca pode quebrar o painel
+  }
+}
+
 /* NOVO: CARD HISTÓRICO DE VERSÕES (TESTE) */
 function renderDeployHistoryCard() {
   try {
@@ -2797,6 +2868,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
