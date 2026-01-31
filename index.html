@@ -283,11 +283,40 @@
           <button class="action-btn secondary" data-action="cancel">
             CANCELAR
           </button>
-</aside>
-              <div class="deploy-log">
-                <div class="deploy-log-title">Log do Pipeline</div>
-                <pre class="mono-log" id="deployPipelineLog">—</pre>
+        </aside>
+
+        <!-- LADO DIREITO: STATUS + LOG -->
+        <div class="deploy-right">
+          <!-- CARD: STATUS DO WORKER (ALVO) -->
+          <div class="deploy-status-card" id="workerStatusCard">
+            <div class="deploy-log-title">Status do Worker (alvo)</div>
+
+            <div class="worker-status-line">
+              <span class="worker-status-label">Worker:</span>
+              <span class="worker-status-value" id="workerStatusWorkerId">—</span>
+            </div>
+
+            <div class="worker-status-env">
+              <div class="worker-env-block">
+                <div class="worker-env-title">TESTE</div>
+                <div class="worker-env-main" id="workerStatusTestMain">—</div>
+                <div class="worker-env-sub" id="workerStatusTestSub">—</div>
               </div>
+
+              <div class="worker-env-block">
+                <div class="worker-env-title">REAL</div>
+                <div class="worker-env-main" id="workerStatusRealMain">—</div>
+                <div class="worker-env-sub" id="workerStatusRealSub">—</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- LOG DO PIPELINE (JÁ EXISTENTE) -->
+          <div class="deploy-log">
+            <div class="deploy-log-title">Log do Pipeline</div>
+            <pre class="mono-log" id="deployPipelineLog">—</pre>
+          </div>
+        </div>
             </div>
           </div>
         </div>
@@ -522,3 +551,4 @@
 
 </body>
 </html>
+
