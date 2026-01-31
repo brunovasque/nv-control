@@ -226,6 +226,15 @@ function boot() {
   bindPersistence();
   bindPatchField();
 
+   // auto-refresh leve do status do worker (TESTE / REAL)
+  try {
+    setInterval(() => {
+      refreshDeployActiveFromWorkerId();
+    }, 60000); // 60s; se quiser mais "ao vivo", pode reduzir
+  } catch (_) {
+    // enriquecimento visual apenas; não pode quebrar o painel
+  }
+
   const enaviaBaseUrl = mustGetEnaviaUrl();
   const deployBaseUrl = mustGetDeployUrl();
 
@@ -2461,5 +2470,6 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
