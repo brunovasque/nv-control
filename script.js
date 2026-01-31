@@ -382,6 +382,7 @@ function bindPersistence() {
       // visual apenas
     }
   });
+}
 
 async function refreshDeployActiveFromWorkerId() {
   try {
@@ -2746,6 +2747,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
