@@ -680,16 +680,16 @@ html, body {
   border-radius: 14px;
   padding: 14px 14px 12px;
 
-  /* mesmo clima dos cards azuis da direita */
+  /* mesmo clima dos cards azuis, mas mais discreto */
   background: radial-gradient(
     circle at top left,
-    rgba(90,167,255,.18),
+    rgba(90,167,255,.10),
     #050811
   );
-  border: 1px solid rgba(90,167,255,.85);
+  border: 1px solid rgba(90,167,255,.55);
   box-shadow:
     0 0 0 1px rgba(0,0,0,.7),
-    0 0 0 1px rgba(90,167,255,.24);
+    0 0 0 1px rgba(90,167,255,.14);
 }
 
 .deploy-grid .actions-header{
@@ -1551,13 +1551,13 @@ body { overflow: hidden; }
 .tab-panel[data-tab="deploy"] #pipelineTimelineCard{
   background: radial-gradient(
     circle at top left,
-    rgba(90,167,255,.14),
+    rgba(90,167,255,.06),
     #0c0f15
   );
-  border-color: rgba(90,167,255,.85);
+  border-color: rgba(90,167,255,.60);
   box-shadow:
     0 0 0 1px rgba(0,0,0,.7),
-    0 0 0 1px rgba(90,167,255,.24);
+    0 0 0 1px rgba(90,167,255,.12);
 }
 
 .tab-panel[data-tab="deploy"] #deployHistoryCard .deploy-log-title,
@@ -1570,13 +1570,13 @@ body { overflow: hidden; }
 .tab-panel[data-tab="deploy"] #deployHealthCard{
   background: radial-gradient(
     circle at top left,
-    rgba(0,200,120,.16),
+    rgba(0,200,120,.08),
     #0c1412
   );
-  border-color: rgba(0,200,120,.85);
+  border-color: rgba(0,200,120,.60);
   box-shadow:
     0 0 0 1px rgba(0,0,0,.7),
-    0 0 0 1px rgba(0,200,120,.22);
+    0 0 0 1px rgba(0,200,120,.12);
 }
 
 .tab-panel[data-tab="deploy"] #deployHealthCard .deploy-log-title{
@@ -1595,13 +1595,13 @@ body { overflow: hidden; }
 .tab-panel[data-tab="deploy"] #browserTestCard{
   background: radial-gradient(
     circle at top left,
-    rgba(255,184,76,.18),
+    rgba(255,184,76,.10),
     #14120c
   );
-  border-color: rgba(255,184,76,.9);
+  border-color: rgba(255,184,76,.65);
   box-shadow:
     0 0 0 1px rgba(0,0,0,.7),
-    0 0 0 1px rgba(255,184,76,.24);
+    0 0 0 1px rgba(255,184,76,.13);
 }
 
 .tab-panel[data-tab="deploy"] #browserTestCard .deploy-log-title{
@@ -1690,36 +1690,34 @@ body { overflow: hidden; }
 
 /* Pre’s desses cards com degradê, igual aos blocos TESTE/REAL */
 
-/* SAÚDE — verde “ok” */
+/* SAÚDE — verde “ok” (mais suave) */
 .tab-panel[data-tab="deploy"] #deployHealthCard .mono-log{
   background: radial-gradient(
     circle at top left,
-    rgba(0,200,120,.18),
+    rgba(0,200,120,.11),
     #050b09
   );
-  border-color: rgba(0,200,120,.65);
+  border-color: rgba(0,200,120,.45);
 }
 
-/* SMOKE — laranja “atenção/teste” */
+/* SMOKE — laranja “atenção/teste” (mais suave) */
 .tab-panel[data-tab="deploy"] #browserTestCard .mono-log{
   background: radial-gradient(
     circle at top left,
-    rgba(255,184,76,.22),
+    rgba(255,184,76,.14),
     #1f1508
   );
-  border-color: rgba(255,184,76,.7);
+  border-color: rgba(255,184,76,.50);
 }
 
-/* HISTÓRICO + RESUMO + LOG — azul ENAVIA */
+/* HISTÓRICO + RESUMO + LOG — azul ENAVIA (mais discreto) */
 .tab-panel[data-tab="deploy"] #deployHistoryCard .mono-log,
 .tab-panel[data-tab="deploy"] #pipelineSummaryCard .mono-log,
 .tab-panel[data-tab="deploy"] #pipelineTimelineCard .mono-log{
   background: radial-gradient(
     circle at top left,
-    rgba(90,167,255,.22),
+    rgba(90,167,255,.14),
     #071019
   );
-  border-color: rgba(90,167,255,.7);
+  border-color: rgba(90,167,255,.50);
 }
-
-
