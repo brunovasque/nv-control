@@ -2443,11 +2443,3 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
-
-
-
-
-
-
-
-
