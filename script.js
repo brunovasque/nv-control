@@ -671,6 +671,111 @@ function renderWorkerStatusCard() {
   }
 }
 
+/* NOVO: CARD HISTÓRICO DE VERSÕES (TESTE) */
+function renderDeployHistoryCard() {
+  try {
+    const box = document.getElementById("deployHistoryBox");
+    if (!box) return;
+
+    const st = typeof getPanelState === "function" ? getPanelState() || {} : {};
+    const list = Array.isArray(st.deploy_history_test) ? st.deploy_history_test : [];
+
+    if (!list.length) {
+      box.textContent = "Sem histórico recente para TESTE.";
+      return;
+    }
+
+    const now = Date.now();
+
+    const lines = list.slice(0, 8).map((item) => {
+      const version =
+        item.script_version ||
+        item.version ||
+        (item.id ? item.id.slice(0, 8) : "—");
+      const number =
+        typeof item.number === "number" ? ` · #${item.number}` : "";
+
+      const tsRaw = item.deployed_at || item.ts || item.timestamp || null;
+      let diff = null;
+      if (tsRaw) {
+        const parsed = Date.parse(tsRaw);
+        if (!Number.isNaN(parsed)) {
+          diff = now - parsed;
+        }
+      }
+      const timeLabel =
+        diff != null ? formatRelativeTimeFromMs(diff) : "agora";
+
+      const annotations = item.annotations || {};
+      const annMessage =
+        annotations["workers/message"] ||
+        annotations["workers/message:short"] ||
+        null;
+      const annTriggered =
+        annotations["workers/triggered_by"] ||
+        annotations["workers/triggered-by"] ||
+        null;
+
+      const source = item.source || "dash";
+      const triggered = item.triggered_by || annTriggered || "upload";
+      const author = item.author_email || "";
+      const message = item.message || annMessage || "";
+
+      const infoParts = [`${source}/${triggered}`];
+      if (author) infoParts.push(author);
+      if (message) infoParts.push(message);
+
+      const info = infoParts.join(" · ");
+
+      return `• ${version}${number} · ${timeLabel} · ${info}`;
+    });
+
+    box.textContent = lines.join("\n");
+  } catch (_) {
+    // enriquecimento visual; nunca quebra painel
+  }
+}
+
+async function refreshDeployHistoryFromWorkerId() {
+  try {
+    const u = ui();
+    const input = u.targetWorkerIdInput;
+    if (!input) return;
+
+    const workerId = (input.value || "").trim();
+    if (!workerId) return;
+
+    const deployBaseUrl = mustGetDeployUrl();
+    if (!deployBaseUrl) return;
+
+    const base = deployBaseUrl.replace(/\/$/, "");
+
+    const url = `${base}/deploy-history?workerId=${encodeURIComponent(
+      workerId
+    )}&env=test`;
+
+    const res = await fetch(url, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+
+    if (!res.ok) return;
+
+    const data = await res.json().catch(() => null);
+    if (!data || data.ok === false) return;
+
+    const history = Array.isArray(data.history) ? data.history : [];
+
+    if (typeof updatePanelState === "function") {
+      updatePanelState({ deploy_history_test: history });
+    }
+
+    renderDeployHistoryCard();
+  } catch (_) {
+    // erro de rede não deve travar painel
+  }
+}
+
 function updateDeployActiveVersion(env, info) {
   try {
     const u = ui();
@@ -2470,6 +2575,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
