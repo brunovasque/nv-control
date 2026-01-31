@@ -1460,11 +1460,24 @@ body { overflow: hidden; }
   opacity: .9;
 }
 
+/* ===== DEPLOY: cards lado a lado (2 colunas) + scroll interno ===== */
 
+.tab-panel[data-tab="deploy"] .deploy-right-column{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 
+  /* scroll interno da coluna direita */
+  max-height: calc(100vh - 220px);
+  overflow: auto;
 
+  /* importante pra grid não “estourar” */
+  min-width: 0;
+  padding-right: 6px;
+}
 
-
-
-
-
+/* garante que cards se comportem bem dentro do grid */
+.tab-panel[data-tab="deploy"] .deploy-right-column .deploy-log{
+  min-width: 0;
+  min-height: 140px;
+}
