@@ -802,6 +802,11 @@ function updateDeployActiveVersion(env, info) {
       renderWorkerStatusCard();
     } catch (_) {}
 
+     } catch (_) {
+    // não pode quebrar painel
+  }
+}
+
 function syncDeployActiveFromResult(env, r) {
   try {
     if (!r) return;
@@ -2443,3 +2448,4 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
