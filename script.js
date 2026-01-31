@@ -372,8 +372,16 @@ function bindPersistence() {
   refreshDeployActiveFromWorkerId();
   refreshDeployHistoryFromWorkerId();
   refreshDeployHealthFromWorkerId();
+  
+     // Atualiza também o card de teste de browser para este worker
+    try {
+      renderWorkerStatusCard();
+      renderDeployHistoryCard();
+      renderBrowserTestCard();
+    } catch (_) {
+      // visual apenas
+    }
   });
-}
 
 async function refreshDeployActiveFromWorkerId() {
   try {
@@ -2738,6 +2746,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
