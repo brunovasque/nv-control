@@ -151,6 +151,7 @@ html, body {
   flex: 1;
   display: flex;
   overflow: hidden;
+  position: relative;           /* <- precisa disso pro logo central */
 }
 
 /* ============================================================
@@ -1728,5 +1729,6 @@ body { overflow: hidden; }
   );
   border-color: rgba(90,167,255,.50);
 }
+
 
 
