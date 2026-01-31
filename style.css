@@ -1675,13 +1675,36 @@ body { overflow: hidden; }
               rgba(90,167,255,.05), #0c0f15);
 }
 
-/* Pre’s desses cards um pouco mais “limpos” pra leitura */
-.tab-panel[data-tab="deploy"] #deployHealthCard .mono-log,
-.tab-panel[data-tab="deploy"] #browserTestCard .mono-log,
-.tab-panel[data-tab="deploy"] #pipelineSummaryCard .mono-log,
-.tab-panel[data-tab="deploy"] #pipelineTimelineCard .mono-log{
-  border-color: #22273a;
+/* Pre’s desses cards com degradê, igual aos blocos TESTE/REAL */
+
+/* SAÚDE — verde “ok” */
+.tab-panel[data-tab="deploy"] #deployHealthCard .mono-log{
+  background: radial-gradient(
+    circle at top left,
+    rgba(0,200,120,.18),
+    #050b09
+  );
+  border-color: rgba(0,200,120,.65);
 }
 
+/* SMOKE — laranja “atenção/teste” */
+.tab-panel[data-tab="deploy"] #browserTestCard .mono-log{
+  background: radial-gradient(
+    circle at top left,
+    rgba(255,184,76,.22),
+    #1f1508
+  );
+  border-color: rgba(255,184,76,.7);
+}
 
-
+/* HISTÓRICO + RESUMO + LOG — azul ENAVIA */
+.tab-panel[data-tab="deploy"] #deployHistoryCard .mono-log,
+.tab-panel[data-tab="deploy"] #pipelineSummaryCard .mono-log,
+.tab-panel[data-tab="deploy"] #pipelineTimelineCard .mono-log{
+  background: radial-gradient(
+    circle at top left,
+    rgba(90,167,255,.22),
+    #071019
+  );
+  border-color: rgba(90,167,255,.7);
+}
