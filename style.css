@@ -1571,7 +1571,9 @@ body { overflow: hidden; }
 /* Histórico + Resumo + Log: azul ENAVIA */
 .tab-panel[data-tab="deploy"] #deployHistoryCard,
 .tab-panel[data-tab="deploy"] #pipelineSummaryCard,
-.tab-panel[data-tab="deploy"] #pipelineTimelineCard{
+.tab-panel[data-tab="deploy"] #pipelineTimelineCard,
+.tab-panel[data-tab="deploy"] #auditSummaryCard,
+.tab-panel[data-tab="deploy"] #canonicalSummaryCard{
   border-color: rgba(90,167,255,.60);
   box-shadow:
     0 0 0 1px rgba(0,0,0,.7),
@@ -1762,4 +1764,5 @@ body { overflow: hidden; }
   filter: none;
   pointer-events: none;
 }
+
 
