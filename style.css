@@ -1655,17 +1655,24 @@ body { overflow: hidden; }
 /* TESTE / REAL com mais presença visual */
 .worker-status-env{
   display: flex;
+  flex-wrap: wrap;          /* ✅ impede vazar no zoom */
   gap: 10px;
-  margin-top: 6px;
+  margin-top: 2px;          /* ✅ sobe um pouco */
+  transform: translateY(-10px); /* ✅ ~3mm pra cima (ajuste fino) */
+  min-width: 0;
 }
 
 .worker-env-block{
-  flex: 1;
+  flex: 1 1 260px;        /* ✅ pode quebrar pra linha de baixo */
+  min-width: 240px;       /* ✅ evita ficar “micro” */
+  max-width: 100%;        /* ✅ nunca passa do card pai */
+  box-sizing: border-box; /* ✅ zoom/layout estável */
   padding: 10px 11px;
   border-radius: 12px;
   background: radial-gradient(circle at top left,
-              rgba(90,167,255,.12), #0b0f15);
+              rgba(90,167,255,12), #0b0f15);
   border: 1px solid #1e2230;
+  overflow: hidden;       /* ✅ segura qualquer conteúdo */
 }
 
 .worker-env-title{
@@ -1689,6 +1696,13 @@ body { overflow: hidden; }
   margin-top: 2px;
   font-size: 11px;
   color: #9aa0a6;
+}
+
+.worker-env-main,
+.worker-env-sub{
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* Saúde / Smoke / Pipeline com glow suave de fundo */
@@ -1764,5 +1778,6 @@ body { overflow: hidden; }
   filter: none;
   pointer-events: none;
 }
+
 
 
