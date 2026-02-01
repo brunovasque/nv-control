@@ -293,12 +293,13 @@ function bindBrowserExecuteButton() {
       // Dispara de fato no Browser Executor
       await runBrowserPlan(plan);
 
-      // Se tiver overlay ao vivo disponível, tenta abrir (não quebra se não tiver)
-      try {
-        if (typeof openLiveOverlay === "function") {
-          openLiveOverlay();
-        }
-      } catch (_) {}
+      // ❌ Não abre mais o overlay automaticamente aqui.
+      //    O overlay "AO VIVO" fica 100% manual no botão próprio.
+      // try {
+      //   if (typeof openLiveOverlay === "function") {
+      //     openLiveOverlay();
+      //   }
+      // } catch (_) {}
 
       btn.textContent = originalLabel || "▶ Executar";
       btn.disabled = false;
@@ -3148,6 +3149,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
