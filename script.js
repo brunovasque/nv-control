@@ -57,8 +57,8 @@ function on(el, evt, fn) { if (el) el.addEventListener(evt, fn); }
 
 async function runBrowserPlan(plan) {
   const runUrl =
-  localStorage.getItem("nv_browser_run_url") ||
-  "https://run.nv-imoveis.com/browser/run";
+    localStorage.getItem(LS.BROWSER_RUN_URL) ||
+    DEFAULTS.browser_run_url;
 
   console.debug("[BROWSER EXECUTOR] usando URL:", runUrl);
 
@@ -3151,6 +3151,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
