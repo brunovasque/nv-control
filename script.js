@@ -2750,7 +2750,9 @@ document.addEventListener("DOMContentLoaded", () => {
     e.stopPropagation();
 
     try {
-      openLiveOverlay(); // 👁️ apenas visualização
+      const liveUrl =
+        "https://browser.nv-imoveis.com/novnc/vnc.html?autoconnect=1";
+      window.open(liveUrl, "_blank", "noopener,noreferrer");
     } catch (err) {
       console.warn("AO VIVO falhou, abrindo em nova aba:", err);
       window.open(
@@ -3149,6 +3151,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
