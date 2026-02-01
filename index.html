@@ -302,14 +302,14 @@
             <pre class="mono-log" id="deployHistoryBox">—</pre>
           </div>
 
-         <!-- CARD: RESUMO AUDITORIA (AGORA NA ABA DEPLOY) -->
-  <div class="deploy-log" id="auditSummaryCard">
+        <!-- CARD: RESUMO AUDITORIA (AGORA NA ABA DEPLOY) -->
+<div class="deploy-log" id="auditSummaryCard">
   <div class="deploy-log-title">Resumo Auditoria</div>
   <div class="mono-log">
     <div class="widget-body">
-      <div>• risco: <span class="pill">—</span></div>
-      <div>• fase: <span class="pill">—</span></div>
-      <div>• próximo passo: <span class="pill">—</span></div>
+      <div>• risco: <span class="pill" id="auditSummaryRisk">—</span></div>
+      <div>• fase: <span class="pill" id="auditSummaryPhase">—</span></div>
+      <div>• próximo passo: <span class="pill" id="auditSummaryNext">—</span></div>
     </div>
   </div>
 </div>
@@ -323,13 +323,13 @@ Telemetria resumida ainda não está ligada para este worker.
           </div>
 
          <!-- CARD: MAPA CANÔNICO (AGORA NA ABA DEPLOY) -->
-  <div class="deploy-log" id="canonicalSummaryCard">
+<div class="deploy-log" id="canonicalSummaryCard">
   <div class="deploy-log-title">Mapa Canônico (Resumo)</div>
   <div class="mono-log">
     <div class="widget-body">
-      <div>• rotas: <span class="pill">—</span></div>
-      <div>• bindings: <span class="pill">—</span></div>
-      <div>• invariants: <span class="pill">—</span></div>
+      <div>• rotas: <span class="pill" id="canonicalSummaryRoutes">—</span></div>
+      <div>• bindings: <span class="pill" id="canonicalSummaryBindings">—</span></div>
+      <div>• invariants: <span class="pill" id="canonicalSummaryInvariants">—</span></div>
     </div>
   </div>
 </div>
@@ -592,6 +592,7 @@ Nenhum registro de pipeline para este worker ainda.
 
 </body>
 </html>
+
 
 
 
