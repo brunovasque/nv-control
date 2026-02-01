@@ -93,6 +93,80 @@ async function runBrowserPlan(plan) {
 
   const txt = await res.text();
 
+   let data = null;
+
+  try {
+    data = txt ? JSON.parse(txt) : null;
+  } catch (_) {}
+
+  // NOVO: se for um plano de SMOKE (/health), grava o status no panel-state
+  try {
+    const st =
+      typeof getPanelState === "function" ? getPanelState() || {} : {};
+
+    const targetWorkerId =
+      (st.target && st.target.workerId) ||
+      localStorage.getItem("nv_target_workerid") ||
+      localStorage.getItem("nv_worker_test") ||
+      localStorage.getItem("nv_worker_real") ||
+      "";
+
+    // Detecta se este plano é um smoke /health
+    let isSmoke = false;
+    let scenario = "execução browser";
+
+    try {
+      const steps = Array.isArray(plan && plan.steps) ? plan.steps : [];
+      const first = steps[0] || null;
+      const url = (first && (first.url || first.href || first.target)) || "";
+
+      if (
+        first &&
+        first.type === "open" &&
+        typeof url === "string" &&
+        /health/i.test(url)
+      ) {
+        isSmoke = true;
+        scenario = "smoke /health";
+      }
+    } catch (_) {}
+
+    if (isSmoke && targetWorkerId && typeof updatePanelState === "function") {
+      const statusPayload = {
+        target: targetWorkerId,
+        scenario,
+        status: !res.ok ? "failed" : "passed",
+        last_run_ts: new Date().toISOString(),
+        run_id:
+          (data &&
+            (data.run_id ||
+              data.execution_id ||
+              data.id ||
+              data.executionId)) ||
+          "",
+        details:
+          (!res.ok && (data && (data.error || data.message))) ||
+          "Execução enviada ao Browser com sucesso.",
+      };
+
+      updatePanelState({ browser_test_status: statusPayload });
+
+      // Força o repaint imediato do card na aba Deploy
+      try {
+        if (typeof renderBrowserTestCard === "function") renderBrowserTestCard();
+      } catch (_) {}
+    }
+  } catch (_) {
+    // qualquer falha aqui não pode quebrar a execução
+  }
+
+  if (!res.ok) {
+    throw new Error((data && (data.error || data.message)) || txt);
+  }
+
+  return data || { ok: true };
+}
+
 window.runBrowserPlan = runBrowserPlan;
 
 /* ============================================================
@@ -1682,7 +1756,11 @@ async function callCodeExecutor(action, extra = {}) {
     const res = await fetch("https://run.nv-imoveis.com/code-executor/v1", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, ...extra }),
+      const res = await fetch("https://run.nv-imoveis.com/code-executor/v1", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ action, ...extra }),
+});
     });
 
     const raw = await res.text();
@@ -3033,3 +3111,4 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
