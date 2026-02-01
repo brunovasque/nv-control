@@ -92,18 +92,6 @@ async function runBrowserPlan(plan) {
   });
 
   const txt = await res.text();
-  let data = null;
-
-  try {
-    data = JSON.parse(txt);
-  } catch (_) {}
-
-  if (!res.ok) {
-    throw new Error(data?.error || data?.message || txt);
-  }
-
-  return data || { ok: true };
-}
 
 window.runBrowserPlan = runBrowserPlan;
 
@@ -3045,21 +3033,3 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
