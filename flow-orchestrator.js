@@ -158,10 +158,30 @@ export async function handlePanelAction(action) {
           return;
         }
 
-        // ✅🔥 ESTE É O PONTO CRÍTICO (RESTAURADO)
+        // 🧠 Resumo estruturado do último audit (pra loop cognitivo)
+        const auditSummary = {
+          verdict: audit.verdict,
+          risk_level: audit.risk_level,
+          findings: Array.isArray(audit.findings) ? audit.findings : [],
+          recommended_changes: Array.isArray(audit.recommended_changes)
+            ? audit.recommended_changes
+            : [],
+          blockers: Array.isArray(audit.blockers) ? audit.blockers : [],
+          issues: Array.isArray(audit?.details?.patch_syntax?.issues)
+            ? audit.details.patch_syntax.issues
+            : [],
+          next_actions: Array.isArray(audit.next_actions)
+            ? audit.next_actions
+            : Array.isArray(audit?.dm_stamp?.next_actions)
+            ? audit.dm_stamp.next_actions
+            : [],
+        };
+
+        // ✅ Mantém comportamento atual + grava memória do audit
         updatePanelState({
           patch_status: PATCH_STATUSES.AUDITED,
-          audit: audit,
+          audit,
+          loop_last_audit_summary: auditSummary,
           last_error: null,
         });
 
@@ -352,15 +372,53 @@ const res = await api.propose({
           return;
         }
 
-        // ✅ mostra retorno no chat
+       // 🧠 Extrai patch sugerido (se houver) do retorno da ENAVIA
+        const data = res?.data || null;
+        const proposePayload = data?.propose || null;
+        const proposeResult = proposePayload?.result || null;
+
+        const patchObj =
+          proposeResult?.patch ||
+          proposePayload?.patch ||
+          null;
+
+        let patchFromPropose = null;
+
+        if (patchObj) {
+          try {
+            patchFromPropose = JSON.stringify(patchObj, null, 2);
+          } catch (jsonErr) {
+            console.warn("[PROPOSE] Falha ao serializar patch:", jsonErr);
+          }
+        }
+
+        // 🧠 Atualiza memória do loop (objetivo raiz + última proposta)
+        const currentState = getPanelState?.() || {};
+        const rootObjective =
+          typeof currentState.loop_objective_root === "string" &&
+          currentState.loop_objective_root.trim().length > 0
+            ? currentState.loop_objective_root
+            : objective;
+
+        const patchUpdate = {
+          patch_status: PATCH_STATUSES.PROPOSED,
+          last_error: null,
+          loop_objective_root: rootObjective,
+          loop_auto_refine_count: 0,
+          loop_last_propose: proposePayload || null,
+        };
+
+        // Se veio patch real do PROPOSE, joga no campo PATCH
+        if (patchFromPropose) {
+          patchUpdate.patch = patchFromPropose;
+        }
+
+        updatePanelState(patchUpdate);
+
+        // ✅ mostra retorno no chat (continua igual, mas agora com estado atualizado)
         addChatMessage({
           role: "enavia",
           text: "[PROPOSE RESULT]\n" + JSON.stringify(res, null, 2),
-        });
-
-        updatePanelState({
-          patch_status: PATCH_STATUSES.PROPOSED,
-          last_error: null,
         });
       } catch (err) {
         console.error("[PROPOSE FLOW ERROR]", err);
