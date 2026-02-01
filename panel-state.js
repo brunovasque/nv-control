@@ -58,6 +58,12 @@ let state = {
   // 🧠 SNAPSHOT DO AUDIT (READ-ONLY / UX DECISION)
   audit: null,
 
+  // 🧠 LOOP COGNITIVO PROPOSE/AUDIT (MEMÓRIA LOCAL)
+  loop_objective_root: null,
+  loop_auto_refine_count: 0,
+  loop_last_propose: null,
+  loop_last_audit_summary: null,
+
    // 🟢 PLANO DE BROWSER APROVADO (CANÔNICO)
   approved_browser_plan: null,
 
@@ -103,6 +109,12 @@ export function resetPanelState() {
     // 🧠 RESET DO AUDIT
     audit: null,
 
+    // 🧠 LOOP COGNITIVO PROPOSE/AUDIT (MEMÓRIA LOCAL)
+    loop_objective_root: null,
+    loop_auto_refine_count: 0,
+    loop_last_propose: null,
+    loop_last_audit_summary: null,
+
     // 🟢 RESET DO PLANO DE BROWSER APROVADO (CANÔNICO)
     approved_browser_plan: null,
 
@@ -113,6 +125,17 @@ export function resetPanelState() {
   };
 
   notifyStateChange();
+}
+
+function notifyStateChange() {
+  state.updated_at = Date.now();
+  listeners.forEach((fn) => {
+    try {
+      fn({ ...state });
+    } catch (err) {
+      console.error("[panel-state] listener error:", err);
+    }
+  });
 }
 
 /* ============================================================
