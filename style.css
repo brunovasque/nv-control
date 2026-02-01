@@ -1732,6 +1732,20 @@ body { overflow: hidden; }
   border-color: rgba(90,167,255,.50);
 }
 
+/* Subcards de resumo (Audit / Mapa Canônico) no Deploy com degradê interno */
+.tab-panel[data-tab="deploy"] .deploy-right-column .deploy-log:not(:has(.mono-log)) > :last-child{
+  margin-top: 8px;
+  padding: 10px 14px;
+  border-radius: 12px;
+
+  background: radial-gradient(
+    circle at top left,
+    rgba(90,167,255,0.16),
+    #071019
+  );
+  border: 1px solid rgba(90,167,255,0.45);
+}
+
 /* ============================================================
    FIX: watermark só no card principal (Diretor)
    - desliga watermark global
@@ -1760,5 +1774,3 @@ body { overflow: hidden; }
   filter: none;
   pointer-events: none;
 }
-
-
