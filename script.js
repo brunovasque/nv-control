@@ -1074,6 +1074,32 @@ function renderCanonicalSummaryCard() {
   }
 }
 
+/* NOVO: CARD RESUMO DO PIPELINE (STATUS GERAL) */
+function renderPipelineSummaryCard() {
+  try {
+    const st =
+      typeof getPanelState === "function" ? getPanelState() || {} : {};
+
+    const status = st.status || "idle";
+    const execId =
+      st.execution_id ||
+      (typeof getExecutionId === "function" ? getExecutionId() || null : null);
+    const patchStatus = st.patch_status || "idle";
+    const audit = st.last_audit || st.audit || null;
+
+    console.log("[PIPELINE SUMMARY CARD]", {
+      status,
+      execution_id: execId,
+      patch_status: patchStatus,
+      audit,
+    });
+
+    // TODO: depois podemos trocar esse console.log por UI bonitinha no card.
+  } catch (e) {
+    console.warn("[PIPELINE SUMMARY CARD] erro ao logar estado:", e);
+  }
+}
+
 /* NOVO: CARD LOG RESUMIDO DO PIPELINE */
 function renderPipelineTimelineCard() {
   try {
@@ -3179,6 +3205,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
