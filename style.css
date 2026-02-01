@@ -1669,8 +1669,7 @@ body { overflow: hidden; }
   box-sizing: border-box; /* ✅ zoom/layout estável */
   padding: 10px 11px;
   border-radius: 12px;
-  background: radial-gradient(circle at top left,
-              rgba(90,167,255,12), #0b0f15);
+  background: #0c0f15;
   border: 1px solid #1e2230;
   overflow: hidden;       /* ✅ segura qualquer conteúdo */
 }
@@ -1689,7 +1688,7 @@ body { overflow: hidden; }
   font-size: 15px;        /* antes: 13px */
   font-weight: 600;       /* dá mais presença */
   letter-spacing: 0.02em; /* leve “cara” de tag */
-  color: var(--accent);
+  color: #e6e8eb;
 }
 
 .worker-env-sub{
@@ -1778,6 +1777,7 @@ body { overflow: hidden; }
   filter: none;
   pointer-events: none;
 }
+
 
 
 
