@@ -1723,27 +1723,15 @@ body { overflow: hidden; }
 /* HISTÓRICO + RESUMO + LOG — azul ENAVIA (mais discreto) */
 .tab-panel[data-tab="deploy"] #deployHistoryCard .mono-log,
 .tab-panel[data-tab="deploy"] #pipelineSummaryCard .mono-log,
-.tab-panel[data-tab="deploy"] #pipelineTimelineCard .mono-log{
+.tab-panel[data-tab="deploy"] #pipelineTimelineCard .mono-log,
+.tab-panel[data-tab="deploy"] #auditSummaryCard .mono-log,
+.tab-panel[data-tab="deploy"] #canonicalSummaryCard .mono-log{
   background: radial-gradient(
     circle at top left,
     rgba(90,167,255,.14),
     #071019
   );
   border-color: rgba(90,167,255,.50);
-}
-
-/* Subcards de resumo (Audit / Mapa Canônico) no Deploy com degradê interno */
-.tab-panel[data-tab="deploy"] .deploy-right-column .deploy-log:not(:has(.mono-log)) > :last-child{
-  margin-top: 8px;
-  padding: 10px 14px;
-  border-radius: 12px;
-
-  background: radial-gradient(
-    circle at top left,
-    rgba(90,167,255,0.16),
-    #071019
-  );
-  border: 1px solid rgba(90,167,255,0.45);
 }
 
 /* ============================================================
@@ -1774,3 +1762,4 @@ body { overflow: hidden; }
   filter: none;
   pointer-events: none;
 }
+
