@@ -1756,11 +1756,7 @@ async function callCodeExecutor(action, extra = {}) {
     const res = await fetch("https://run.nv-imoveis.com/code-executor/v1", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      const res = await fetch("https://run.nv-imoveis.com/code-executor/v1", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ action, ...extra }),
-});
+      body: JSON.stringify({ action, ...extra }),
     });
 
     const raw = await res.text();
@@ -1790,7 +1786,6 @@ async function callCodeExecutor(action, extra = {}) {
     });
 
     return data;
-
   } catch (err) {
     addCodeTelemetry({
       ts: Date.now(),
@@ -3111,4 +3106,5 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
