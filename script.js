@@ -956,9 +956,10 @@ function renderBrowserTestCard() {
     const rawStatus = status.status || "not_run";
 
     let statusLabel = "⏳ Pendente";
-    if (rawStatus === "passed") statusLabel = "✅ Passou";
-    else if (rawStatus === "failed") statusLabel = "❌ Falhou";
-    else if (rawStatus === "not_run") statusLabel = "— Nunca rodou";
+if (rawStatus === "passed") statusLabel = "✅ Passou";
+else if (rawStatus === "failed") statusLabel = "❌ Falhou";
+else if (rawStatus === "submitted") statusLabel = "📨 Enviado";
+else if (rawStatus === "not_run") statusLabel = "— Nunca rodou";
 
     let whenStr = "";
     if (status.last_run_ts) {
@@ -972,11 +973,19 @@ function renderBrowserTestCard() {
     const details = status.details || "";
     const runId = status.run_id || "";
 
+const httpStatus = status.http_status || "";
+const firstUrl = status.first_url || "";
+const preview = status.response_preview || "";
+
     const lines = [];
     lines.push(`Cenário: ${scenario}`);
     lines.push(`Status: ${statusLabel}${whenStr ? " · " + whenStr : ""}`);
     if (details) lines.push(`Resumo: ${details}`);
     if (runId) lines.push(`Run ID: ${runId}`);
+
+if (firstUrl) lines.push(`URL: ${firstUrl}`);
+if (httpStatus) lines.push(`HTTP: ${httpStatus}`);
+if (preview) lines.push(`Retorno: ${preview}`);
 
     box.textContent = lines.join("\n");
   } catch (_) {
@@ -3138,6 +3147,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
