@@ -270,6 +270,47 @@ function getHumanBrowserPlan() {
   return plan;
 }
 
+// Liga o botão "▶ Executar" da aba BROWSER ao Browser Executor
+function bindBrowserExecuteButton() {
+  const btn = document.getElementById("browser-execute-btn");
+  if (!btn) return; // se não existir, não faz nada
+
+  btn.disabled = false;
+
+  btn.addEventListener("click", async () => {
+    try {
+      // Lê o plano JSON do textarea
+      const plan = getHumanBrowserPlan();
+      if (!plan) {
+        alert("Preencha o plano JSON do Browser antes de executar.");
+        return;
+      }
+
+      btn.disabled = true;
+      const originalLabel = btn.textContent;
+      btn.textContent = "Executando...";
+
+      // Dispara de fato no Browser Executor
+      await runBrowserPlan(plan);
+
+      // Se tiver overlay ao vivo disponível, tenta abrir (não quebra se não tiver)
+      try {
+        if (typeof openLiveOverlay === "function") {
+          openLiveOverlay();
+        }
+      } catch (_) {}
+
+      btn.textContent = originalLabel || "▶ Executar";
+      btn.disabled = false;
+    } catch (err) {
+      console.error("[BROWSER EXECUTOR] erro ao executar plano:", err);
+      alert(err.message || "Erro ao executar plano no Browser.");
+      btn.textContent = "▶ Executar";
+      btn.disabled = false;
+    }
+  });
+}
+
 /* ============================================================
    INIT BOOTSTRAP
 ============================================================ */
@@ -330,6 +371,7 @@ function boot() {
 
   bindSidebarModes();
   bindChatSend();
+  bindBrowserExecuteButton(); // 👈 liga o botão da aba BROWSER
 }
 
 /* ============================================================
@@ -3106,5 +3148,6 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
