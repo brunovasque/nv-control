@@ -127,17 +127,6 @@ export function resetPanelState() {
   notifyStateChange();
 }
 
-function notifyStateChange() {
-  state.updated_at = Date.now();
-  listeners.forEach((fn) => {
-    try {
-      fn({ ...state });
-    } catch (err) {
-      console.error("[panel-state] listener error:", err);
-    }
-  });
-}
-
 /* ============================================================
    VALIDADORES DE FLUXO (CONTRATO v1.0)
 ============================================================ */
