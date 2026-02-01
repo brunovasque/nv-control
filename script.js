@@ -357,6 +357,8 @@ function boot() {
     refreshDeployHealthFromWorkerId();
     renderPipelineSummaryCard();
     renderPipelineTimelineCard();
+    renderAuditSummaryCard();
+    renderCanonicalSummaryCard();
     }, 10000); // 10s; se quiser mais "ao vivo", pode reduzir
   } catch (_) {
     // enriquecimento visual apenas; não pode quebrar o painel
@@ -991,6 +993,50 @@ if (preview) lines.push(`Retorno: ${preview}`);
   } catch (_) {
     // enriquecimento visual; nunca pode quebrar o painel
   }
+}
+
+/* NOVO: CARD RESUMO DE AUDITORIA */
+function renderAuditSummaryCard() {
+  const st = getPanelState?.() || {};
+  const elRisk  = document.getElementById("auditSummaryRisk");
+  const elPhase = document.getElementById("auditSummaryPhase");
+  const elNext  = document.getElementById("auditSummaryNext");
+  if (!elRisk || !elPhase || !elNext) return;
+
+  const a = st.last_audit || null;
+
+  // fallback honesto
+  if (!a) {
+    elRisk.textContent = "—";
+    elPhase.textContent = "—";
+    elNext.textContent = "—";
+    return;
+  }
+
+  elRisk.textContent  = a.risk || "—";
+  elPhase.textContent = a.phase || "—";
+  elNext.textContent  = a.next || "—";
+}
+
+function renderCanonicalSummaryCard() {
+  const st = getPanelState?.() || {};
+  const elR = document.getElementById("canonicalSummaryRoutes");
+  const elB = document.getElementById("canonicalSummaryBindings");
+  const elI = document.getElementById("canonicalSummaryInvariants");
+  if (!elR || !elB || !elI) return;
+
+  const c = st.canonical_summary || null;
+
+  if (!c) {
+    elR.textContent = "—";
+    elB.textContent = "—";
+    elI.textContent = "—";
+    return;
+  }
+
+  elR.textContent = String(c.routes_total ?? "—");
+  elB.textContent = String(c.bindings_total ?? "—");
+  elI.textContent = String(c.invariants_total ?? "—");
 }
 
 /* NOVO: CARD RESUMO DO PIPELINE / PRÓXIMO PASSO */
@@ -3147,6 +3193,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
