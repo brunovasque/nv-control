@@ -99,66 +99,85 @@ async function runBrowserPlan(plan) {
     data = txt ? JSON.parse(txt) : null;
   } catch (_) {}
 
-  // NOVO: se for um plano de SMOKE (/health), grava o status no panel-state
-  try {
-    const st =
-      typeof getPanelState === "function" ? getPanelState() || {} : {};
+  // NOVO: grava SEMPRE a última execução do Browser no panel-state (para aparecer no Deploy)
+try {
+  const st =
+    typeof getPanelState === "function" ? getPanelState() || {} : {};
 
-    const targetWorkerId =
-      (st.target && st.target.workerId) ||
-      localStorage.getItem("nv_target_workerid") ||
-      localStorage.getItem("nv_worker_test") ||
-      localStorage.getItem("nv_worker_real") ||
+  const targetWorkerId =
+    (st.target && st.target.workerId) ||
+    localStorage.getItem("nv_target_workerid") ||
+    localStorage.getItem("nv_worker_test") ||
+    localStorage.getItem("nv_worker_real") ||
+    "";
+
+  // Detecta cenário e captura a 1ª URL
+  let scenario = "execução browser";
+  let firstUrl = "";
+
+  try {
+    const steps = Array.isArray(plan && plan.steps) ? plan.steps : [];
+    const first = steps[0] || null;
+    const url = (first && (first.url || first.href || first.target)) || "";
+    firstUrl = typeof url === "string" ? url : "";
+
+    if (
+      first &&
+      first.type === "open" &&
+      typeof firstUrl === "string" &&
+      /health/i.test(firstUrl)
+    ) {
+      scenario = "smoke /health";
+    }
+  } catch (_) {}
+
+  // Sempre grava para o worker atual do painel (para o card não ficar vazio)
+  if (targetWorkerId && typeof updatePanelState === "function") {
+    const runId =
+      (data &&
+        (data.run_id ||
+          data.execution_id ||
+          data.id ||
+          data.executionId)) ||
       "";
 
-    // Detecta se este plano é um smoke /health
-    let isSmoke = false;
-    let scenario = "execução browser";
-
-    try {
-      const steps = Array.isArray(plan && plan.steps) ? plan.steps : [];
-      const first = steps[0] || null;
-      const url = (first && (first.url || first.href || first.target)) || "";
-
-      if (
-        first &&
-        first.type === "open" &&
-        typeof url === "string" &&
-        /health/i.test(url)
-      ) {
-        isSmoke = true;
-        scenario = "smoke /health";
-      }
-    } catch (_) {}
-
-    if (isSmoke && targetWorkerId && typeof updatePanelState === "function") {
-      const statusPayload = {
-        target: targetWorkerId,
-        scenario,
-        status: !res.ok ? "failed" : "passed",
-        last_run_ts: new Date().toISOString(),
-        run_id:
-          (data &&
-            (data.run_id ||
-              data.execution_id ||
-              data.id ||
-              data.executionId)) ||
-          "",
-        details:
-          (!res.ok && (data && (data.error || data.message))) ||
-          "Execução enviada ao Browser com sucesso.",
-      };
-
-      updatePanelState({ browser_test_status: statusPayload });
-
-      // Força o repaint imediato do card na aba Deploy
+    // Preview curto do retorno (não explode o state)
+    const rawPreview = (() => {
       try {
-        if (typeof renderBrowserTestCard === "function") renderBrowserTestCard();
-      } catch (_) {}
-    }
-  } catch (_) {
-    // qualquer falha aqui não pode quebrar a execução
+        const s = String(txt || "");
+        return s.length > 600 ? s.slice(0, 600) + "…" : s;
+      } catch (_) {
+        return "";
+      }
+    })();
+
+    const ok = !!res.ok;
+    const statusPayload = {
+      target: targetWorkerId,
+      scenario,
+      status: ok ? (scenario === "smoke /health" ? "passed" : "submitted") : "failed",
+      last_run_ts: new Date().toISOString(),
+      run_id: runId,
+      http_status: res.status,
+      first_url: firstUrl,
+      details:
+        (!ok && (data && (data.error || data.message))) ||
+        (ok && scenario === "smoke /health"
+          ? "Smoke enviado ao Browser Executor."
+          : "Execução enviada ao Browser Executor."),
+      response_preview: rawPreview,
+    };
+
+    updatePanelState({ browser_test_status: statusPayload });
+
+    // Repaint imediato do card no Deploy
+    try {
+      if (typeof renderBrowserTestCard === "function") renderBrowserTestCard();
+    } catch (_) {}
   }
+} catch (_) {
+  // qualquer falha aqui não pode quebrar a execução
+}
 
   if (!res.ok) {
     throw new Error((data && (data.error || data.message)) || txt);
@@ -3119,6 +3138,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
