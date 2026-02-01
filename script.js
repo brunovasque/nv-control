@@ -995,96 +995,82 @@ if (preview) lines.push(`Retorno: ${preview}`);
   }
 }
 
-/* NOVO: CARD RESUMO DE AUDITORIA */
+/* NOVO: CARD RESUMO AUDITORIA (DEPLOY) */
 function renderAuditSummaryCard() {
-  const st = getPanelState?.() || {};
-  const elRisk  = document.getElementById("auditSummaryRisk");
-  const elPhase = document.getElementById("auditSummaryPhase");
-  const elNext  = document.getElementById("auditSummaryNext");
-  if (!elRisk || !elPhase || !elNext) return;
-
-  const a = st.last_audit || null;
-
-  // fallback honesto
-  if (!a) {
-    elRisk.textContent = "—";
-    elPhase.textContent = "—";
-    elNext.textContent = "—";
-    return;
-  }
-
-  elRisk.textContent  = a.risk || "—";
-  elPhase.textContent = a.phase || "—";
-  elNext.textContent  = a.next || "—";
-}
-
-function renderCanonicalSummaryCard() {
-  const st = getPanelState?.() || {};
-  const elR = document.getElementById("canonicalSummaryRoutes");
-  const elB = document.getElementById("canonicalSummaryBindings");
-  const elI = document.getElementById("canonicalSummaryInvariants");
-  if (!elR || !elB || !elI) return;
-
-  const c = st.canonical_summary || null;
-
-  if (!c) {
-    elR.textContent = "—";
-    elB.textContent = "—";
-    elI.textContent = "—";
-    return;
-  }
-
-  elR.textContent = String(c.routes_total ?? "—");
-  elB.textContent = String(c.bindings_total ?? "—");
-  elI.textContent = String(c.invariants_total ?? "—");
-}
-
-/* NOVO: CARD RESUMO DO PIPELINE / PRÓXIMO PASSO */
-function renderPipelineSummaryCard() {
   try {
-    const box = document.getElementById("pipelineSummaryBox");
-    if (!box) return;
+    const riskEl = document.getElementById("auditRiskPill");
+    const phaseEl = document.getElementById("auditPhasePill");
+    const nextEl = document.getElementById("auditNextPill");
+    if (!riskEl || !phaseEl || !nextEl) return;
 
-    const st =
-      typeof getPanelState === "function" ? getPanelState() || {} : {};
+    const st = typeof getPanelState === "function" ? getPanelState() || {} : {};
+    const a = st.last_audit || null;
 
-    const execId =
-      typeof getExecutionId === "function" ? getExecutionId() || "" : "";
-
-    const env =
-      st.env ||
-      localStorage.getItem(LS.ENV) ||
-      "test";
-
-    const targetWorkerId =
-      (st.target && st.target.workerId) ||
-      localStorage.getItem(LS.LAST_TARGET_WORKERID) ||
-      "";
-
-    const lines = [];
-
-    if (targetWorkerId) {
-      lines.push(`Worker alvo: ${targetWorkerId} (${env})`);
+    if (!a) {
+      riskEl.textContent = "—";
+      phaseEl.textContent = "—";
+      nextEl.textContent = "—";
+      return;
     }
 
-    if (execId) {
-      lines.push(`Execution ID atual: ${execId}`);
-      lines.push(
-        "Resumo automático do pipeline ainda não está ligado."
-      );
-      lines.push(
-        "Por enquanto, siga a ordem: AUDIT → APPLY TEST → DEPLOY TESTE → APPROVE → PROMOTE REAL."
-      );
+    const verdict = a.verdict || "";
+    const risk = a.risk || "";
+
+    // risco
+    riskEl.textContent = risk ? String(risk) : "—";
+
+    // fase (mínimo e honesto)
+    phaseEl.textContent = verdict ? String(verdict) : "AUDIT";
+
+    // próximo passo (regra segura)
+    const verdictLower = String(verdict || "").toLowerCase();
+    const riskLower = String(risk || "").toLowerCase();
+
+    if (verdictLower.includes("fail") || verdictLower.includes("error")) {
+      nextEl.textContent = "NÃO aplicar — corrigir patch";
+    } else if (riskLower.includes("high") || riskLower.includes("alto")) {
+      nextEl.textContent = "Revisar — risco alto";
     } else {
-      lines.push("Execution ID atual: — (pipeline não iniciado)");
-      lines.push(
-        "Assim que você iniciar um AUDIT/PROPOSE com execution_id, este card passa a acompanhar o pipeline."
-      );
+      nextEl.textContent = "APPLY TEST";
+    }
+  } catch (_) {
+    // visual apenas; nunca quebra painel
+  }
+}
+
+/* NOVO: CARD MAPA CANÔNICO (RESUMO) */
+function renderCanonicalSummaryCard() {
+  try {
+    const rEl = document.getElementById("canonRoutesPill");
+    const bEl = document.getElementById("canonBindingsPill");
+    const iEl = document.getElementById("canonInvariantsPill");
+    if (!rEl || !bEl || !iEl) return;
+
+    const st = typeof getPanelState === "function" ? getPanelState() || {} : {};
+
+    // suporte a nomes possíveis sem quebrar
+    const m =
+      st.canonical_map ||
+      st.canonical_summary ||
+      st.map_canonical ||
+      null;
+
+    if (!m) {
+      rEl.textContent = "—";
+      bEl.textContent = "—";
+      iEl.textContent = "—";
+      return;
     }
 
-    box.textContent = lines.join("\n");
+    const routes = m.routes_total ?? m.routes ?? "—";
+    const binds = m.bindings_total ?? m.bindings ?? "—";
+    const invs = m.invariants_total ?? m.invariants ?? "—";
+
+    rEl.textContent = String(routes);
+    bEl.textContent = String(binds);
+    iEl.textContent = String(invs);
   } catch (_) {
-    // visual apenas; não pode quebrar o painel
+    // visual apenas
   }
 }
 
@@ -3193,6 +3179,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
