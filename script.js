@@ -293,7 +293,7 @@ function bindBrowserExecuteButton() {
       // Dispara de fato no Browser Executor
       await runBrowserPlan(plan);
 
-      // ❌ Não abre mais o overlay automaticamente aqui.
+      // ❌ NÃO abre mais o overlay automaticamente aqui.
       //    O overlay "AO VIVO" fica 100% manual no botão próprio.
       // try {
       //   if (typeof openLiveOverlay === "function") {
@@ -3149,6 +3149,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
