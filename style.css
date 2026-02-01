@@ -724,6 +724,32 @@ html, body {
     0 0 0 1px rgba(90,167,255,0.08);
 }
 
+/* ============================================================
+   UNIFICAR FUNDO: todos os cards no padrão do STATUS (TESTE/REAL)
+   - mantém bordas coloridas por card
+   - só padroniza o "miolo" (background) em azul suave
+   ============================================================ */
+
+.tab-panel[data-tab="deploy"] #deployHistoryCard,
+.tab-panel[data-tab="deploy"] #pipelineSummaryCard,
+.tab-panel[data-tab="deploy"] #pipelineTimelineCard,
+.tab-panel[data-tab="deploy"] #deployHealthCard,
+.tab-panel[data-tab="deploy"] #browserTestCard,
+.tab-panel[data-tab="deploy"] #auditSummaryCard,
+.tab-panel[data-tab="deploy"] #canonicalSummaryCard,
+.tab-panel[data-tab="deploy"] #workerStatusCard,
+.tab-panel[data-tab="deploy"] .deploy-log,
+.tab-panel[data-tab="deploy"] .deploy-grid .actions-panel{
+  background: radial-gradient(circle at top left,
+              rgba(90,167,255,.12), #0b0f15) !important;
+}
+
+/* E o conteúdo interno (as caixas .mono-log) no MESMO padrão */
+.tab-panel[data-tab="deploy"] .mono-log{
+  background: radial-gradient(circle at top left,
+              rgba(90,167,255,.12), #0b0f15) !important;
+}
+
 .deploy-log-title{
   font-size: 12px;
   color: #9aa0a6;
@@ -1778,6 +1804,7 @@ body { overflow: hidden; }
   filter: none;
   pointer-events: none;
 }
+
 
 
 
