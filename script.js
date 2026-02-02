@@ -626,8 +626,14 @@ function getTargetRequired() {
   // 1) Fonte principal: o que está no input visível do painel
   let workerFromInput = "";
   try {
-    if (u && u.targetWorkerIdInput) {
-      workerFromInput = String(u.targetWorkerIdInput.value || "").trim();
+    // Prioriza explicitamente o input da aba Deploy
+    const input =
+      document.querySelector("#targetWorkerIdInput") ||
+      document.querySelector("[data-field='target-workerid']") ||
+      (u && u.targetWorkerIdInput);
+
+    if (input) {
+      workerFromInput = String(input.value || "").trim();
     }
   } catch (_) {
     workerFromInput = "";
@@ -3218,6 +3224,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
