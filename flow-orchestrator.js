@@ -94,6 +94,235 @@ function explainBlockedAction(action) {
 }
 
 /* ============================================================
+   LOOP COGNITIVO AUTOMÁTICO (AUDIT ⇄ PROPOSE)
+   - Tenta refinar o patch algumas vezes com base no último audit
+   - NÃO aplica nem faz deploy, só gera novo patch + re-audita
+============================================================ */
+async function maybeRunAutoRefineFromAudit() {
+  try {
+    if (!api || typeof api.propose !== "function") {
+      return;
+    }
+
+    if (typeof getPanelState !== "function") {
+      return;
+    }
+
+    const state = getPanelState() || {};
+
+    // Respeita a máquina de estados: só sai de AUDITED → PROPOSED
+    if (!canTransitionTo(PATCH_STATUSES.PROPOSED)) {
+      return;
+    }
+
+    const summary =
+      state && typeof state.loop_last_audit_summary === "object"
+        ? state.loop_last_audit_summary
+        : null;
+
+    if (!summary) {
+      return;
+    }
+
+    const currentCount =
+      typeof state.loop_auto_refine_count === "number" &&
+      Number.isFinite(state.loop_auto_refine_count)
+        ? state.loop_auto_refine_count
+        : 0;
+
+    if (currentCount >= MAX_AUTO_REFINE_LOOPS) {
+      addChatMessage({
+        role: "director",
+        text:
+          "A ENAVIA já tentou refinar automaticamente o patch algumas vezes. " +
+          "Agora é melhor ajustar manualmente o patch ou pedir um PROPOSE direto.",
+      });
+      return;
+    }
+
+    const verdict =
+      typeof summary.verdict === "string"
+        ? summary.verdict.toLowerCase()
+        : null;
+    const risk =
+      typeof summary.risk_level === "string"
+        ? summary.risk_level.toLowerCase()
+        : null;
+
+    const findings = Array.isArray(summary.findings)
+      ? summary.findings
+      : [];
+    const recommended = Array.isArray(summary.recommended_changes)
+      ? summary.recommended_changes
+      : [];
+    const blockers = Array.isArray(summary.blockers)
+      ? summary.blockers
+      : [];
+    const issues = Array.isArray(summary.issues)
+      ? summary.issues
+      : [];
+    const nextActions = Array.isArray(summary.next_actions)
+      ? summary.next_actions
+      : [];
+
+    const hasProblems =
+      blockers.length > 0 ||
+      issues.length > 0 ||
+      findings.length > 0 ||
+      recommended.length > 0 ||
+      (verdict && verdict !== "approve");
+
+    const wantsPropose =
+      nextActions.includes("propose_safe_patch") ||
+      nextActions.includes("auto_refine");
+
+    // Se auditoria está limpa e não pediu propose, não faz nada
+    if (!hasProblems && !wantsPropose) {
+      return;
+    }
+
+    const rootObjective =
+      typeof state.loop_objective_root === "string" &&
+      state.loop_objective_root.trim().length > 0
+        ? state.loop_objective_root.trim()
+        : typeof state.last_message === "string" &&
+          state.last_message.trim().length > 0
+        ? state.last_message.trim()
+        : "";
+
+    const objectiveParts = [];
+
+    if (rootObjective) {
+      objectiveParts.push(rootObjective);
+    }
+
+    const summaryChunks = [];
+
+    const safeJson = (value) => {
+      try {
+        return JSON.stringify(value).slice(0, 400);
+      } catch (_e) {
+        return String(value);
+      }
+    };
+
+    if (blockers.length) {
+      summaryChunks.push(
+        "Blockers: " + safeJson(blockers.slice(0, 3))
+      );
+    }
+    if (issues.length) {
+      summaryChunks.push("Issues: " + safeJson(issues.slice(0, 3)));
+    }
+    if (findings.length) {
+      summaryChunks.push(
+        "Findings: " + safeJson(findings.slice(0, 3))
+      );
+    }
+    if (recommended.length) {
+      summaryChunks.push(
+        "Recomendações: " + safeJson(recommended.slice(0, 3))
+      );
+    }
+
+    objectiveParts.push(
+      "Refine o patch atual para resolver os problemas apontados na última auditoria, " +
+        "sem aplicar nem fazer deploy. Foque em um patch LOW-RISK alinhado ao objetivo original."
+    );
+
+    if (summaryChunks.length) {
+      objectiveParts.push(
+        "Resumo da última auditoria:\n" + summaryChunks.join("\n")
+      );
+    }
+
+    const objective = objectiveParts.join("\n\n");
+
+    const patchText =
+      typeof state.patch === "string" && state.patch.trim().length > 0
+        ? state.patch.trim()
+        : null;
+
+    addChatMessage({
+      role: "director",
+      text:
+        "A ENAVIA vai tentar refinar automaticamente o patch com base na última auditoria.",
+    });
+
+    const res = await api.propose({
+      objective,
+      ...(patchText ? { patch: patchText } : {}),
+    });
+
+    console.log("[ENAVIA AUTO-REFINE PROPOSE RESPONSE]", res);
+
+    if (typeof window !== "undefined") {
+      window.__LAST_PROPOSE_RESPONSE__ = res;
+    }
+
+    const data = res?.data || null;
+    const proposePayload = data?.propose || null;
+    const proposeResult = proposePayload?.result || null;
+
+    const patchObj =
+      (proposeResult && proposeResult.patch) || proposePayload?.patch || null;
+
+    let patchFromPropose = null;
+    if (patchObj) {
+      try {
+        patchFromPropose = JSON.stringify(patchObj, null, 2);
+      } catch (jsonErr) {
+        console.warn(
+          "[AUTO-REFINE PROPOSE] Falha ao serializar patch:",
+          jsonErr
+        );
+      }
+    }
+
+    const rootForState =
+      state.loop_objective_root && state.loop_objective_root.trim().length > 0
+        ? state.loop_objective_root.trim()
+        : rootObjective || objective || "auto_refine_from_audit";
+
+    const patchUpdate = {
+      patch_status: PATCH_STATUSES.PROPOSED,
+      last_error: null,
+      loop_objective_root: rootForState,
+      loop_auto_refine_count: currentCount + 1,
+      loop_last_propose: proposePayload || null,
+    };
+
+    if (patchFromPropose) {
+      patchUpdate.patch = patchFromPropose;
+    }
+
+    updatePanelState(patchUpdate);
+
+    addChatMessage({
+      role: "enavia",
+      text:
+        "[AUTO PROPOSE RESULT]\n" + JSON.stringify(res, null, 2),
+    });
+
+    // 🔁 Re-audita automaticamente o patch refinado
+    await handlePanelAction("audit");
+  } catch (err) {
+    console.error("[AUTO-REFINE PROPOSE ERROR]", err);
+    updatePanelState({
+      last_error:
+        err?.message ||
+        "Erro inesperado durante refinamento automático (propose).",
+    });
+    addChatMessage({
+      role: "enavia",
+      text:
+        "Erro no refinamento automático (PROPOSE a partir do AUDIT): " +
+        (err?.message || "erro inesperado"),
+    });
+  }
+}
+
+/* ============================================================
    ORQUESTRADOR PRINCIPAL
 ============================================================ */
 
