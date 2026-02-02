@@ -2066,19 +2066,24 @@ function buildApiAdapter(api) {
         const enaviaBaseUrl = mustGetEnaviaUrl();
         const token = getTokenOrNull();
 
+        // DEBUG: ver exatamente o que o painel está mandando pro PROPOSE
+        const requestBody = {
+          ...payload,
+          ask_suggestions: true,
+          // redundância intencional (compat)
+          message: objective,
+          intent: { objective },
+        };
+
+        console.log("[NV DEBUG PROPOSE PAYLOAD]", requestBody);
+
         const res = await fetch(`${enaviaBaseUrl}/propose`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify({
-            ...payload,
-            ask_suggestions: true,
-            // redundância intencional (compat)
-            message: objective,
-            intent: { objective },
-          }),
+          body: JSON.stringify(requestBody),
         });
 
         const raw = await res.text();
@@ -3224,6 +3229,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
