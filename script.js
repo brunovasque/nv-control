@@ -2024,6 +2024,7 @@ function buildApiAdapter(api) {
       if (isPropose) {
         // PROPOSE: ENGINEER MODE REAL (chama /propose de verdade)
         payload.target = getTargetRequired();
+        // DEBUG TEMPORÁRIO: ver exatamente qual alvo vai para o PROPOSE
         console.log("[NV DEBUG PROPOSE TARGET]", payload.target);
 
         // 🔒 Só sugere se houver um pedido explícito seu (do chat ou opts)
@@ -3230,6 +3231,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
