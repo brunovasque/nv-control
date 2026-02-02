@@ -621,11 +621,11 @@ function getExecutionIdRequired() {
 ============================================================ */
 function getTargetRequired() {
   const st = getPanelState();
+  const u = ui && ui();
 
-  // Prioriza SEMPRE o que está no input visível do painel
+  // 1) Fonte principal: o que está no input visível do painel
   let workerFromInput = "";
   try {
-    const u = ui && ui();
     if (u && u.targetWorkerIdInput) {
       workerFromInput = String(u.targetWorkerIdInput.value || "").trim();
     }
@@ -633,9 +633,10 @@ function getTargetRequired() {
     workerFromInput = "";
   }
 
+  // 2) Fallback: estado canônico / localStorage (legado)
   const workerId =
     workerFromInput ||
-    st?.target?.workerId ||
+    (st && st.target && st.target.workerId) ||
     localStorage.getItem("nv_worker_test") ||
     localStorage.getItem("nv_worker_real") ||
     localStorage.getItem(LS.LAST_TARGET_WORKERID);
@@ -655,7 +656,7 @@ function getTargetRequired() {
     workerId,
   };
 
-  // mantém compatibilidade legada
+  // mantém compatibilidade legada e sincroniza o que foi usado agora
   updatePanelState({ target });
   localStorage.setItem(LS.LAST_TARGET_WORKERID, workerId);
 
@@ -3217,6 +3218,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
