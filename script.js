@@ -622,7 +622,19 @@ function getExecutionIdRequired() {
 function getTargetRequired() {
   const st = getPanelState();
 
+  // Prioriza SEMPRE o que está no input visível do painel
+  let workerFromInput = "";
+  try {
+    const u = ui && ui();
+    if (u && u.targetWorkerIdInput) {
+      workerFromInput = String(u.targetWorkerIdInput.value || "").trim();
+    }
+  } catch (_) {
+    workerFromInput = "";
+  }
+
   const workerId =
+    workerFromInput ||
     st?.target?.workerId ||
     localStorage.getItem("nv_worker_test") ||
     localStorage.getItem("nv_worker_real") ||
@@ -3205,6 +3217,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
