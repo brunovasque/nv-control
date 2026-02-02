@@ -1036,7 +1036,19 @@ export function initFlowOrchestrator(apiAdapter) {
   const lsProd = String(localStorage.getItem("nv_worker_real") || "").trim();
   const inputVal = String(document.getElementById("targetWorkerIdInput")?.value || "").trim();
 
-  const rawWorker = envMode === "prod" ? (lsProd || inputVal) : (lsTest || inputVal);
+  // PRIORIDADE: sempre o que está no input; LS só entra como fallback
+const rawWorker =
+  inputVal ||
+  (envMode === "prod" ? lsProd : lsTest);
+
+// DEBUG temporário pra ver o que está indo pro PROPOSE
+console.log("[NV DEBUG PROPOSE WORKER RESOLVE]", {
+  envMode,
+  lsTest,
+  lsProd,
+  inputVal,
+  rawWorker,
+});
 
   const normalizeWorkerId = (v) => {
     let s = String(v || "").trim();
