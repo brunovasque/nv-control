@@ -23,6 +23,9 @@ import { callBrowserRunAdapter } from "../lib/browser-run-client.js";
 
 let api = null; // ← única fonte de verdade (injeção real no init)
 
+// Máximo de ciclos automáticos PROPOSE ← AUDIT por execução
+const MAX_AUTO_REFINE_LOOPS = 4;
+
 /* ============================================================
    EXECUTION LOCK — BROWSER (CANÔNICO / GLOBAL)
    - NÃO interfere no fluxo Cloudflare
@@ -292,6 +295,10 @@ export async function handlePanelAction(action) {
           last_error: err?.message || "Erro inesperado durante auditoria.",
         });
       }
+
+      // 🔁 LOOP COGNITIVO: se a última auditoria apontar problemas,
+      // dispara um PROPOSE automático de refinamento (sem apply/deploy).
+      await maybeRunAutoRefineFromAudit();
 
       break;
     }
@@ -751,6 +758,226 @@ function bindDirectorChatExecuteHook() {
 
   // Ajuda debug: estado do lock
   window.__NV_GET_BROWSER_EXEC_LOCK__ = () => activeBrowserExecutionId;
+}
+
+/* ============================================================
+   LOOP COGNITIVO — AUTO PROPOSE APÓS AUDIT
+   - NÃO aplica nem faz deploy
+   - Só roda se o último audit apontar problemas
+   - Limitado por MAX_AUTO_REFINE_LOOPS
+============================================================ */
+async function maybeRunAutoRefineFromAudit() {
+  try {
+    if (!api || typeof api.propose !== "function") {
+      return;
+    }
+
+    if (typeof getPanelState !== "function") {
+      return;
+    }
+
+    // Respeita o contrato de transição: só sai de AUDITED → PROPOSED
+    if (!canTransitionTo(PATCH_STATUSES.PROPOSED)) {
+      return;
+    }
+
+    const st = getPanelState() || {};
+    const summary =
+      st && typeof st.loop_last_audit_summary === "object"
+        ? st.loop_last_audit_summary
+        : null;
+
+    if (!summary) {
+      return;
+    }
+
+    const currentCount =
+      typeof st.loop_auto_refine_count === "number" &&
+      Number.isFinite(st.loop_auto_refine_count)
+        ? st.loop_auto_refine_count
+        : 0;
+
+    if (currentCount >= MAX_AUTO_REFINE_LOOPS) {
+      console.log("[AUTO-REFINE LOOP] limite atingido, não vou propor de novo.", {
+        currentCount,
+        MAX_AUTO_REFINE_LOOPS,
+      });
+      return;
+    }
+
+    const verdict =
+      typeof summary.verdict === "string"
+        ? summary.verdict.toLowerCase()
+        : null;
+    const risk =
+      typeof summary.risk_level === "string"
+        ? summary.risk_level.toLowerCase()
+        : null;
+
+    const findings = Array.isArray(summary.findings)
+      ? summary.findings
+      : [];
+    const recommended = Array.isArray(summary.recommended_changes)
+      ? summary.recommended_changes
+      : [];
+    const blockers = Array.isArray(summary.blockers)
+      ? summary.blockers
+      : [];
+    const issues = Array.isArray(summary.issues)
+      ? summary.issues
+      : [];
+    const nextActions = Array.isArray(summary.next_actions)
+      ? summary.next_actions
+      : [];
+
+    const hasProblems =
+      blockers.length > 0 ||
+      issues.length > 0 ||
+      findings.length > 0 ||
+      recommended.length > 0 ||
+      (verdict && verdict !== "approve");
+
+    const wantsPropose =
+      nextActions.includes("propose_safe_patch") ||
+      nextActions.includes("auto_refine");
+
+    // Se auditoria está limpa e não pediu propose, não faz nada
+    if (!hasProblems && !wantsPropose) {
+      return;
+    }
+
+    const rootObjective =
+      typeof st.loop_objective_root === "string" &&
+      st.loop_objective_root.trim().length > 0
+        ? st.loop_objective_root.trim()
+        : "";
+
+    const objectiveParts = [];
+
+    if (rootObjective) {
+      objectiveParts.push(rootObjective);
+    }
+
+    const summaryChunks = [];
+
+    const safeJson = (value) => {
+      try {
+        return JSON.stringify(value).slice(0, 400);
+      } catch (_e) {
+        return String(value);
+      }
+    };
+
+    if (blockers.length) {
+      summaryChunks.push(
+        "Blockers: " + safeJson(blockers.slice(0, 3))
+      );
+    }
+    if (issues.length) {
+      summaryChunks.push("Issues: " + safeJson(issues.slice(0, 3)));
+    }
+    if (findings.length) {
+      summaryChunks.push(
+        "Findings: " + safeJson(findings.slice(0, 3))
+      );
+    }
+    if (recommended.length) {
+      summaryChunks.push(
+        "Recomendações: " + safeJson(recommended.slice(0, 3))
+      );
+    }
+
+    objectiveParts.push(
+      "Refine o patch atual para resolver os problemas apontados na última auditoria, " +
+        "sem aplicar nem fazer deploy. Foque em um patch LOW-RISK e coerente com o objetivo original."
+    );
+
+    if (summaryChunks.length) {
+      objectiveParts.push(
+        "Resumo da última auditoria:\n" + summaryChunks.join("\n")
+      );
+    }
+
+    const objective = objectiveParts.join("\n\n");
+
+    const patchText =
+      typeof st.patch === "string" && st.patch.trim().length > 0
+        ? st.patch.trim()
+        : null;
+
+    addChatMessage({
+      role: "director",
+      text:
+        "A ENAVIA vai propor automaticamente um refinamento técnico do patch com base na última auditoria. " +
+        "Nenhuma aplicação ou deploy será feito.",
+    });
+
+    const res = await api.propose({
+      objective,
+      ...(patchText ? { patch: patchText } : {}),
+    });
+
+    console.log("[ENAVIA AUTO-REFINE PROPOSE RESPONSE]", res);
+
+    if (typeof window !== "undefined") {
+      window.__LAST_PROPOSE_RESPONSE__ = res;
+    }
+
+    const data = res?.data || null;
+    const proposePayload = data?.propose || null;
+    const proposeResult = proposePayload?.result || null;
+
+    const patchObj =
+      (proposeResult && proposeResult.patch) || proposePayload?.patch || null;
+
+    let patchFromPropose = null;
+    if (patchObj) {
+      try {
+        patchFromPropose = JSON.stringify(patchObj, null, 2);
+      } catch (jsonErr) {
+        console.warn(
+          "[AUTO-REFINE PROPOSE] Falha ao serializar patch:",
+          jsonErr
+        );
+      }
+    }
+
+    const rootForState =
+      rootObjective || objective || "auto_refine_from_audit";
+
+    const patchUpdate = {
+      patch_status: PATCH_STATUSES.PROPOSED,
+      last_error: null,
+      loop_objective_root: rootForState,
+      loop_auto_refine_count: currentCount + 1,
+      loop_last_propose: proposePayload || null,
+    };
+
+    if (patchFromPropose) {
+      patchUpdate.patch = patchFromPropose;
+    }
+
+    updatePanelState(patchUpdate);
+
+    addChatMessage({
+      role: "enavia",
+      text:
+        "[AUTO PROPOSE RESULT]\n" + JSON.stringify(res, null, 2),
+    });
+  } catch (err) {
+    console.error("[AUTO-REFINE PROPOSE ERROR]", err);
+    updatePanelState({
+      last_error:
+        err?.message ||
+        "Erro inesperado durante refinamento automático (propose).",
+    });
+    addChatMessage({
+      role: "enavia",
+      text:
+        "Erro no refinamento automático (PROPOSE a partir do AUDIT): " +
+        (err?.message || "erro inesperado"),
+    });
+  }
 }
 
 /* ============================================================
