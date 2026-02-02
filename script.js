@@ -2704,7 +2704,18 @@ async function askEnaviaAnalysis(intentText) {
     const lsProd = String(localStorage.getItem("nv_worker_real") || "").trim();
     const inputVal = String(document.getElementById("targetWorkerIdInput")?.value || "").trim();
 
-    const rawWorker = envMode === "prod" ? (lsProd || inputVal) : (lsTest || inputVal);
+    // PRIORIDADE: sempre o que está no input; localStorage só entra como fallback
+    const rawWorker =
+      inputVal ||
+      (envMode === "prod" ? lsProd : lsTest);
+
+    console.log("[NV DEBUG DIRECTOR PROPOSE TARGET]", {
+      envMode,
+      inputVal,
+      lsTest,
+      lsProd,
+      rawWorker,
+    });
 
     const normalizeWorkerId = (v) => {
       let s = String(v || "").trim();
@@ -3231,6 +3242,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
   if (initial) setTab(initial);
 })();
+
 
 
 
