@@ -124,6 +124,7 @@
         <button class="tab-btn" data-main-tab="deploy">Deploy</button>
         <button class="tab-btn" data-main-tab="browser">Browser</button>
         <button class="tab-btn" data-main-tab="telemetry">Telemetria</button>
+        <button class="tab-btn" data-main-tab="conversations">Conversas</button>
         <button class="tab-btn" data-main-tab="history">Histórico</button>
       </nav>
 
@@ -535,6 +536,92 @@ Nenhum registro de pipeline para este worker ainda.
             </select>
           </div>
           <pre class="mono-log" id="telemetryPre">—</pre>
+        </div>
+      </section>
+
+      <!-- =========================
+           TAB: CONVERSAS
+      ========================== -->
+      <section class="tab-panel" data-tab="conversations">
+        <div class="conversations-layout">
+          <div class="conversations-card">
+            <div class="conversations-header">
+              <div>
+                <div class="conversations-title">Leads</div>
+                <div class="conversations-subtitle">Pipeline ativo (estático)</div>
+              </div>
+              <span class="pill">5 ativos</span>
+            </div>
+            <div class="conversations-list">
+              <div class="conversation-item active">
+                <div class="conversation-name">João Santos</div>
+                <div class="conversation-meta">
+                  <span class="pill">Novo</span>
+                  <span class="conversation-time">Há 2 min</span>
+                </div>
+                <div class="conversation-preview">Perguntou sobre apartamentos no Centro.</div>
+              </div>
+              <div class="conversation-item">
+                <div class="conversation-name">Marina Lopes</div>
+                <div class="conversation-meta">
+                  <span class="pill">Qualificado</span>
+                  <span class="conversation-time">Há 18 min</span>
+                </div>
+                <div class="conversation-preview">Quer agendar visita para sábado.</div>
+              </div>
+              <div class="conversation-item">
+                <div class="conversation-name">Carlos Prado</div>
+                <div class="conversation-meta">
+                  <span class="pill">Retorno</span>
+                  <span class="conversation-time">Hoje</span>
+                </div>
+                <div class="conversation-preview">Solicitou simulação de financiamento.</div>
+              </div>
+              <div class="conversation-item">
+                <div class="conversation-name">Ana Ribeiro</div>
+                <div class="conversation-meta">
+                  <span class="pill">Em análise</span>
+                  <span class="conversation-time">Ontem</span>
+                </div>
+                <div class="conversation-preview">Comparando opções com 2 quartos.</div>
+              </div>
+              <div class="conversation-item">
+                <div class="conversation-name">Henrique Dias</div>
+                <div class="conversation-meta">
+                  <span class="pill">Follow-up</span>
+                  <span class="conversation-time">15/01</span>
+                </div>
+                <div class="conversation-preview">Pediu detalhes do condomínio.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="conversations-card conversation-thread">
+            <div class="conversations-header">
+              <div>
+                <div class="conversations-title">Thread</div>
+                <div class="conversations-subtitle">João Santos • WhatsApp</div>
+              </div>
+              <span class="pill">Aberta</span>
+            </div>
+            <div class="conversation-messages">
+              <div class="conversation-message incoming">
+                Olá! Vi um anúncio no Centro e queria saber se ainda está disponível.
+              </div>
+              <div class="conversation-message outgoing">
+                Oi João! Sim, ainda temos unidades. Posso te enviar opções com preço e metragem?
+              </div>
+              <div class="conversation-message incoming">
+                Pode sim. Prefiro algo com 2 quartos e garagem.
+              </div>
+              <div class="conversation-message outgoing">
+                Perfeito! Vou separar algumas opções e te retorno em breve.
+              </div>
+            </div>
+            <div class="conversation-composer">
+              <div class="composer-placeholder">Campo de resposta (em breve)</div>
+            </div>
+          </div>
         </div>
       </section>
 
