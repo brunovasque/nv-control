@@ -6,10 +6,7 @@ export default async function handler(req, res) {
   if (methodSeen !== "POST") return methodNotAllowed(req, res, ["POST"]);
 
   const q = req.query || {};
-  const executionId =
-    q.execution_id ||
-    q.executionId ||
-    (q.execution_id && Array.isArray(q.execution_id) ? q.execution_id[0] : null);
+  const executionId = q.execution_id || q.executionId || null;
 
   let body = req.body;
   if (typeof body === "string") {
