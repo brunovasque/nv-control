@@ -9,7 +9,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    const execution_id = req.query?.execution_id;
+    const execution_id = req.body?.execution_id;
+
+    if (!execution_id || typeof execution_id !== "string") {
+      return sendJson(res, 400, {
+        ok: false,
+        error: "MISSING_EXECUTION_ID",
+        message: "body.execution_id é obrigatório (string).",
+        method_seen: methodSeen,
+      });
+    }
 
     const result = await approveExecution(process.env, execution_id);
 
