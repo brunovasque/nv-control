@@ -124,27 +124,41 @@ export async function rerunStep(env, executionId, stepId) {
   return { ok: true, execution: afterRerun };
 }
 
-export async function approveExecution(env, executionId) {
-  const execution = await getExecution(env, executionId);
+export async function approveExecution(executionId) {
+  const execution = await getExecution(executionId);
   if (!execution) {
     return { ok: false, error: "execution_id não encontrado." };
   }
 
-  // ✅ idempotente: se já foi aprovada, não retorna erro
+  // ✅ RESUME: se já foi aprovada e está RUNNING, tenta continuar do próximo step
   if (!execution.needs_approval) {
-    return {
-      ok: true,
-      already_approved: true,
-      execution
-    };
+    if (execution.status === EXEC_STATUS.RUNNING) {
+      const workflow = await getWorkflow(execution.workflow_id);
+      if (!workflow) {
+        execution.status = EXEC_STATUS.FAILED;
+        execution.updated_at = nowIso();
+        await saveExecution(execution);
+        return { ok: false, error: "workflow_id não encontrado na execução." };
+      }
+
+      const idx = workflow.steps.findIndex((s) => s.id === execution.current_step_id);
+      const startIndex = idx >= 0 ? idx + 1 : 0;
+
+      return {
+        ok: true,
+        already_approved: true,
+        resumed: true,
+        execution: await executeFromStep(executionId, startIndex),
+      };
+    }
+
+    // já aprovado e não está rodando: só responde ok
+    return { ok: true, already_approved: true, execution };
   }
 
-  // ainda precisa aprovar, mas só é válido se estiver PAUSED
+  // aqui: ainda precisa de aprovação
   if (execution.status !== EXEC_STATUS.PAUSED) {
-    return {
-      ok: false,
-      error: "Execução não está aguardando aprovação."
-    };
+    return { ok: false, error: "Execução não está aguardando aprovação." };
   }
 
   execution.needs_approval = false;
@@ -159,11 +173,11 @@ export async function approveExecution(env, executionId) {
   }
 
   execution.updated_at = nowIso();
-  await saveExecution(env, execution);
+  await saveExecution(execution);
 
   return {
     ok: true,
-    execution: await executeFromStep(env, executionId, blockedIdx + 1)
+    execution: await executeFromStep(executionId, blockedIdx + 1),
   };
 }
 
