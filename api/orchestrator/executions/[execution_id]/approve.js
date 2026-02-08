@@ -9,18 +9,29 @@ export default async function handler(req, res) {
   }
 
   try {
-    const execution_id = req.body?.execution_id;
+    const execution_id = String(
+      (req.body && req.body.execution_id) || (req.query && req.query.execution_id) || ""
+    ).trim();
 
-    if (!execution_id || typeof execution_id !== "string") {
+    if (!execution_id) {
       return sendJson(res, 400, {
         ok: false,
         error: "MISSING_EXECUTION_ID",
-        message: "body.execution_id é obrigatório (string).",
+        message: "Informe execution_id no body OU na query.",
         method_seen: methodSeen,
       });
     }
 
     const result = await approveExecution(process.env, execution_id);
+
+    if (!result.ok) {
+      return sendJson(res, 400, {
+        ok: false,
+        execution_id,
+        ...result,
+        method_seen: methodSeen,
+      });
+    }
 
     return sendJson(res, 200, {
       ok: true,
