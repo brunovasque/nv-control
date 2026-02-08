@@ -1,163 +1,103 @@
-const ORCH_DB_URL = process.env.ORCH_DB_URL || process.env.SUPABASE_URL || "";
-const ORCH_DB_KEY =
-  process.env.ORCH_DB_KEY ||
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.SUPABASE_ANON_KEY ||
-  "";
-
-const WORKFLOWS_TABLE =
-  process.env.ORCH_DB_WORKFLOWS_TABLE || "orchestrator_workflows";
-const EXECUTIONS_TABLE =
-  process.env.ORCH_DB_EXECUTIONS_TABLE || "orchestrator_executions";
-const FLAGS_TABLE = process.env.ORCH_DB_FLAGS_TABLE || "orchestrator_flags";
-
-const hasRemoteDbConfig = Boolean(ORCH_DB_URL && ORCH_DB_KEY);
-
-let hasWarnedMemoryFallback = false;
-
-const memoryDb = {
-  workflows: {},
-  executions: {},
-  flags: {},
-};
-
-function warnMemoryFallback() {
-  if (hasWarnedMemoryFallback) return;
-  hasWarnedMemoryFallback = true;
-  console.warn(
-    "[orchestrator] DB remoto não configurado. Usando memory fallback."
-  );
+function nowIso() {
+  return new Date().toISOString();
 }
 
-async function supabaseRequest(table, { method = "GET", query = "", body = null }) {
-  const url = `${ORCH_DB_URL}/rest/v1/${table}${query || ""}`;
+function requireEnv(env, key) {
+  const v = env[key];
+  if (!v) throw new Error(`Missing env: ${key}`);
+  return v;
+}
+
+async function supabaseRequest(env, method, path, { body = null, prefer = null } = {}) {
+  const baseUrl = requireEnv(env, "ORCH_DB_URL");
+  const key = requireEnv(env, "ORCH_DB_KEY");
+
+  const url = `${baseUrl.replace(/\/$/, "")}${path}`;
+
   const headers = {
-    apikey: ORCH_DB_KEY,
-    Authorization: `Bearer ${ORCH_DB_KEY}`,
+    apikey: key,
+    Authorization: `Bearer ${key}`,
     "Content-Type": "application/json",
   };
 
-  const resp = await fetch(url, {
+  if (prefer) headers.Prefer = prefer;
+
+  const response = await fetch(url, {
     method,
     headers,
-    body: body ? JSON.stringify(body) : undefined,
+    body: body ? JSON.stringify(body) : null,
   });
 
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => "");
+  const rawText = await response.text();
+  const text = (rawText ?? "").trim(); // ✅ blindagem: evita JSON.parse("\n")
+
+  let data = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      // ✅ erro explícito e rastreável
+      throw new Error(
+        `[orchestrator/db] invalid JSON from Supabase (${response.status}) ${method} ${path}: ${e.message} | body_preview="${text.slice(
+          0,
+          200
+        )}"`
+      );
+    }
+  }
+
+  if (!response.ok) {
+    const err = data || { message: rawText || "Supabase request failed" };
     throw new Error(
-      `Supabase request failed: ${resp.status} ${resp.statusText} ${text}`
+      `Supabase request failed: ${response.status} ${response.statusText} ${JSON.stringify(
+        err
+      )}`
     );
   }
 
-  if (resp.status === 204) return null;
-  return resp.json();
+  return data;
 }
 
-async function getPayloadById(table, idColumn, idValue) {
-  const query = `?${idColumn}=eq.${encodeURIComponent(
-    idValue
-  )}&select=payload&limit=1`;
-  const rows = await supabaseRequest(table, { query });
+// Tabela workflows
+export async function saveWorkflow(env, workflow) {
+  const payload = {
+    workflow_id: workflow.workflow_id,
+    version: workflow.version,
+    payload: workflow,
+    updated_at: nowIso(),
+  };
 
-  if (!Array.isArray(rows) || rows.length === 0) return null;
-  return rows[0]?.payload ?? null;
-}
-
-async function upsertRow(table, idColumn, idValue, payload) {
-  const row = { [idColumn]: idValue, payload };
-  await supabaseRequest(table, {
-    method: "POST",
-    query: "?on_conflict=" + encodeURIComponent(idColumn),
-    body: row,
+  return supabaseRequest(env, "POST", `/rest/v1/orchestrator_workflows?on_conflict=workflow_id,version`, {
+    body: [payload],
+    // ✅ return=minimal reduz chance de body "estranho"
+    prefer: "resolution=merge-duplicates,return=minimal",
   });
 }
 
-function saveWorkflowMemory(workflow) {
-  memoryDb.workflows[workflow.workflow_id] = workflow;
-  return workflow;
+export async function getWorkflow(env, workflow_id, version) {
+  const q = `?workflow_id=eq.${encodeURIComponent(workflow_id)}&version=eq.${encodeURIComponent(
+    version
+  )}&select=payload&limit=1`;
+  const rows = await supabaseRequest(env, "GET", `/rest/v1/orchestrator_workflows${q}`);
+  return rows?.[0]?.payload || null;
 }
 
-function saveExecutionMemory(execution) {
-  memoryDb.executions[execution.execution_id] = execution;
-  return execution;
-}
-
-function setFlagMemory(key, value) {
-  memoryDb.flags[key] = value;
-  return value;
-}
-
-export function getDbMeta() {
-  return {
-    mode: hasRemoteDbConfig ? "remote" : "memory",
-    hasRemoteDbConfig,
-    url_present: Boolean(ORCH_DB_URL),
-    key_present: Boolean(ORCH_DB_KEY),
-    tables: {
-      workflows: WORKFLOWS_TABLE,
-      executions: EXECUTIONS_TABLE,
-      flags: FLAGS_TABLE,
-    },
+// Tabela executions
+export async function saveExecution(env, execution) {
+  const payload = {
+    execution_id: execution.execution_id,
+    payload: execution,
+    updated_at: nowIso(),
   };
+
+  return supabaseRequest(env, "POST", `/rest/v1/orchestrator_executions?on_conflict=execution_id`, {
+    body: [payload],
+    prefer: "resolution=merge-duplicates,return=minimal",
+  });
 }
 
-export function peekMemoryExecution(executionId) {
-  return memoryDb.executions[executionId] || null;
-}
-
-export async function getWorkflow(workflowId) {
-  if (!hasRemoteDbConfig) {
-    warnMemoryFallback();
-    return memoryDb.workflows[workflowId] || null;
-  }
-  return getPayloadById(WORKFLOWS_TABLE, "workflow_id", workflowId);
-}
-
-export async function saveWorkflow(workflow) {
-  if (!hasRemoteDbConfig) {
-    warnMemoryFallback();
-    return saveWorkflowMemory(workflow);
-  }
-  await upsertRow(WORKFLOWS_TABLE, "workflow_id", workflow.workflow_id, workflow);
-  return workflow;
-}
-
-export async function getExecution(executionId) {
-  if (!hasRemoteDbConfig) {
-    warnMemoryFallback();
-    return memoryDb.executions[executionId] || null;
-  }
-  return getPayloadById(EXECUTIONS_TABLE, "execution_id", executionId);
-}
-
-export async function saveExecution(execution) {
-  if (!hasRemoteDbConfig) {
-    warnMemoryFallback();
-    return saveExecutionMemory(execution);
-  }
-  await upsertRow(
-    EXECUTIONS_TABLE,
-    "execution_id",
-    execution.execution_id,
-    execution
-  );
-  return execution;
-}
-
-export async function setFlag(key, value) {
-  if (!hasRemoteDbConfig) {
-    warnMemoryFallback();
-    return setFlagMemory(key, value);
-  }
-  await upsertRow(FLAGS_TABLE, "key", key, value);
-  return value;
-}
-
-export async function getFlag(key) {
-  if (!hasRemoteDbConfig) {
-    warnMemoryFallback();
-    return memoryDb.flags[key];
-  }
-  return getPayloadById(FLAGS_TABLE, "key", key);
+export async function getExecution(env, execution_id) {
+  const q = `?execution_id=eq.${encodeURIComponent(execution_id)}&select=payload&limit=1`;
+  const rows = await supabaseRequest(env, "GET", `/rest/v1/orchestrator_executions${q}`);
+  return rows?.[0]?.payload || null;
 }
