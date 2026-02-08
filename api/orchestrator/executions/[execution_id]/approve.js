@@ -1,4 +1,4 @@
-import { methodNotAllowed, sendJson } from "../../../../workers/orchestrator/http.js";
+import { sendJson } from "../../../../workers/orchestrator/http.js";
 import { approveExecution } from "../../../../workers/orchestrator/engine.js";
 
 export default async function handler(req, res) {
