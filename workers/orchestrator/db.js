@@ -1,97 +1,159 @@
-import { promises as fs } from "fs";
-import path from "path";
+const ORCH_DB_URL = process.env.ORCH_DB_URL || process.env.SUPABASE_URL || "";
+const ORCH_DB_KEY =
+  process.env.ORCH_DB_KEY ||
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_ANON_KEY ||
+  "";
 
-const DB_PATH = path.join(process.cwd(), ".orchestrator-db.json");
+const WORKFLOWS_TABLE = process.env.ORCH_DB_WORKFLOWS_TABLE || "orchestrator_workflows";
+const EXECUTIONS_TABLE = process.env.ORCH_DB_EXECUTIONS_TABLE || "orchestrator_executions";
+const FLAGS_TABLE = process.env.ORCH_DB_FLAGS_TABLE || "orchestrator_flags";
 
-let memoryDb = {
+const hasRemoteDbConfig = Boolean(ORCH_DB_URL && ORCH_DB_KEY);
+
+let hasWarnedMemoryFallback = false;
+const memoryDb = {
   workflows: {},
   executions: {},
   flags: {}
 };
 
-async function readDiskDb() {
-  try {
-    const raw = await fs.readFile(DB_PATH, "utf-8");
-    const parsed = JSON.parse(raw);
-
-    return {
-      workflows: parsed.workflows || {},
-      executions: parsed.executions || {},
-      flags: parsed.flags || {}
-    };
-  } catch (err) {
-    if (err && err.code === "ENOENT") {
-      return { ...memoryDb };
-    }
-
-    return { ...memoryDb };
+function warnMemoryFallback() {
+  if (hasWarnedMemoryFallback) {
+    return;
   }
+
+  hasWarnedMemoryFallback = true;
+  console.warn(
+    "[orchestrator/db] ORCH_DB_URL/ORCH_DB_KEY not configured; using in-memory fallback (non-persistent)."
+  );
 }
 
-async function writeDiskDb(db) {
-  memoryDb = db;
+function buildRestUrl(path, query = "") {
+  const base = ORCH_DB_URL.replace(/\/+$/, "");
+  return `${base}/rest/v1/${path}${query}`;
+}
 
-  try {
-    await fs.writeFile(DB_PATH, JSON.stringify(db, null, 2), "utf-8");
-  } catch {
-    // Ambiente read-only: mantém persistência em memória.
+async function supabaseRequest(path, { method = "GET", query = "", body, prefer } = {}) {
+  const headers = {
+    apikey: ORCH_DB_KEY,
+    Authorization: `Bearer ${ORCH_DB_KEY}`
+  };
+
+  if (body !== undefined) {
+    headers["Content-Type"] = "application/json";
   }
+
+  if (prefer) {
+    headers.Prefer = prefer;
+  }
+
+  const response = await fetch(buildRestUrl(path, query), {
+    method,
+    headers,
+    body: body === undefined ? undefined : JSON.stringify(body)
+  });
+
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : null;
+
+  if (!response.ok) {
+    const errorMessage = data?.message || data?.hint || text || `HTTP ${response.status}`;
+    throw new Error(`[orchestrator/db] ${method} ${path} failed: ${errorMessage}`);
+  }
+
+  return data;
 }
 
-export async function getDb() {
-  const db = await readDiskDb();
-  memoryDb = db;
-  return db;
+async function upsertRow(table, idColumn, idValue, payload) {
+  await supabaseRequest(table, {
+    method: "POST",
+    query: `?on_conflict=${encodeURIComponent(idColumn)}`,
+    prefer: "resolution=merge-duplicates",
+    body: [{ [idColumn]: idValue, payload }]
+  });
 }
 
-export async function updateDb(updater) {
-  const db = await getDb();
-  const next = await updater(db);
-  await writeDiskDb(next);
-  return next;
+async function getPayloadById(table, idColumn, idValue) {
+  const query = `?${idColumn}=eq.${encodeURIComponent(idValue)}&select=payload&limit=1`;
+  const rows = await supabaseRequest(table, { query });
+
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return null;
+  }
+
+  return rows[0]?.payload ?? null;
+}
+
+function saveWorkflowMemory(workflow) {
+  memoryDb.workflows[workflow.workflow_id] = workflow;
+  return memoryDb;
+}
+
+function saveExecutionMemory(execution) {
+  memoryDb.executions[execution.execution_id] = execution;
+  return memoryDb;
+}
+
+function setFlagMemory(key, value) {
+  memoryDb.flags[key] = value;
+  return memoryDb;
 }
 
 export async function saveWorkflow(workflow) {
-  return updateDb((db) => ({
-    ...db,
-    workflows: {
-      ...db.workflows,
-      [workflow.workflow_id]: workflow
-    }
-  }));
+  if (!hasRemoteDbConfig) {
+    warnMemoryFallback();
+    return saveWorkflowMemory(workflow);
+  }
+
+  await upsertRow(WORKFLOWS_TABLE, "workflow_id", workflow.workflow_id, workflow);
+  return workflow;
 }
 
 export async function getWorkflow(workflowId) {
-  const db = await getDb();
-  return db.workflows[workflowId] || null;
+  if (!hasRemoteDbConfig) {
+    warnMemoryFallback();
+    return memoryDb.workflows[workflowId] || null;
+  }
+
+  return getPayloadById(WORKFLOWS_TABLE, "workflow_id", workflowId);
 }
 
 export async function saveExecution(execution) {
-  return updateDb((db) => ({
-    ...db,
-    executions: {
-      ...db.executions,
-      [execution.execution_id]: execution
-    }
-  }));
+  if (!hasRemoteDbConfig) {
+    warnMemoryFallback();
+    return saveExecutionMemory(execution);
+  }
+
+  await upsertRow(EXECUTIONS_TABLE, "execution_id", execution.execution_id, execution);
+  return execution;
 }
 
 export async function getExecution(executionId) {
-  const db = await getDb();
-  return db.executions[executionId] || null;
+  if (!hasRemoteDbConfig) {
+    warnMemoryFallback();
+    return memoryDb.executions[executionId] || null;
+  }
+
+  return getPayloadById(EXECUTIONS_TABLE, "execution_id", executionId);
 }
 
 export async function setFlag(key, value) {
-  return updateDb((db) => ({
-    ...db,
-    flags: {
-      ...db.flags,
-      [key]: value
-    }
-  }));
+  if (!hasRemoteDbConfig) {
+    warnMemoryFallback();
+    return setFlagMemory(key, value);
+  }
+
+  await upsertRow(FLAGS_TABLE, "key", key, value);
+  return value;
 }
 
 export async function getFlag(key) {
-  const db = await getDb();
-  return db.flags[key];
+  if (!hasRemoteDbConfig) {
+    warnMemoryFallback();
+    return memoryDb.flags[key];
+  }
+
+  const payload = await getPayloadById(FLAGS_TABLE, "key", key);
+  return payload;
 }
