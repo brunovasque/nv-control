@@ -1,12 +1,15 @@
-import { sendJson } from "../../../workers/orchestrator/http.js";
+import { sendJson, methodNotAllowed } from "../../../workers/orchestrator/http.js";
 import { rerunStep } from "../../../workers/orchestrator/engine.js";
 
 export default async function handler(req, res) {
   const methodSeen = req.method || "UNKNOWN";
 
+  if (methodSeen !== "POST") {
+    return methodNotAllowed(req, res, ["POST"]);
+  }
+
   const query = req.query || {};
-  const body =
-    req.body && typeof req.body === "object" ? req.body : {};
+  const body = req.body && typeof req.body === "object" ? req.body : {};
 
   const executionId =
     body.execution_id ||
@@ -15,12 +18,7 @@ export default async function handler(req, res) {
     query.executionId ||
     null;
 
-  const stepId =
-    body.step_id ||
-    body.stepId ||
-    query.step_id ||
-    query.stepId ||
-    null;
+  const stepId = body.step_id || body.stepId || query.step_id || query.stepId || null;
 
   if (!executionId || typeof executionId !== "string") {
     return sendJson(res, 400, {
@@ -41,7 +39,10 @@ export default async function handler(req, res) {
   const result = await rerunStep(executionId, stepId);
 
   if (!result || !result.ok) {
-    return sendJson(res, 400, {
+    const msg = String(result?.error || result?.message || "RERUN_FAILED");
+    const status = msg.includes("não encontrado") ? 404 : 400;
+
+    return sendJson(res, status, {
       ok: false,
       ...result,
       method_seen: methodSeen,
