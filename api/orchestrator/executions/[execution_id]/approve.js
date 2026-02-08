@@ -1,5 +1,6 @@
 import { sendJson, methodNotAllowed } from "../../../workers/orchestrator/http.js";
 import { approveExecution } from "../../../workers/orchestrator/engine.js";
+import { getDbMeta, peekMemoryExecution } from "../../../workers/orchestrator/db.js";
 
 export default async function handler(req, res) {
   const methodSeen = req.method || "UNKNOWN";
@@ -23,24 +24,25 @@ export default async function handler(req, res) {
       ok: false,
       error: "execution_id é obrigatório (string).",
       method_seen: methodSeen,
+      db_meta: getDbMeta(),
     });
   }
 
   const result = await approveExecution(executionId);
 
   if (!result || !result.ok) {
-    const msg = String(result?.error || result?.message || "APPROVE_FAILED");
-    const status = msg.includes("não encontrado") ? 404 : 400;
-
-    return sendJson(res, status, {
+    return sendJson(res, 404, {
       ok: false,
       ...result,
       method_seen: methodSeen,
+      db_meta: getDbMeta(),
+      memory_has_execution: Boolean(peekMemoryExecution(executionId)),
     });
   }
 
   return sendJson(res, 200, {
     ...result,
     method_seen: methodSeen,
+    db_meta: getDbMeta(),
   });
 }
