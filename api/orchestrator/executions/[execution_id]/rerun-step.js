@@ -9,20 +9,40 @@ export default async function handler(req, res) {
   }
 
   try {
-    const execution_id = req.query?.execution_id;
     const body = req.body || {};
-    const step_id = body.step_id || null;
+
+    const execution_id = String(body.execution_id || (req.query && req.query.execution_id) || "").trim();
+    const step_id = String(body.step_id || "").trim();
+
+    if (!execution_id) {
+      return sendJson(res, 400, {
+        ok: false,
+        error: "MISSING_EXECUTION_ID",
+        message: "Informe execution_id no body OU na query.",
+        method_seen: methodSeen,
+      });
+    }
 
     if (!step_id) {
       return sendJson(res, 400, {
         ok: false,
         error: "MISSING_STEP_ID",
-        message: "body.step_id é obrigatório",
+        message: "body.step_id é obrigatório.",
         method_seen: methodSeen,
       });
     }
 
     const result = await rerunStep(process.env, execution_id, step_id);
+
+    if (!result.ok) {
+      return sendJson(res, 400, {
+        ok: false,
+        execution_id,
+        step_id,
+        ...result,
+        method_seen: methodSeen,
+      });
+    }
 
     return sendJson(res, 200, {
       ok: true,
