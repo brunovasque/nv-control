@@ -9,6 +9,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    // aceita body OU query (backward-compatible)
     const execution_id = String(
       (req.body && req.body.execution_id) || (req.query && req.query.execution_id) || ""
     ).trim();
@@ -22,7 +23,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // ✅ engine atual: approveExecution(executionId)
+    // ✅ engine atual recebe 1 argumento
     const result = await approveExecution(execution_id);
 
     return sendJson(res, 200, {
