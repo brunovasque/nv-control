@@ -6,7 +6,7 @@ export default async function handler(req, res) {
     return methodNotAllowed(req, res, ["POST"]);
   }
 
-  const result = await saveWorkflowDefinition(req.body || {});
+  const result = await saveWorkflowDefinition(process.env, req.body || {});
   if (!result.ok) {
     return sendJson(res, 400, {
       ok: false,
