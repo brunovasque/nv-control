@@ -2,111 +2,96 @@ import { methodNotAllowed, sendJson } from "../../../workers/orchestrator/http.j
 import {
   getExecutionState,
   approveExecution,
-  rerunStep
+  rerunStep,
 } from "../../../workers/orchestrator/engine.js";
 
 export default async function handler(req, res) {
   const method = req.method || "GET";
 
-  const { execution_id: executionId } = req.query || {};
+  // ✅ só aceitamos GET nessa rota (evita o 400/405 estranho do POST)
+  if (method !== "GET") {
+    return methodNotAllowed(req, res, ["GET"]);
+  }
+
+  const { execution_id: executionId, action: actionRaw, step_id: stepIdRaw } =
+    req.query || {};
 
   if (!executionId || typeof executionId !== "string") {
     return sendJson(res, 400, {
       ok: false,
-      error: "execution_id é obrigatório (string)."
+      error: "execution_id é obrigatório (string).",
     });
   }
 
+  const action =
+    typeof actionRaw === "string" ? actionRaw.trim() : String(actionRaw || "").trim();
+
   // =========================
-  // GET → mantém comportamento atual
+  // 1) Sem action → só retorna estado (comportamento antigo)
   // =========================
-  if (method === "GET") {
+  if (!action) {
     const state = await getExecutionState(executionId);
 
     if (!state) {
       return sendJson(res, 404, {
         ok: false,
-        error: "execution_id não encontrado."
+        error: "execution_id não encontrado.",
       });
     }
 
     return sendJson(res, 200, {
       ok: true,
-      execution: state
+      execution: state,
     });
   }
 
   // =========================
-  // POST → ações sobre a execução
+  // 2) action=approve → aprova execução
   // =========================
-  if (method === "POST") {
-    const actionRaw =
-      (req.query && req.query.action) ||
-      (req.body && req.body.action) ||
-      "";
+  if (action === "approve") {
+    const result = await approveExecution(executionId);
+    const statusCode = result && result.ok ? 200 : 400;
 
-    const action =
-      typeof actionRaw === "string" ? actionRaw.trim() : String(actionRaw || "").trim();
+    return sendJson(res, statusCode, {
+      ...result,
+      action: "approve",
+      method_seen: method,
+    });
+  }
 
-    if (!action) {
+  // =========================
+  // 3) action=rerun_step → rerun de step
+  // =========================
+  if (action === "rerun_step") {
+    const stepId =
+      typeof stepIdRaw === "string" ? stepIdRaw.trim() : String(stepIdRaw || "").trim();
+
+    if (!stepId) {
       return sendJson(res, 400, {
         ok: false,
-        error: "action é obrigatório para POST.",
-        method_seen: method
-      });
-    }
-
-    // ---- APPROVE ----
-    if (action === "approve") {
-      const result = await approveExecution(executionId);
-
-      const statusCode = result && result.ok ? 200 : 400;
-
-      return sendJson(res, statusCode, {
-        ...result,
-        method_seen: method,
-        action: "approve"
-      });
-    }
-
-    // ---- RERUN STEP ----
-    if (action === "rerun_step") {
-      const stepIdRaw =
-        (req.body && req.body.step_id) ||
-        (req.query && req.query.step_id) ||
-        "";
-
-      const stepId =
-        typeof stepIdRaw === "string" ? stepIdRaw.trim() : String(stepIdRaw || "").trim();
-
-      if (!stepId) {
-        return sendJson(res, 400, {
-          ok: false,
-          error: "step_id é obrigatório (string) para ação 'rerun_step'.",
-          method_seen: method,
-          action: "rerun_step"
-        });
-      }
-
-      const result = await rerunStep(executionId, stepId);
-      const statusCode = result && result.ok ? 200 : 400;
-
-      return sendJson(res, statusCode, {
-        ...result,
-        method_seen: method,
+        error: "step_id é obrigatório (string) para action=rerun_step.",
         action: "rerun_step",
-        step_id: stepId
+        method_seen: method,
       });
     }
 
-    // action inválida
-    return sendJson(res, 400, {
-      ok: false,
-      error: `action inválido: ${action}. Use 'approve' ou 'rerun_step'.`,
-      method_seen: method
+    const result = await rerunStep(executionId, stepId);
+    const statusCode = result && result.ok ? 200 : 400;
+
+    return sendJson(res, statusCode, {
+      ...result,
+      action: "rerun_step",
+      step_id: stepId,
+      method_seen: method,
     });
   }
 
-  // Demais métodos ainda retornam 405
-  return methodNotAllowed(req, res, ["GET", "POST"]);
+  // =========================
+  // 4) action inválido
+  // =========================
+  return sendJson(res, 400, {
+    ok: false,
+    error: `action inválido: ${action}. Use 'approve' ou 'rerun_step'.`,
+    method_seen: method,
+  });
 }
