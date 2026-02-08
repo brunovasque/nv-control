@@ -1,7 +1,7 @@
-import { methodNotAllowed, sendJson } from "././././workers/orchestrator/http.js";
-import { rerunStep } from "././././workers/orchestrator/engine.js";
+import { methodNotAllowed, sendJson } from "../../../../workers/orchestrator/http.js";
+import { rerunStep } from "../../../../workers/orchestrator/engine.js";
 
-const HANDLER_VERSION = "rerun-path-fix-v2-2026-02-08";
+const HANDLER_VERSION = "rerun-path-fix-v3-2026-02-08";
 
 export default async function handler(req, res) {
   const methodSeen = req.method || "UNKNOWN";
@@ -11,14 +11,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    // execution_id vem do path (Next injeta em req.query.execution_id)
     const execution_id_path = String(req.query?.execution_id || "").trim();
+    const body = req.body && typeof req.body === "object" ? req.body : {};
 
-    // compat: se quiser chamar por body também, aceita
-    const execution_id_body = String(req.body?.execution_id || "").trim();
-
+    const execution_id_body = String(body.execution_id || "").trim();
     const execution_id = String(execution_id_path || execution_id_body || "").trim();
-    const step_id = String(req.body?.step_id || "").trim();
+
+    const step_id = String(body.step_id || body.stepId || "").trim();
 
     if (!execution_id) {
       return sendJson(res, 400, {
@@ -36,7 +35,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // ✅ engine canônico: rerunStep(env, executionId, stepId)
     const result = await rerunStep(process.env, execution_id, step_id);
 
     if (!result?.ok) {
@@ -44,7 +42,7 @@ export default async function handler(req, res) {
         ok: false,
         execution_id,
         step_id,
-        ...(result || {}),
+        error: result?.error || "RERUN_FAILED",
         handler_version: HANDLER_VERSION,
       });
     }
@@ -53,7 +51,7 @@ export default async function handler(req, res) {
       ok: true,
       execution_id,
       step_id,
-      ...(result || {}),
+      ...result,
       handler_version: HANDLER_VERSION,
     });
   } catch (e) {
