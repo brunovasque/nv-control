@@ -130,7 +130,17 @@ export async function approveExecution(env, executionId) {
     return { ok: false, error: "execution_id não encontrado." };
   }
 
-  if (!execution.needs_approval || execution.status !== EXEC_STATUS.PAUSED) {
+  // ✅ idempotente: se já foi aprovada, não retorna erro
+  if (!execution.needs_approval) {
+    return {
+      ok: true,
+      already_approved: true,
+      execution
+    };
+  }
+
+  // ainda precisa aprovar, mas só é válido se estiver PAUSED
+  if (execution.status !== EXEC_STATUS.PAUSED) {
     return {
       ok: false,
       error: "Execução não está aguardando aprovação."
