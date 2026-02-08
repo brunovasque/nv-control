@@ -1,33 +1,8 @@
-function sendJsonFallback(res, status, body) {
-  try {
-    res.statusCode = status;
-    res.setHeader("Content-Type", "application/json; charset=utf-8");
-    res.end(JSON.stringify(body, null, 2));
-  } catch (e) {
-    try { res.end(); } catch {}
-  }
-}
+import { methodNotAllowed, sendJson } from "../../../../workers/orchestrator/http.js";
+import { approveExecution } from "../../../../workers/orchestrator/engine.js";
 
 export default async function handler(req, res) {
   const methodSeen = req.method || "UNKNOWN";
-
-  // Importa tudo dentro do handler (evita crash "mudo" no load)
-  let sendJson, methodNotAllowed, approveExecution;
-  try {
-    const http = await import("../../../../workers/orchestrator/http.js");
-    const eng = await import("../../../../workers/orchestrator/engine.js");
-    sendJson = http.sendJson;
-    methodNotAllowed = http.methodNotAllowed;
-    approveExecution = eng.approveExecution;
-  } catch (err) {
-    return sendJsonFallback(res, 500, {
-      ok: false,
-      error: "APPROVE_IMPORT_FAILED",
-      message: err?.message ? err.message : String(err),
-      method_seen: methodSeen,
-    });
-  }
-
   if (methodSeen !== "POST") return methodNotAllowed(req, res, ["POST"]);
 
   const q = req.query || {};
@@ -43,7 +18,9 @@ export default async function handler(req, res) {
 
   try {
     const result = await approveExecution(executionId);
-    return sendJson(res, result?.ok ? 200 : 400, { ...result, method_seen: methodSeen });
+    const msg = String(result?.error || result?.message || "");
+    const status = result?.ok ? 200 : (msg.toLowerCase().includes("não encontrado") ? 404 : 400);
+    return sendJson(res, status, { ...result, method_seen: methodSeen });
   } catch (err) {
     console.error("ORCH_APPROVE_ERROR", err);
     return sendJson(res, 500, {
