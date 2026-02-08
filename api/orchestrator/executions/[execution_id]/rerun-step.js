@@ -10,7 +10,6 @@ export default async function handler(req, res) {
 
   try {
     const body = req.body || {};
-
     const execution_id = String(body.execution_id || (req.query && req.query.execution_id) || "").trim();
     const step_id = String(body.step_id || "").trim();
 
@@ -32,17 +31,8 @@ export default async function handler(req, res) {
       });
     }
 
-    const result = await rerunStep(process.env, execution_id, step_id);
-
-    if (!result.ok) {
-      return sendJson(res, 400, {
-        ok: false,
-        execution_id,
-        step_id,
-        ...result,
-        method_seen: methodSeen,
-      });
-    }
+    // ✅ engine atual: rerunStep(executionId, stepId)
+    const result = await rerunStep(execution_id, step_id);
 
     return sendJson(res, 200, {
       ok: true,
