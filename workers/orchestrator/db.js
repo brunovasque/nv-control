@@ -92,15 +92,13 @@ export async function saveWorkflow(a, b) {
   const env = resolveEnv(b ? a : null);
   const workflow = b ? b : a;
 
-  const payload = {
+  const row = {
     workflow_id: workflow.workflow_id,
-    version: workflow.version || "1.0.0",
     payload: workflow,
-    updated_at: nowIso(),
   };
 
-  return supabaseRequest(env, "POST", `/rest/v1/orchestrator_workflows?on_conflict=workflow_id,version`, {
-    body: [payload],
+  return supabaseRequest(env, "POST", `/rest/v1/orchestrator_workflows?on_conflict=workflow_id`, {
+    body: [row],
     prefer: "resolution=merge-duplicates,return=minimal",
   });
 }
@@ -135,14 +133,14 @@ export async function saveExecution(a, b) {
   const env = resolveEnv(b ? a : null);
   const execution = b ? b : a;
 
-  const payload = {
+  // ✅ não usa updated_at (tabela não tem essa coluna)
+  const row = {
     execution_id: execution.execution_id,
     payload: execution,
-    updated_at: nowIso(),
   };
 
   return supabaseRequest(env, "POST", `/rest/v1/orchestrator_executions?on_conflict=execution_id`, {
-    body: [payload],
+    body: [row],
     prefer: "resolution=merge-duplicates,return=minimal",
   });
 }
