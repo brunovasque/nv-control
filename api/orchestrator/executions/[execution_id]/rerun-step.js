@@ -1,4 +1,4 @@
-import { sendJson, methodNotAllowed } from "../../../workers/orchestrator/http.js";
+import { methodNotAllowed, sendJson } from "../../../workers/orchestrator/http.js";
 import { rerunStep } from "../../../workers/orchestrator/engine.js";
 
 export default async function handler(req, res) {
@@ -18,7 +18,12 @@ export default async function handler(req, res) {
     query.executionId ||
     null;
 
-  const stepId = body.step_id || body.stepId || query.step_id || query.stepId || null;
+  const stepId =
+    body.step_id ||
+    body.stepId ||
+    query.step_id ||
+    query.stepId ||
+    null;
 
   if (!executionId || typeof executionId !== "string") {
     return sendJson(res, 400, {
