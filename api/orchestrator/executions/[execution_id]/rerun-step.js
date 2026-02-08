@@ -1,7 +1,7 @@
 import { methodNotAllowed, sendJson } from "../../../../workers/orchestrator/http.js";
 import { rerunStep } from "../../../../workers/orchestrator/engine.js";
 
-const HANDLER_VERSION = "rerun-path-fix-v3-2026-02-08";
+const HANDLER_VERSION = "rerun-path-fix-v4-2026-02-08";
 
 export default async function handler(req, res) {
   const methodSeen = req.method || "UNKNOWN";
