@@ -29,21 +29,26 @@ export default async function handler(req, res) {
     });
   }
 
-  // monta payload compatível com o engine
   const payload = {
+    execution_id,
     workflow_id,
-    // se vier execution_id/string, usa; senão o engine gera um novo
-    execution_id: typeof execution_id === "string" ? execution_id : undefined,
-    workflow_version:
-      typeof workflow_version === "string" ? workflow_version : "1.0.0",
-    env_mode: typeof env_mode === "string" ? env_mode : "TEST",
-    inputs: inputs && typeof inputs === "object" ? inputs : {},
-    requested_by:
-      typeof requested_by === "string" ? requested_by : "unknown (run api)",
+    workflow_version,
+    env_mode,
+    inputs,
+    requested_by,
   };
 
   try {
-    const result = await runWorkflow(payload);
+    const result = await runWorkflow(process.env, payload);
+
+    if (!result.ok) {
+      return sendJson(res, 400, {
+        ok: false,
+        errors: result.errors,
+        method_seen: methodSeen,
+      });
+    }
+
     const execution = result.execution;
 
     return sendJson(res, 200, {
