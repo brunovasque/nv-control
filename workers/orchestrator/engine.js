@@ -204,9 +204,9 @@ async function executeSingleStep(executionId, index) {
   execution.updated_at = nowIso();
   await saveExecution(execution);
 
-  const maxAttempts = stepDef.on_error === "retry_simple" ? 2 : 1;
+  const retryConfig = resolveRetryConfig(stepDef);
 
-  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+  for (let attempt = 1; attempt <= retryConfig.maxAttempts; attempt += 1) {
     try {
       const result = await executeStepType(stepDef, execution);
 
@@ -235,7 +235,11 @@ async function executeSingleStep(executionId, index) {
       execution.updated_at = nowIso();
       await saveExecution(execution);
 
-      if (attempt < maxAttempts) {
+      if (attempt < retryConfig.maxAttempts) {
+        if (retryConfig.backoffMs > 0) {
+          await sleep(retryConfig.backoffMs);
+        }
+
         stepState.status = STEP_STATUS.RUNNING;
         stepState.attempt += 1;
         stepState.started_at = nowIso();
@@ -268,9 +272,7 @@ async function executeStepType(stepDef, execution) {
       return waitUntilFlag(stepDef.params);
 
     case "enavia.deploy_step":
-      return {
-        resultResumo: `Deploy step '${stepDef.params?.action || "unknown"}' processado (MVP).`
-      };
+      return runEnaviaDeployStep(stepDef.params);
 
     case "enavia.browser_plan":
       return {
@@ -304,6 +306,81 @@ async function runHttpRequest(params = {}) {
 
   return {
     resultResumo: `http.request ${response.status} ${method} ${params.url}`
+  };
+}
+
+async function runEnaviaDeployStep(params = {}) {
+  const url = params.url;
+  if (!url || typeof url !== "string") {
+    throw new Error("enavia.deploy_step params.url é obrigatório");
+  }
+
+  const method = (params.method || "POST").toUpperCase();
+  const headers = normalizeHeaders(params.headers || {});
+  const hasBody = method !== "GET" && method !== "HEAD";
+  const timeoutMsRaw = Number(params.timeout_ms);
+  const timeoutMs = Number.isFinite(timeoutMsRaw) && timeoutMsRaw > 0 ? timeoutMsRaw : 10000;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      method,
+      headers,
+      body: hasBody ? JSON.stringify(params.body ?? null) : undefined,
+      signal: controller.signal
+    });
+
+    const responseText = await response.text();
+    const preview = responseText.length > 180 ? `${responseText.slice(0, 177)}...` : responseText;
+
+    if (!response.ok) {
+      throw new Error(`enavia.deploy_step ${response.status}: ${preview}`);
+    }
+
+    return {
+      resultResumo: `enavia.deploy_step ${response.status} ${method} ${url}`
+    };
+  } catch (err) {
+    if (err?.name === "AbortError") {
+      throw new Error(`enavia.deploy_step timeout após ${timeoutMs}ms`);
+    }
+
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function normalizeHeaders(headers = {}) {
+  const normalized = { ...headers };
+  const lowerCaseMap = Object.keys(normalized).reduce((acc, key) => {
+    acc[key.toLowerCase()] = key;
+    return acc;
+  }, {});
+
+  if (!lowerCaseMap["content-type"]) {
+    normalized["content-type"] = "application/json";
+  }
+
+  return normalized;
+}
+
+function resolveRetryConfig(stepDef) {
+  if (stepDef.type === "enavia.deploy_step") {
+    const maxAttempts = Number(stepDef?.params?.retry?.max_attempts);
+    const backoffMs = Number(stepDef?.params?.retry?.backoff_ms || 0);
+
+    return {
+      maxAttempts: Number.isInteger(maxAttempts) && maxAttempts > 0 ? maxAttempts : 1,
+      backoffMs: Number.isFinite(backoffMs) && backoffMs >= 0 ? backoffMs : 0
+    };
+  }
+
+  return {
+    maxAttempts: stepDef.on_error === "retry_simple" ? 2 : 1,
+    backoffMs: 0
   };
 }
 

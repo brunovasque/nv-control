@@ -40,8 +40,12 @@ export function validateWorkflowV1(payload) {
         errors.push(`steps[${index}].params é obrigatório (objeto).`);
       }
 
-      if (!["stop", "retry_simple"].includes(step?.on_error)) {
-        errors.push(`steps[${index}].on_error deve ser 'stop' ou 'retry_simple'.`);
+      if (!["stop", "retry_simple", "continue"].includes(step?.on_error)) {
+        errors.push(`steps[${index}].on_error deve ser 'stop', 'continue' ou 'retry_simple'.`);
+      }
+
+      if (step?.type === "enavia.deploy_step") {
+        validateEnaviaDeployStep(step, index, errors);
       }
     });
   }
@@ -81,4 +85,49 @@ export function validateRunV1(payload) {
 
 function isNonEmptyString(value) {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function validateEnaviaDeployStep(step, index, errors) {
+  const params = step.params || {};
+
+  if (!isNonEmptyString(params.url)) {
+    errors.push(`steps[${index}].params.url é obrigatório para enavia.deploy_step (string).`);
+  }
+
+  if (params.method !== undefined && !isNonEmptyString(params.method)) {
+    errors.push(`steps[${index}].params.method deve ser string quando informado.`);
+  }
+
+  if (params.headers !== undefined && !isPlainObject(params.headers)) {
+    errors.push(`steps[${index}].params.headers deve ser objeto quando informado.`);
+  }
+
+  if (params.timeout_ms !== undefined && (!Number.isFinite(Number(params.timeout_ms)) || Number(params.timeout_ms) <= 0)) {
+    errors.push(`steps[${index}].params.timeout_ms deve ser número positivo quando informado.`);
+  }
+
+  if (params.retry !== undefined) {
+    if (!isPlainObject(params.retry)) {
+      errors.push(`steps[${index}].params.retry deve ser objeto quando informado.`);
+      return;
+    }
+
+    if (params.retry.max_attempts !== undefined) {
+      const maxAttempts = Number(params.retry.max_attempts);
+      if (!Number.isInteger(maxAttempts) || maxAttempts < 1) {
+        errors.push(`steps[${index}].params.retry.max_attempts deve ser inteiro >= 1.`);
+      }
+    }
+
+    if (params.retry.backoff_ms !== undefined) {
+      const backoffMs = Number(params.retry.backoff_ms);
+      if (!Number.isFinite(backoffMs) || backoffMs < 0) {
+        errors.push(`steps[${index}].params.retry.backoff_ms deve ser número >= 0.`);
+      }
+    }
+  }
+}
+
+function isPlainObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
