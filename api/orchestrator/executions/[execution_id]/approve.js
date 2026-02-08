@@ -1,6 +1,8 @@
 import { methodNotAllowed, sendJson } from "../../../workers/orchestrator/http.js";
 import { approveExecution } from "../../../workers/orchestrator/engine.js";
 
+const HANDLER_VERSION = "approve-fix-v1-2026-02-08";
+
 export default async function handler(req, res) {
   const methodSeen = req.method || "UNKNOWN";
 
@@ -9,6 +11,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    // ✅ aceita BODY ou QUERY (compat)
     const execution_id = String(
       (req.body && req.body.execution_id) || (req.query && req.query.execution_id) || ""
     ).trim();
@@ -19,6 +22,7 @@ export default async function handler(req, res) {
         error: "MISSING_EXECUTION_ID",
         message: "Informe execution_id no body OU na query.",
         method_seen: methodSeen,
+        handler_version: HANDLER_VERSION,
       });
     }
 
@@ -31,6 +35,7 @@ export default async function handler(req, res) {
         error: result?.error || "execution_id não encontrado.",
         execution_id,
         method_seen: methodSeen,
+        handler_version: HANDLER_VERSION,
       });
     }
 
@@ -39,6 +44,7 @@ export default async function handler(req, res) {
       execution_id,
       ...result,
       method_seen: methodSeen,
+      handler_version: HANDLER_VERSION,
     });
   } catch (e) {
     return sendJson(res, 500, {
@@ -46,6 +52,7 @@ export default async function handler(req, res) {
       error: "APPROVE_FAILED",
       message: e?.message || String(e),
       method_seen: methodSeen,
+      handler_version: HANDLER_VERSION,
     });
   }
 }
