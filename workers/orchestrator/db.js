@@ -92,6 +92,7 @@ export async function saveWorkflow(a, b) {
   const env = resolveEnv(b ? a : null);
   const workflow = b ? b : a;
 
+  // ✅ tabela não tem coluna version
   const row = {
     workflow_id: workflow.workflow_id,
     payload: workflow,
@@ -103,25 +104,11 @@ export async function saveWorkflow(a, b) {
   });
 }
 
-export async function getWorkflow(a, b, c) {
-  // suportar: (env, workflow_id, version) OU (workflow_id, version) OU (workflow_id)
-  const env = resolveEnv(c ? a : (b ? null : null));
-  const workflow_id = c ? b : a;
-  const version = c ? c : b;
+export async function getWorkflow(a, b) {
+  const env = resolveEnv(b ? a : null);
+  const workflow_id = b ? b : a;
 
-  if (version) {
-    const q =
-      `?workflow_id=eq.${encodeURIComponent(workflow_id)}` +
-      `&version=eq.${encodeURIComponent(version)}` +
-      `&select=payload&limit=1`;
-    const rows = await supabaseRequest(env, "GET", `/rest/v1/orchestrator_workflows${q}`);
-    return rows?.[0]?.payload || null;
-  }
-
-  // sem version: pega o mais recente
-  const q =
-    `?workflow_id=eq.${encodeURIComponent(workflow_id)}` +
-    `&select=payload,updated_at&order=updated_at.desc&limit=1`;
+  const q = `?workflow_id=eq.${encodeURIComponent(workflow_id)}&select=payload&limit=1`;
   const rows = await supabaseRequest(env, "GET", `/rest/v1/orchestrator_workflows${q}`);
   return rows?.[0]?.payload || null;
 }
