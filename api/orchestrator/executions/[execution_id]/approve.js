@@ -1,52 +1,29 @@
-import { methodNotAllowed, sendJson } from "../../../../workers/orchestrator/http.js";
-import { approveExecution } from "../../../../workers/orchestrator/engine.js";
+import { methodNotAllowed, sendJson } from "../../../workers/orchestrator/http.js";
+import { approveExecution } from "../../../workers/orchestrator/engine.js";
 
 export default async function handler(req, res) {
   const methodSeen = req.method || "UNKNOWN";
 
   if (methodSeen !== "POST") {
-    return methodNotAllowed(req, res, ["POST"]);
-  }
-
-  const query = req.query || {};
-  const body = req.body && typeof req.body === "object" ? req.body : {};
-
-  const executionId =
-    body.execution_id ||
-    body.executionId ||
-    query.execution_id ||
-    query.executionId ||
-    null;
-
-  if (!executionId || typeof executionId !== "string") {
-    return sendJson(res, 400, {
-      ok: false,
-      error: "execution_id é obrigatório (string).",
-      method_seen: methodSeen,
-    });
+    return methodNotAllowed(req, res, ["POST"], { method_seen: methodSeen });
   }
 
   try {
-    const result = await approveExecution(executionId);
+    const execution_id = req.query?.execution_id;
 
-    if (!result || !result.ok) {
-      return sendJson(res, 400, {
-        ok: false,
-        ...result,
-        method_seen: methodSeen,
-      });
-    }
+    const result = await approveExecution(process.env, execution_id);
 
     return sendJson(res, 200, {
+      ok: true,
+      execution_id,
       ...result,
       method_seen: methodSeen,
     });
-  } catch (err) {
-    console.error("ORCHESTRATOR_APPROVE_ERROR", err);
+  } catch (e) {
     return sendJson(res, 500, {
       ok: false,
       error: "APPROVE_FAILED",
-      message: err?.message ? String(err.message) : String(err),
+      message: e?.message || String(e),
       method_seen: methodSeen,
     });
   }
