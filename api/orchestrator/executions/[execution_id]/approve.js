@@ -1,49 +1,48 @@
-import { methodNotAllowed, sendJson } from "../../../workers/orchestrator/http.js";
-import { approveExecution } from "../../../workers/orchestrator/engine.js";
+import { methodNotAllowed, sendJson } from "../../../../workers/orchestrator/http.js";
+import { approveExecution } from "../../../../workers/orchestrator/engine.js";
 
-const HANDLER_VERSION = "approve-fix-v1-2026-02-08";
+const HANDLER_VERSION = "approve-path-fix-v1-2026-02-08";
 
 export default async function handler(req, res) {
   const methodSeen = req.method || "UNKNOWN";
 
   if (methodSeen !== "POST") {
-    return methodNotAllowed(req, res, ["POST"], { method_seen: methodSeen });
+    return methodNotAllowed(req, res, ["POST"]);
   }
 
   try {
-    // ✅ aceita BODY ou QUERY (compat)
-    const execution_id = String(
-      (req.body && req.body.execution_id) || (req.query && req.query.execution_id) || ""
+    // execution_id vem do path (Next injeta em req.query.execution_id)
+    const execution_id = String(req.query?.execution_id || "").trim();
+
+    // compat: se quiser chamar por body também, aceita
+    const executionIdFinal = String(
+      execution_id || (req.body && req.body.execution_id) || ""
     ).trim();
 
-    if (!execution_id) {
+    if (!executionIdFinal) {
       return sendJson(res, 400, {
         ok: false,
         error: "MISSING_EXECUTION_ID",
-        message: "Informe execution_id no body OU na query.",
-        method_seen: methodSeen,
         handler_version: HANDLER_VERSION,
       });
     }
 
-    // ✅ engine canônico: 1 argumento
-    const result = await approveExecution(execution_id);
+    // ✅ engine canônico: approveExecution(executionId)
+    const result = await approveExecution(executionIdFinal);
 
     if (!result?.ok) {
       return sendJson(res, 404, {
         ok: false,
         error: result?.error || "execution_id não encontrado.",
-        execution_id,
-        method_seen: methodSeen,
+        execution_id: executionIdFinal,
         handler_version: HANDLER_VERSION,
       });
     }
 
     return sendJson(res, 200, {
       ok: true,
-      execution_id,
+      execution_id: executionIdFinal,
       ...result,
-      method_seen: methodSeen,
       handler_version: HANDLER_VERSION,
     });
   } catch (e) {
@@ -51,7 +50,6 @@ export default async function handler(req, res) {
       ok: false,
       error: "APPROVE_FAILED",
       message: e?.message || String(e),
-      method_seen: methodSeen,
       handler_version: HANDLER_VERSION,
     });
   }
