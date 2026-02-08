@@ -1,12 +1,15 @@
-import { sendJson } from "../../../workers/orchestrator/http.js";
+import { sendJson, methodNotAllowed } from "../../../workers/orchestrator/http.js";
 import { approveExecution } from "../../../workers/orchestrator/engine.js";
 
 export default async function handler(req, res) {
   const methodSeen = req.method || "UNKNOWN";
 
+  if (methodSeen !== "POST") {
+    return methodNotAllowed(req, res, ["POST"]);
+  }
+
   const query = req.query || {};
-  const body =
-    req.body && typeof req.body === "object" ? req.body : {};
+  const body = req.body && typeof req.body === "object" ? req.body : {};
 
   const executionId =
     body.execution_id ||
@@ -26,7 +29,10 @@ export default async function handler(req, res) {
   const result = await approveExecution(executionId);
 
   if (!result || !result.ok) {
-    return sendJson(res, 400, {
+    const msg = String(result?.error || result?.message || "APPROVE_FAILED");
+    const status = msg.includes("não encontrado") ? 404 : 400;
+
+    return sendJson(res, status, {
       ok: false,
       ...result,
       method_seen: methodSeen,
