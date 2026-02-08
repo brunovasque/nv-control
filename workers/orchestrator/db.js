@@ -2,17 +2,50 @@ function nowIso() {
   return new Date().toISOString();
 }
 
-function requireEnv(env, key) {
-  const v = env[key];
-  if (!v) throw new Error(`Missing env: ${key}`);
-  return v;
+function resolveEnv(maybeEnv) {
+  // se já veio um env "de verdade"
+  if (
+    maybeEnv &&
+    typeof maybeEnv === "object" &&
+    ("ORCH_DB_URL" in maybeEnv ||
+      "ORCH_DB_KEY" in maybeEnv ||
+      "SUPABASE_URL" in maybeEnv ||
+      "SUPABASE_SERVICE_ROLE_KEY" in maybeEnv)
+  ) {
+    return maybeEnv;
+  }
+
+  // Vercel/Node
+  if (typeof process !== "undefined" && process.env) return process.env;
+
+  return {};
 }
 
-async function supabaseRequest(env, method, path, { body = null, prefer = null } = {}) {
+function requireEnv(env, key) {
+  const e = env || {};
+  const direct = e[key];
+  if (direct) return direct;
+
+  // ✅ fallback seguro (não quebra quem já tem ORCH_*)
+  if (key === "ORCH_DB_URL") {
+    const fb = e.SUPABASE_URL;
+    if (fb) return fb;
+  }
+  if (key === "ORCH_DB_KEY") {
+    const fb = e.SUPABASE_SERVICE_ROLE_KEY || e.SUPABASE_KEY || e.SUPABASE_ANON_KEY;
+    if (fb) return fb;
+  }
+
+  throw new Error(`Missing env: ${key}`);
+}
+
+async function supabaseRequest(envIn, method, path, { body = null, prefer = null } = {}) {
+  const env = resolveEnv(envIn);
+
   const baseUrl = requireEnv(env, "ORCH_DB_URL");
   const key = requireEnv(env, "ORCH_DB_KEY");
 
-  const url = `${baseUrl.replace(/\/$/, "")}${path}`;
+  const url = `${String(baseUrl).replace(/\/$/, "")}${path}`;
 
   const headers = {
     apikey: key,
@@ -37,10 +70,7 @@ async function supabaseRequest(env, method, path, { body = null, prefer = null }
       data = JSON.parse(text);
     } catch (e) {
       throw new Error(
-        `[orchestrator/db] invalid JSON from Supabase (${response.status}) ${method} ${path}: ${e.message} | body_preview="${text.slice(
-          0,
-          200
-        )}"`
+        `[orchestrator/db] invalid JSON (${response.status}) ${method} ${path}: ${e.message}`
       );
     }
   }
@@ -55,30 +85,60 @@ async function supabaseRequest(env, method, path, { body = null, prefer = null }
   return data;
 }
 
-// Tabela workflows (schema real: workflow_id, payload)
-export async function saveWorkflow(env, workflow) {
+// -------------------------
+// WORKFLOWS
+// -------------------------
+export async function saveWorkflow(a, b) {
+  const env = resolveEnv(b ? a : null);
+  const workflow = b ? b : a;
+
   const payload = {
     workflow_id: workflow.workflow_id,
+    version: workflow.version || "1.0.0",
     payload: workflow,
+    updated_at: nowIso(),
   };
 
-  return supabaseRequest(env, "POST", `/rest/v1/orchestrator_workflows?on_conflict=workflow_id`, {
+  return supabaseRequest(env, "POST", `/rest/v1/orchestrator_workflows?on_conflict=workflow_id,version`, {
     body: [payload],
     prefer: "resolution=merge-duplicates,return=minimal",
   });
 }
 
-export async function getWorkflow(env, workflow_id) {
-  const q = `?workflow_id=eq.${encodeURIComponent(workflow_id)}&select=payload&limit=1`;
+export async function getWorkflow(a, b, c) {
+  // suportar: (env, workflow_id, version) OU (workflow_id, version) OU (workflow_id)
+  const env = resolveEnv(c ? a : (b ? null : null));
+  const workflow_id = c ? b : a;
+  const version = c ? c : b;
+
+  if (version) {
+    const q =
+      `?workflow_id=eq.${encodeURIComponent(workflow_id)}` +
+      `&version=eq.${encodeURIComponent(version)}` +
+      `&select=payload&limit=1`;
+    const rows = await supabaseRequest(env, "GET", `/rest/v1/orchestrator_workflows${q}`);
+    return rows?.[0]?.payload || null;
+  }
+
+  // sem version: pega o mais recente
+  const q =
+    `?workflow_id=eq.${encodeURIComponent(workflow_id)}` +
+    `&select=payload,updated_at&order=updated_at.desc&limit=1`;
   const rows = await supabaseRequest(env, "GET", `/rest/v1/orchestrator_workflows${q}`);
   return rows?.[0]?.payload || null;
 }
 
-// Tabela executions (schema real: execution_id, payload)
-export async function saveExecution(env, execution) {
+// -------------------------
+// EXECUTIONS
+// -------------------------
+export async function saveExecution(a, b) {
+  const env = resolveEnv(b ? a : null);
+  const execution = b ? b : a;
+
   const payload = {
     execution_id: execution.execution_id,
     payload: execution,
+    updated_at: nowIso(),
   };
 
   return supabaseRequest(env, "POST", `/rest/v1/orchestrator_executions?on_conflict=execution_id`, {
@@ -87,27 +147,11 @@ export async function saveExecution(env, execution) {
   });
 }
 
-export async function getExecution(env, execution_id) {
+export async function getExecution(a, b) {
+  const env = resolveEnv(b ? a : null);
+  const execution_id = b ? b : a;
+
   const q = `?execution_id=eq.${encodeURIComponent(execution_id)}&select=payload&limit=1`;
   const rows = await supabaseRequest(env, "GET", `/rest/v1/orchestrator_executions${q}`);
   return rows?.[0]?.payload || null;
-}
-
-// Tabela flags (schema real: key, payload)
-export async function setFlag(env, key, payload) {
-  const row = {
-    key,
-    payload,
-  };
-
-  return supabaseRequest(env, "POST", `/rest/v1/orchestrator_flags?on_conflict=key`, {
-    body: [row],
-    prefer: "resolution=merge-duplicates,return=minimal",
-  });
-}
-
-export async function getFlag(env, key) {
-  const q = `?key=eq.${encodeURIComponent(key)}&select=payload&limit=1`;
-  const rows = await supabaseRequest(env, "GET", `/rest/v1/orchestrator_flags${q}`);
-  return rows?.[0]?.payload ?? null;
 }
