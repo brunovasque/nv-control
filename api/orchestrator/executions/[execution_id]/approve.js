@@ -22,16 +22,8 @@ export default async function handler(req, res) {
       });
     }
 
-    const result = await approveExecution(process.env, execution_id);
-
-    if (!result.ok) {
-      return sendJson(res, 400, {
-        ok: false,
-        execution_id,
-        ...result,
-        method_seen: methodSeen,
-      });
-    }
+    // ✅ engine atual: approveExecution(executionId)
+    const result = await approveExecution(execution_id);
 
     return sendJson(res, 200, {
       ok: true,
