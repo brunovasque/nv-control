@@ -1,5 +1,5 @@
-import { methodNotAllowed, sendJson } from "../../../../workers/orchestrator/http.js";
-import { rerunStep } from "../../../../workers/orchestrator/engine.js";
+import { methodNotAllowed, sendJson } from "././././workers/orchestrator/http.js";
+import { rerunStep } from "././././workers/orchestrator/engine.js";
 
 const HANDLER_VERSION = "rerun-path-fix-v2-2026-02-08";
 
@@ -11,16 +11,19 @@ export default async function handler(req, res) {
   }
 
   try {
-    const execution_id = String(req.query?.execution_id || "").trim();
-    const body = req.body && typeof req.body === "object" ? req.body : {};
-    const step_id = String(body.step_id || body.stepId || "").trim();
+    // execution_id vem do path (Next injeta em req.query.execution_id)
+    const execution_id_path = String(req.query?.execution_id || "").trim();
+
+    // compat: se quiser chamar por body também, aceita
+    const execution_id_body = String(req.body?.execution_id || "").trim();
+
+    const execution_id = String(execution_id_path || execution_id_body || "").trim();
+    const step_id = String(req.body?.step_id || "").trim();
 
     if (!execution_id) {
       return sendJson(res, 400, {
         ok: false,
         error: "MISSING_EXECUTION_ID",
-        message: "execution_id é obrigatório (path).",
-        method_seen: methodSeen,
         handler_version: HANDLER_VERSION,
       });
     }
@@ -29,27 +32,19 @@ export default async function handler(req, res) {
       return sendJson(res, 400, {
         ok: false,
         error: "MISSING_STEP_ID",
-        message: "body.step_id é obrigatório.",
-        execution_id,
-        method_seen: methodSeen,
         handler_version: HANDLER_VERSION,
       });
     }
 
-    // compat: engine canônico atual é rerunStep(env, executionId, stepId)
-    // (mantém fallback se alguém tiver engine antigo por algum motivo)
-    const result =
-      typeof rerunStep === "function" && rerunStep.length >= 3
-        ? await rerunStep(process.env, execution_id, step_id)
-        : await rerunStep(execution_id, step_id);
+    // ✅ engine canônico: rerunStep(env, executionId, stepId)
+    const result = await rerunStep(process.env, execution_id, step_id);
 
     if (!result?.ok) {
-      return sendJson(res, 404, {
+      return sendJson(res, 400, {
         ok: false,
         execution_id,
         step_id,
-        error: result?.error || "RERUN_FAILED",
-        method_seen: methodSeen,
+        ...(result || {}),
         handler_version: HANDLER_VERSION,
       });
     }
@@ -58,8 +53,7 @@ export default async function handler(req, res) {
       ok: true,
       execution_id,
       step_id,
-      ...result,
-      method_seen: methodSeen,
+      ...(result || {}),
       handler_version: HANDLER_VERSION,
     });
   } catch (e) {
@@ -67,7 +61,6 @@ export default async function handler(req, res) {
       ok: false,
       error: "RERUN_STEP_FAILED",
       message: e?.message || String(e),
-      method_seen: methodSeen,
       handler_version: HANDLER_VERSION,
     });
   }
