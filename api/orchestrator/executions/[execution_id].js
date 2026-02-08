@@ -6,92 +6,86 @@ import {
 } from "../../../workers/orchestrator/engine.js";
 
 export default async function handler(req, res) {
-  const method = req.method || "GET";
+  const methodSeen = req.method || "UNKNOWN";
 
-  // ✅ só aceitamos GET nessa rota (evita o 400/405 estranho do POST)
-  if (method !== "GET") {
+  // Só vamos trabalhar com GET por enquanto
+  if (methodSeen !== "GET") {
     return methodNotAllowed(req, res, ["GET"]);
   }
 
-  const { execution_id: executionId, action: actionRaw, step_id: stepIdRaw } =
-    req.query || {};
+  const { execution_id, action, step_id } = req.query || {};
+  const executionId = execution_id;
 
   if (!executionId || typeof executionId !== "string") {
     return sendJson(res, 400, {
       ok: false,
       error: "execution_id é obrigatório (string).",
+      method_seen: methodSeen,
     });
   }
 
-  const action =
-    typeof actionRaw === "string" ? actionRaw.trim() : String(actionRaw || "").trim();
+  try {
+    // 1) Sem action => só consulta estado
+    if (!action) {
+      const execution = await getExecutionState(executionId);
 
-  // =========================
-  // 1) Sem action → só retorna estado (comportamento antigo)
-  // =========================
-  if (!action) {
-    const state = await getExecutionState(executionId);
+      if (!execution) {
+        return sendJson(res, 404, {
+          ok: false,
+          error: "execution_id não encontrado.",
+          method_seen: methodSeen,
+        });
+      }
 
-    if (!state) {
-      return sendJson(res, 404, {
-        ok: false,
-        error: "execution_id não encontrado.",
+      return sendJson(res, 200, {
+        ok: true,
+        execution,
+        method_seen: methodSeen,
       });
     }
 
-    return sendJson(res, 200, {
-      ok: true,
-      execution: state,
-    });
-  }
+    // 2) action=approve => chama approveExecution
+    if (action === "approve") {
+      const result = await approveExecution(executionId);
+      const statusCode = result.ok ? 200 : 400;
 
-  // =========================
-  // 2) action=approve → aprova execução
-  // =========================
-  if (action === "approve") {
-    const result = await approveExecution(executionId);
-    const statusCode = result && result.ok ? 200 : 400;
-
-    return sendJson(res, statusCode, {
-      ...result,
-      action: "approve",
-      method_seen: method,
-    });
-  }
-
-  // =========================
-  // 3) action=rerun_step → rerun de step
-  // =========================
-  if (action === "rerun_step") {
-    const stepId =
-      typeof stepIdRaw === "string" ? stepIdRaw.trim() : String(stepIdRaw || "").trim();
-
-    if (!stepId) {
-      return sendJson(res, 400, {
-        ok: false,
-        error: "step_id é obrigatório (string) para action=rerun_step.",
-        action: "rerun_step",
-        method_seen: method,
+      return sendJson(res, statusCode, {
+        ...result,
+        method_seen: methodSeen,
       });
     }
 
-    const result = await rerunStep(executionId, stepId);
-    const statusCode = result && result.ok ? 200 : 400;
+    // 3) action=rerun_step => chama rerunStep(executionId, step_id)
+    if (action === "rerun_step") {
+      if (!step_id || typeof step_id !== "string") {
+        return sendJson(res, 400, {
+          ok: false,
+          error: "step_id é obrigatório (string).",
+          method_seen: methodSeen,
+        });
+      }
 
-    return sendJson(res, statusCode, {
-      ...result,
-      action: "rerun_step",
-      step_id: stepId,
-      method_seen: method,
+      const result = await rerunStep(executionId, step_id);
+      const statusCode = result.ok ? 200 : 400;
+
+      return sendJson(res, statusCode, {
+        ...result,
+        method_seen: methodSeen,
+      });
+    }
+
+    // 4) action desconhecida
+    return sendJson(res, 400, {
+      ok: false,
+      error: `action desconhecida: ${String(action)}`,
+      method_seen: methodSeen,
+    });
+  } catch (err) {
+    return sendJson(res, 500, {
+      ok: false,
+      error: "Erro interno ao processar execução.",
+      details: err instanceof Error ? err.message : String(err),
+      method_seen: methodSeen,
     });
   }
-
-  // =========================
-  // 4) action inválido
-  // =========================
-  return sendJson(res, 400, {
-    ok: false,
-    error: `action inválido: ${action}. Use 'approve' ou 'rerun_step'.`,
-    method_seen: method,
-  });
 }
