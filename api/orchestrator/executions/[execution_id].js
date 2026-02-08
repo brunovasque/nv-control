@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     });
   }
 
-  const state = await getExecutionState(executionId);
+  const state = await getExecutionState(process.env, executionId);
 
   if (!state) {
     return sendJson(res, 404, {
