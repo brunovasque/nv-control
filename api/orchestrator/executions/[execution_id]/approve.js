@@ -1,9 +1,19 @@
-import { sendJson } from "../../../../workers/orchestrator/http.js";
-import { approveExecution } from "../../../../workers/orchestrator/engine.js";
+import { sendJson } from "../../../workers/orchestrator/http.js";
+import { approveExecution } from "../../../workers/orchestrator/engine.js";
 
 export default async function handler(req, res) {
-  const { execution_id: executionId } = req.query || {};
   const methodSeen = req.method || "UNKNOWN";
+
+  const query = req.query || {};
+  const body =
+    req.body && typeof req.body === "object" ? req.body : {};
+
+  const executionId =
+    body.execution_id ||
+    body.executionId ||
+    query.execution_id ||
+    query.executionId ||
+    null;
 
   if (!executionId || typeof executionId !== "string") {
     return sendJson(res, 400, {
@@ -15,8 +25,9 @@ export default async function handler(req, res) {
 
   const result = await approveExecution(executionId);
 
-  if (!result.ok) {
+  if (!result || !result.ok) {
     return sendJson(res, 400, {
+      ok: false,
       ...result,
       method_seen: methodSeen,
     });
