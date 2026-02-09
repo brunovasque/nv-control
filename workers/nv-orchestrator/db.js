@@ -30,21 +30,27 @@ async function supabaseRequest(env, method, path, { body = null, prefer = null }
 
   if (prefer) headers.Prefer = prefer;
 
-  const response = await fetch(url, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : null
-  });
+  try {
+    const response = await fetch(url, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : null
+    });
 
-  const rawText = await response.text();
-  const text = (rawText ?? "").trim();
-  const data = text ? JSON.parse(text) : null;
+    const rawText = await response.text();
+    const text = (rawText ?? "").trim();
+    const data = text ? JSON.parse(text) : null;
 
-  if (!response.ok) {
-    throw new Error(`Supabase request failed: ${response.status} ${response.statusText} ${JSON.stringify(data || rawText)}`);
+    if (!response.ok) {
+      throw new Error(`Supabase request failed: ${response.status} ${response.statusText} ${JSON.stringify(data || rawText)}`);
+    }
+
+    console.log("DB OK:", data);
+    return data;
+  } catch (e) {
+    console.error("DB ERROR:", e);
+    throw e;
   }
-
-  return data;
 }
 
 export async function saveWorkflow(env, workflow) {
