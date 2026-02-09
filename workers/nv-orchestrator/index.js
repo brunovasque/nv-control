@@ -1,95 +1,81 @@
-import { approveExecution, getExecutionState, rerunStep, runWorkflow, saveWorkflowDefinition } from "./engine.js";
-import { json, methodNotAllowed, readJson } from "./http.js";
-
-const ORCHESTRATOR_PREFIX = "/orchestrator";
+import {
+  saveWorkflowDefinition,
+  runWorkflow,
+  getExecutionState,
+  rerunStep,
+  approveExecution,
+} from "./engine.js";
 
 export default {
-  async fetch(request, env) {
-    try {
-      const url = new URL(request.url);
-      const path = url.pathname;
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    const pathname = url.pathname;
+    const method = request.method.toUpperCase();
 
-      if (!path.startsWith(ORCHESTRATOR_PREFIX)) {
-        return json({ ok: false, error: "not_found" }, 404);
-      }
-
-      if (path === "/orchestrator/workflows/save") {
-        return handleSaveWorkflow(request, env);
-      }
-
-      if (path === "/orchestrator/run") {
-        return handleRun(request, env);
-      }
-
-      const executionMatch = path.match(/^\/orchestrator\/executions\/([^/]+)$/);
-      if (executionMatch) {
-        return handleGetExecution(request, env, decodeURIComponent(executionMatch[1]));
-      }
-
-      const approveMatch = path.match(/^\/orchestrator\/executions\/([^/]+)\/approve$/);
-      if (approveMatch) {
-        return handleApprove(request, env, decodeURIComponent(approveMatch[1]));
-      }
-
-      const rerunMatch = path.match(/^\/orchestrator\/executions\/([^/]+)\/rerun-step$/);
-      if (rerunMatch) {
-        return handleRerunStep(request, env, decodeURIComponent(rerunMatch[1]));
-      }
-
-      return json({ ok: false, error: "not_found" }, 404);
-    } catch (error) {
-      return json({ ok: false, error: "internal_error", message: error?.message || String(error) }, 500);
+    async function json(data, status = 200) {
+      return new Response(JSON.stringify(data, null, 2), {
+        status,
+        headers: { "Content-Type": "application/json" },
+      });
     }
-  }
+
+    try {
+      if (method === "POST" && pathname === "/orchestrator/workflows/save") {
+        const body = await request.json();
+        const result = await saveWorkflowDefinition(env, body);
+        const status = result?.ok === false ? 400 : 200;
+        return json({ ok: true, ...result, method_seen: method }, status);
+      }
+
+      if (method === "POST" && pathname === "/orchestrator/run") {
+        const body = await request.json();
+        const result = await runWorkflow(env, body);
+        const status = result?.ok === false ? 400 : 200;
+        return json({ ok: true, ...result, method_seen: method }, status);
+      }
+
+      const execMatch = pathname.match(/^\/orchestrator\/executions\/([^\/]+)$/);
+      if (execMatch && method === "GET") {
+        const executionId = execMatch[1];
+        const state = await getExecutionState(env, executionId);
+        if (!state) {
+          return json({ ok: false, error: "execution_id não encontrado.", method_seen: method }, 404);
+        }
+        return json({ ok: true, execution: state, method_seen: method });
+      }
+
+      const approveMatch = pathname.match(/^\/orchestrator\/executions\/([^\/]+)\/approve$/);
+      if (approveMatch && method === "POST") {
+        const executionId = approveMatch[1];
+        const result = await approveExecution(env, executionId);
+        const status = result?.ok === false ? 400 : 200;
+        return json({ ok: true, execution_id: executionId, ...result, method_seen: method }, status);
+      }
+
+      const rerunMatch = pathname.match(/^\/orchestrator\/executions\/([^\/]+)\/rerun-step$/);
+      if (rerunMatch && method === "POST") {
+        const executionId = rerunMatch[1];
+        const body = await request.json();
+        const stepId = String(body?.step_id || "").trim();
+        if (!stepId) {
+          return json({ ok: false, error: "step_id é obrigatório.", method_seen: method }, 400);
+        }
+        const result = await rerunStep(env, executionId, stepId);
+        const status = result?.ok === false ? 400 : 200;
+        return json({ ok: true, execution_id: executionId, step_id: stepId, ...result, method_seen: method }, status);
+      }
+
+      return json({ ok: false, error: "ROUTE_NOT_FOUND", path: pathname, method_seen: method }, 404);
+    } catch (err) {
+      return json(
+        {
+          ok: false,
+          error: "ORCHESTRATOR_WORKER_ERROR",
+          message: err?.message || String(err),
+          method_seen: method,
+        },
+        500,
+      );
+    }
+  },
 };
-
-async function handleSaveWorkflow(request, env) {
-  if (request.method !== "POST") return methodNotAllowed(["POST"]);
-
-  const payload = await readJson(request);
-  const result = await saveWorkflowDefinition(env, payload);
-  if (!result.ok) return json({ ok: false, errors: result.errors }, 400);
-
-  return json(result, 200);
-}
-
-async function handleRun(request, env) {
-  if (request.method !== "POST") return methodNotAllowed(["POST"]);
-
-  const payload = await readJson(request);
-  const result = await runWorkflow(env, payload);
-  if (!result.ok) return json({ ok: false, errors: result.errors }, 400);
-
-  return json({ ok: true, execution: result.execution }, 200);
-}
-
-async function handleGetExecution(request, env, executionId) {
-  if (request.method !== "GET") return methodNotAllowed(["GET"]);
-
-  const execution = await getExecutionState(env, executionId);
-  if (!execution) return json({ ok: false, error: "execution_id não encontrado." }, 404);
-
-  return json({ ok: true, execution }, 200);
-}
-
-async function handleApprove(request, env, executionId) {
-  if (request.method !== "POST") return methodNotAllowed(["POST"]);
-
-  const result = await approveExecution(env, executionId);
-  if (!result.ok) return json({ ok: false, error: result.error }, 400);
-
-  return json(result, 200);
-}
-
-async function handleRerunStep(request, env, executionId) {
-  if (request.method !== "POST") return methodNotAllowed(["POST"]);
-
-  const body = await readJson(request);
-  const stepId = String(body?.step_id || "").trim();
-  if (!stepId) return json({ ok: false, error: "MISSING_STEP_ID" }, 400);
-
-  const result = await rerunStep(env, executionId, stepId);
-  if (!result.ok) return json({ ok: false, error: result.error }, 400);
-
-  return json(result, 200);
-}
