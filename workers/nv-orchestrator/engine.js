@@ -19,6 +19,8 @@ const EXEC_STATUS = {
 };
 
 export async function saveWorkflowDefinition(env, payload) {
+  const input = payload;
+  console.log("[saveWorkflowDefinition] input:", JSON.stringify(input || {}, null, 2));
   const errors = validateWorkflowV1(payload);
   if (errors.length > 0) return { ok: false, errors };
   await saveWorkflow(env, payload);
@@ -26,6 +28,8 @@ export async function saveWorkflowDefinition(env, payload) {
 }
 
 export async function runWorkflow(env, payload) {
+  const input = payload;
+  console.log("[runWorkflow] input:", JSON.stringify(input || {}, null, 2));
   const errors = validateRunV1(payload);
   if (errors.length > 0) return { ok: false, errors };
 
@@ -73,10 +77,14 @@ export async function runWorkflow(env, payload) {
 }
 
 export async function getExecutionState(env, executionId) {
+  const input = { execution_id: executionId };
+  console.log("[getExecutionState] input:", JSON.stringify(input || {}, null, 2));
   return getExecution(env, executionId);
 }
 
 export async function approveExecution(env, executionId) {
+  const input = { execution_id: executionId };
+  console.log("[approveExecution] input:", JSON.stringify(input || {}, null, 2));
   const execution = await getExecution(env, executionId);
   if (!execution) return { ok: false, error: "execution_id não encontrado." };
 
@@ -127,6 +135,8 @@ export async function approveExecution(env, executionId) {
 }
 
 export async function rerunStep(env, executionId, stepId) {
+  const input = { execution_id: executionId, step_id: stepId };
+  console.log("[rerunStep] input:", JSON.stringify(input || {}, null, 2));
   const execution = await getExecution(env, executionId);
   if (!execution) return { ok: false, error: "execution_id não encontrado." };
 
