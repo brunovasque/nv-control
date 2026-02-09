@@ -1,7 +1,7 @@
-import { methodNotAllowed, sendJson } from "../../../../workers/orchestrator/http.js";
-import { approveExecution } from "../../../../workers/orchestrator/engine.js";
+import { methodNotAllowed, sendJson } from "././././workers/orchestrator/http.js";
+import { approveExecution } from "././././workers/orchestrator/engine.js";
 
-const HANDLER_VERSION = "approve-path-fix-v1-2026-02-08";
+const HANDLER_VERSION = "approve-path-fix-v2-2026-02-08";
 
 export default async function handler(req, res) {
   const methodSeen = req.method || "UNKNOWN";
@@ -27,8 +27,8 @@ export default async function handler(req, res) {
       });
     }
 
-    // ✅ engine canônico: approveExecution(executionId)
-    const result = await approveExecution(executionIdFinal);
+    // ✅ engine canônico: approveExecution(env, executionId)
+    const result = await approveExecution(process.env, executionIdFinal);
 
     if (!result?.ok) {
       return sendJson(res, 404, {
