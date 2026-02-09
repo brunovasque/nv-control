@@ -140,3 +140,31 @@ export async function getExecution(a, b) {
   const rows = await supabaseRequest(env, "GET", `/rest/v1/orchestrator_executions${q}`);
   return rows?.[0]?.payload || null;
 }
+
+// -------------------------
+// FLAGS
+// -------------------------
+export async function setFlag(a, b, c) {
+  const env = resolveEnv(c ? a : null);
+  const key = c ? b : a;
+  const value = c ? c : b;
+
+  const row = {
+    key,
+    payload: value,
+  };
+
+  return supabaseRequest(env, "POST", `/rest/v1/orchestrator_flags?on_conflict=key`, {
+    body: [row],
+    prefer: "resolution=merge-duplicates,return=minimal",
+  });
+}
+
+export async function getFlag(a, b) {
+  const env = resolveEnv(b ? a : null);
+  const key = b ? b : a;
+
+  const q = `?key=eq.${encodeURIComponent(key)}&select=payload&limit=1`;
+  const rows = await supabaseRequest(env, "GET", `/rest/v1/orchestrator_flags${q}`);
+  return rows?.[0]?.payload ?? null;
+}

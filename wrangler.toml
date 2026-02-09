@@ -1,5 +1,5 @@
-name = "nv-orchestrator"
-main = "workers/nv-orchestrator/index.js"
+name = "nv-orchestrator-engine"
+main = "workers/orchestrator/index.js"
 compatibility_date = "2026-02-08"
 
 [observability]

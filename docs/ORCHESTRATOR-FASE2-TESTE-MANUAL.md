@@ -1,6 +1,8 @@
 # Teste manual — Orchestrator (FASE 2)
 
-Base URL local (Vercel dev): `http://localhost:3000`
+Base URL do Worker (produção): `https://nv-orchestrator-engine.workers.dev`
+
+Base URL local (Vercel dev/proxy): `http://localhost:3000`
 
 ## 1) Salvar workflow
 
@@ -61,3 +63,9 @@ curl -X POST http://localhost:3000/orchestrator/executions/exec-001/approve
 ```powershell
 Invoke-RestMethod -Method Post -Uri "http://localhost:3000/orchestrator/workflows/save" -ContentType "application/json" -Body '{"workflow_id":"deploy-seguro-v1","name":"Deploy Seguro v1","version":"1.0.0","steps":[{"id":"s1","type":"enavia.deploy_step","params":{"action":"audit"},"on_error":"stop"}]}'
 ```
+
+
+## Variáveis de ambiente
+
+- Worker: `ORCH_DB_URL` e `ORCH_DB_KEY` (com fallback para `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_KEY` / `SUPABASE_ANON_KEY`).
+- Vercel proxy: `ORCH_WORKER_BASE=https://nv-orchestrator-engine.workers.dev`.
