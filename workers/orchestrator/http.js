@@ -7,9 +7,10 @@ export function json(payload, status = 200) {
   });
 }
 
-// ✅ Compat: Next/Vercel (res.status().json()) E Cloudflare (Response)
+// ✅ Compat: Next/Vercel (res.status().json()) e Cloudflare (Response)
+// Cloudflare padrão esperado neste projeto: sendJson(status, payload)
 export function sendJson(resOrStatus, statusOrPayload, payloadMaybe) {
-  // Next/Vercel style: sendJson(res, status, payload)
+  // Next/Vercel: sendJson(res, status, payload)
   if (
     resOrStatus &&
     typeof resOrStatus.status === "function" &&
@@ -17,15 +18,16 @@ export function sendJson(resOrStatus, statusOrPayload, payloadMaybe) {
   ) {
     const res = resOrStatus;
     const status = typeof statusOrPayload === "number" ? statusOrPayload : 200;
-    const payload =
-      typeof statusOrPayload === "number"
-        ? payloadMaybe ?? {}
-        : statusOrPayload ?? {};
+    const payload = typeof statusOrPayload === "number" ? payloadMaybe ?? {} : statusOrPayload ?? {};
     return res.status(status).json(payload);
   }
 
-  // Cloudflare style: sendJson(status, payload) ou sendJson(payload)
-  if (typeof resOrStatus === "number") return json(statusOrPayload ?? {}, resOrStatus);
+  // Cloudflare: sendJson(status, payload)
+  if (typeof resOrStatus === "number") {
+    return json(statusOrPayload ?? {}, resOrStatus);
+  }
+
+  // Fallback compatível: sendJson(payload)
   return json(resOrStatus ?? {}, 200);
 }
 

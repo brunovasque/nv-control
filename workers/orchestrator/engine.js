@@ -149,62 +149,36 @@ export async function approveExecution(a, b) {
   };
 }
 
-export async function approveExecution(executionId) {
-  const execution = await getExecution(executionId);
-  if (!execution) {
-    return { ok: false, error: "execution_id não encontrado." };
+
+export async function rerunStep(env, executionId, stepId) {
+  const input = { execution_id: executionId, step_id: stepId };
+  console.log("[rerunStep] input:", JSON.stringify(input || {}, null, 2));
+  const execution = await getExecution(env, executionId);
+  if (!execution) return { ok: false, error: "execution_id não encontrado." };
+
+  const workflow = await getWorkflow(env, execution.workflow_id);
+  if (!workflow) return { ok: false, error: "workflow_id não encontrado na execução." };
+
+  const index = workflow.steps.findIndex((step) => step.id === stepId);
+  if (index < 0) return { ok: false, error: "step_id não encontrado no workflow." };
+
+  const current = execution.steps[index];
+  if (!current || ![STEP_STATUS.ERROR, STEP_STATUS.OK].includes(current.status)) {
+    return { ok: false, error: "step só pode ser reexecutado quando status for 'error' ou 'ok'." };
   }
 
-  // ✅ RESUME: se já foi aprovada e está RUNNING, tenta continuar do próximo step
-  if (!execution.needs_approval) {
-    if (execution.status === EXEC_STATUS.RUNNING) {
-      const workflow = await getWorkflow(execution.workflow_id);
-      if (!workflow) {
-        execution.status = EXEC_STATUS.FAILED;
-        execution.updated_at = nowIso();
-        await saveExecution(execution);
-        return { ok: false, error: "workflow_id não encontrado na execução." };
-      }
-
-      const idx = workflow.steps.findIndex((s) => s.id === execution.current_step_id);
-      const startIndex = idx >= 0 ? idx + 1 : 0;
-
-      return {
-        ok: true,
-        already_approved: true,
-        resumed: true,
-        execution: await executeFromStep(executionId, startIndex),
-      };
-    }
-
-    // já aprovado e não está rodando: só responde ok
-    return { ok: true, already_approved: true, execution };
-  }
-
-  // aqui: ainda precisa de aprovação
-  if (execution.status !== EXEC_STATUS.PAUSED) {
-    return { ok: false, error: "Execução não está aguardando aprovação." };
-  }
-
-  execution.needs_approval = false;
-  execution.approved_at = nowIso();
   execution.status = EXEC_STATUS.RUNNING;
-
-  const blockedIdx = execution.steps.findIndex((step) => step.status === STEP_STATUS.BLOCKED);
-  if (blockedIdx >= 0) {
-    execution.steps[blockedIdx].status = STEP_STATUS.OK;
-    execution.steps[blockedIdx].ended_at = nowIso();
-    execution.steps[blockedIdx].result_resumo = "Aprovado manualmente.";
-  }
-
+  execution.needs_approval = false;
+  execution.current_step_id = stepId;
   execution.updated_at = nowIso();
-  await saveExecution(execution);
+  await saveExecution(env, execution);
 
   return {
     ok: true,
-    execution: await executeFromStep(executionId, blockedIdx + 1),
+    execution: await executeFromStep(env, executionId, index)
   };
 }
+
 
 async function executeFromStep(env, executionId, startIndex) {
   let execution = await getExecution(env, executionId);
