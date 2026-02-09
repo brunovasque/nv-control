@@ -1,54 +1,43 @@
-import { methodNotAllowed, sendJson } from "../../../../workers/orchestrator/http.js";
-import { approveExecution } from "../../../../workers/orchestrator/engine.js";
-
-const HANDLER_VERSION = "approve-path-fix-v2-2026-02-08";
-
 export default async function handler(req, res) {
-  const methodSeen = req.method || "UNKNOWN";
-
-  if (methodSeen !== "POST") {
-    return methodNotAllowed(req, res, ["POST"]);
+  const base = process.env.ORCH_WORKER_BASE;
+  if (!base) {
+    return res.status(500).json({ ok: false, error: "ORCH_WORKER_BASE_NOT_SET" });
   }
 
+  if ((req.method || "GET") !== "POST") {
+    res.setHeader("Allow", "POST");
+    return res.status(405).json({ ok: false, error: "METHOD_NOT_ALLOWED" });
+  }
+
+  const executionId = String(req.query?.execution_id || "").trim();
+  if (!executionId) {
+    return res.status(400).json({ ok: false, error: "MISSING_EXECUTION_ID" });
+  }
+
+  let body = {};
+  if (typeof req.body === "string") {
+    try {
+      body = req.body ? JSON.parse(req.body) : {};
+    } catch {
+      return res.status(400).json({ ok: false, error: "INVALID_JSON_BODY" });
+    }
+  } else {
+    body = req.body || {};
+  }
+
+  const url = `${base}/orchestrator/executions/${encodeURIComponent(executionId)}/approve`;
+  const r = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  const text = await r.text();
+  res.status(r.status);
+
   try {
-    const execution_id = String(req.query?.execution_id || "").trim();
-
-    const executionIdFinal = String(
-      execution_id || (req.body && req.body.execution_id) || ""
-    ).trim();
-
-    if (!executionIdFinal) {
-      return sendJson(res, 400, {
-        ok: false,
-        error: "MISSING_EXECUTION_ID",
-        handler_version: HANDLER_VERSION,
-      });
-    }
-
-    // ✅ engine canônico: approveExecution(env, executionId)
-    const result = await approveExecution(process.env, executionIdFinal);
-
-    if (!result?.ok) {
-      return sendJson(res, 404, {
-        ok: false,
-        error: result?.error || "execution_id não encontrado.",
-        execution_id: executionIdFinal,
-        handler_version: HANDLER_VERSION,
-      });
-    }
-
-    return sendJson(res, 200, {
-      ok: true,
-      execution_id: executionIdFinal,
-      ...result,
-      handler_version: HANDLER_VERSION,
-    });
-  } catch (e) {
-    return sendJson(res, 500, {
-      ok: false,
-      error: "APPROVE_FAILED",
-      message: e?.message || String(e),
-      handler_version: HANDLER_VERSION,
-    });
+    return res.json(JSON.parse(text || "{}"));
+  } catch {
+    return res.send(text);
   }
 }

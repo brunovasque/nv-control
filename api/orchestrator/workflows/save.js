@@ -1,18 +1,38 @@
-import { saveWorkflowDefinition } from "../../../workers/orchestrator/engine.js";
-import { methodNotAllowed, sendJson } from "../../../workers/orchestrator/http.js";
-
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return methodNotAllowed(req, res, ["POST"]);
+  const base = process.env.ORCH_WORKER_BASE;
+  if (!base) {
+    return res.status(500).json({ ok: false, error: "ORCH_WORKER_BASE_NOT_SET" });
   }
 
-  const result = await saveWorkflowDefinition(process.env, req.body || {});
-  if (!result.ok) {
-    return sendJson(res, 400, {
-      ok: false,
-      errors: result.errors
-    });
+  if ((req.method || "GET") !== "POST") {
+    res.setHeader("Allow", "POST");
+    return res.status(405).json({ ok: false, error: "METHOD_NOT_ALLOWED" });
   }
 
-  return sendJson(res, 200, result);
+  let body = {};
+  if (typeof req.body === "string") {
+    try {
+      body = req.body ? JSON.parse(req.body) : {};
+    } catch {
+      return res.status(400).json({ ok: false, error: "INVALID_JSON_BODY" });
+    }
+  } else {
+    body = req.body || {};
+  }
+
+  const url = `${base}/orchestrator/workflows/save`;
+  const r = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  const text = await r.text();
+  res.status(r.status);
+
+  try {
+    return res.json(JSON.parse(text || "{}"));
+  } catch {
+    return res.send(text);
+  }
 }
