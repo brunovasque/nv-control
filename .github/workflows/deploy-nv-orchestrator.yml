@@ -17,7 +17,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy workers/orchestrator/index.js --name nv-orchestrator-engine
+          command: deploy --name nv-orchestrator-engine
 
       - name: Smoke test nv-orchestrator-engine
         shell: bash
@@ -37,8 +37,13 @@ jobs:
           cat "$body_file"
           echo
 
-          if grep -q '1042' "$body_file"; then
-            echo "Smoke test failed: response contains disallowed code 1042"
+          if grep -qi 'hello world' "$body_file"; then
+            echo "Smoke test failed: response still contains Hello World"
+            exit 1
+          fi
+
+          if grep -Eqi '<!doctype html|<html[[:space:]>]' "$body_file"; then
+            echo "Smoke test failed: response appears to be HTML"
             exit 1
           fi
 
