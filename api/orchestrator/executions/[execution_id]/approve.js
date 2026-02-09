@@ -1,5 +1,5 @@
-import { methodNotAllowed, sendJson } from "././././workers/orchestrator/http.js";
-import { approveExecution } from "././././workers/orchestrator/engine.js";
+import { methodNotAllowed, sendJson } from "../../../../workers/orchestrator/http.js";
+import { approveExecution } from "../../../../workers/orchestrator/engine.js";
 
 const HANDLER_VERSION = "approve-path-fix-v2-2026-02-08";
 
@@ -11,10 +11,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    // execution_id vem do path (Next injeta em req.query.execution_id)
     const execution_id = String(req.query?.execution_id || "").trim();
 
-    // compat: se quiser chamar por body também, aceita
     const executionIdFinal = String(
       execution_id || (req.body && req.body.execution_id) || ""
     ).trim();
