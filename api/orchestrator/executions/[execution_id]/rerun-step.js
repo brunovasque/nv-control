@@ -1,4 +1,4 @@
-const HANDLER_VERSION = "rerun-path-fix-v5-2026-02-08";
+const HANDLER_VERSION = "rerun-path-fix-v6-2026-02-08";
 
 export default async function handler(req, res) {
   const methodSeen = req.method || "UNKNOWN";
@@ -8,7 +8,7 @@ export default async function handler(req, res) {
     const httpMod = await import("../../../../workers/orchestrator/http.js");
     const engineMod = await import("../../../../workers/orchestrator/engine.js");
 
-    const methodNotAllowed = httpMod.methodNotAllowed || httpMod.methodNotAllowed;
+    const methodNotAllowed = httpMod.methodNotAllowed;
     const sendJson = httpMod.sendJson;
     const rerunStep = engineMod.rerunStep;
 
@@ -28,7 +28,11 @@ export default async function handler(req, res) {
 
     if (methodSeen !== "POST") {
       if (methodNotAllowed) return methodNotAllowed(req, res, ["POST"]);
-      return sendJson(res, 405, { ok: false, error: "METHOD_NOT_ALLOWED", allow: ["POST"] });
+      return sendJson(res, 405, {
+        ok: false,
+        error: "METHOD_NOT_ALLOWED",
+        allow: ["POST"],
+      });
     }
 
     const execution_id_path = String(req.query?.execution_id || "").trim();
@@ -36,8 +40,18 @@ export default async function handler(req, res) {
     const execution_id = String(execution_id_path || body.execution_id || "").trim();
     const step_id = String(body.step_id || body.stepId || "").trim();
 
-    if (!execution_id) return sendJson(res, 400, { ok: false, error: "MISSING_EXECUTION_ID", handler_version: HANDLER_VERSION });
-    if (!step_id) return sendJson(res, 400, { ok: false, error: "MISSING_STEP_ID", handler_version: HANDLER_VERSION });
+    if (!execution_id)
+      return sendJson(res, 400, {
+        ok: false,
+        error: "MISSING_EXECUTION_ID",
+        handler_version: HANDLER_VERSION,
+      });
+    if (!step_id)
+      return sendJson(res, 400, {
+        ok: false,
+        error: "MISSING_STEP_ID",
+        handler_version: HANDLER_VERSION,
+      });
 
     const result = await rerunStep(process.env, execution_id, step_id);
 
