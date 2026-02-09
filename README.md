@@ -29,3 +29,12 @@ Após criar/publicar o Worker novo, configure no projeto Vercel:
 - `ORCH_WORKER_BASE=https://nv-orchestrator-engine.workers.dev`
 
 As rotas em `api/orchestrator/*` fazem relay para essa base.
+
+### GitHub Actions Secrets (deploy)
+
+Para o workflow `Deploy nv-orchestrator-engine` funcionar, configure estes secrets no repositório GitHub:
+
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+
+Sem eles, o passo do `cloudflare/wrangler-action@v3` falha na autenticação do deploy.
