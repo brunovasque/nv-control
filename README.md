@@ -1,5 +1,34 @@
 # nv-control
 
+## Arquitetura de Workers (canônico)
+
+### Worker canônico: `workers/orchestrator/`
+
+O worker de orquestramento canônico e em produção está em:
+
+```
+workers/orchestrator/
+  index.js      — entrypoint (roteamento HTTP)
+  engine.js     — lógica de execução de workflows
+  db.js         — persistência via Supabase REST
+  http.js       — utilitários HTTP (sendJson, methodNotAllowed)
+  contracts.js  — validação de contratos workflow.v1
+```
+
+`wrangler.toml` na raiz aponta explicitamente para este diretório:
+
+```toml
+main = "workers/orchestrator/index.js"
+```
+
+O workflow de CI (`.github/workflows/deploy-nv-orchestrator.yml`) deploya **este** worker no Cloudflare via `wrangler deploy`.
+
+> **Nota:** O diretório `workers/nv-orchestrator/` era um fork legado/experimental do mesmo engine,
+> nunca deployado em produção. Foi removido nesta revisão P0 para eliminar a ambiguidade.
+> Qualquer futuro patch no engine deve ser feito em `workers/orchestrator/`.
+
+---
+
 ## Orchestrator Engine Worker
 
 Este repositório agora separa o engine do orquestrador em um Worker dedicado:
