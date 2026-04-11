@@ -511,7 +511,7 @@ Nenhum registro de pipeline para este worker ainda.
 </div>
           </div>
 
-         <iframe class="browser-iframe" title="noVNC" src="https://browser.nv-imoveis.com/novnc/vnc.html?autoconnect=1"></iframe>
+         <iframe class="browser-iframe" title="noVNC" data-src="https://browser.nv-imoveis.com/novnc/vnc.html?autoconnect=1" src="about:blank"></iframe>
 
         <div class="browser-logbar">
           <div class="browser-logtext" id="browserLogLine">—</div>
@@ -675,7 +675,7 @@ Nenhum registro de pipeline para este worker ainda.
   <!-- ✅ SCRIPT PRINCIPAL (OBRIGATÓRIO PARA VERCEL) -->
   <script type="module" src="./script.js"></script>
 
-  <script type="module" src="./lib/browser-executor-ui.js"></script>
+  <!-- browser-executor-ui.js removido: binding canônico já existe em script.js (bindBrowserExecuteButton) -->
 
 </body>
 </html>
