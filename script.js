@@ -2803,8 +2803,8 @@ async function askEnaviaAnalysis(intentText) {
 ============================================================ */
 
 function openLiveOverlay() {
-  // Se já existir um viewer noVNC embutido, só foca nele.
-  const inline = document.querySelector("iframe[src*='novnc']");
+  // Se já existir um viewer noVNC embutido (lazy-load ou carregado), só foca nele.
+  const inline = document.querySelector("iframe.browser-iframe[data-src*='novnc']");
   if (inline) {
     try {
       inline.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -2825,7 +2825,10 @@ function openLiveOverlay() {
 
 // ============================================================
 // AO VIVO — BOTÃO (VISUALIZAÇÃO APENAS, CANAL ISOLADO)
+// Guard: reutiliza janela existente, não abre múltiplas abas
 // ============================================================
+let __liveVncWindow = null;
+
 document.addEventListener("DOMContentLoaded", () => {
   const liveBtn =
     document.getElementById("liveViewBtn") ||
@@ -2840,17 +2843,22 @@ document.addEventListener("DOMContentLoaded", () => {
     e.preventDefault();
     e.stopPropagation();
 
+    const liveUrl =
+      "https://browser.nv-imoveis.com/novnc/vnc.html?autoconnect=1";
+
+    // Reutiliza janela já aberta (guard contra múltiplas abas)
+    if (__liveVncWindow && !__liveVncWindow.closed) {
+      try {
+        __liveVncWindow.focus();
+      } catch (_) {}
+      return;
+    }
+
     try {
-      const liveUrl =
-        "https://browser.nv-imoveis.com/novnc/vnc.html?autoconnect=1";
-      window.open(liveUrl, "_blank", "noopener,noreferrer");
+      __liveVncWindow = window.open(liveUrl, "novnc-live");
     } catch (err) {
       console.warn("AO VIVO falhou, abrindo em nova aba:", err);
-      window.open(
-        "https://browser.nv-imoveis.com/novnc/vnc.html?autoconnect=1",
-        "_blank",
-        "noopener,noreferrer"
-      );
+      __liveVncWindow = window.open(liveUrl, "novnc-live");
     }
   });
 });
@@ -3215,6 +3223,7 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
 
 // ============================================================
 // ABAS PRINCIPAIS (Diretor / Deploy / Browser / Telemetria / Histórico)
+// Inclui lazy-load/unload do iframe noVNC ao entrar/sair da aba Browser
 // ============================================================
 (function initMainTabs() {
   const main = document.querySelector(".main-area");
@@ -3231,6 +3240,22 @@ document.querySelectorAll(".mode-btn").forEach(btn => {
     tabs.forEach((t) => {
       t.classList.toggle("active", t === btn);
     });
+
+    // Lazy-load / unload do iframe noVNC ao entrar/sair da aba Browser
+    const iframe = document.querySelector("iframe.browser-iframe[data-src]");
+    if (iframe) {
+      if (tab === "browser") {
+        // Carrega iframe apenas quando a aba Browser é aberta
+        if (!iframe.src || iframe.src === "about:blank") {
+          iframe.src = iframe.getAttribute("data-src");
+        }
+      } else {
+        // Descarrega iframe ao sair da aba Browser (mata conexão VNC)
+        if (iframe.src !== "about:blank") {
+          iframe.src = "about:blank";
+        }
+      }
+    }
   }
 
   tabs.forEach((btn) => {
